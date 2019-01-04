@@ -1,0 +1,72 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+<h1>Setup</h1>
+<hr>
+<h2>Admin Account</h2>
+<p><b>Admin username:</b> <span style='font-family: monospace;'>admin</span></p>
+<p><b>Admin password:</b> <span style='font-family: monospace;'>{{ password }}</span></p>
+
+<br>
+
+<h2>Event Attack Vector</h2>
+{% for value in event_attack_vector %}
+<p>{{ value }}</p>
+{% endfor %}
+
+<h2>Event Disposition</h2>
+{% for value in event_disposition %}
+<p>{{ value }}</p>
+{% endfor %}
+
+<h2>Event Prevention Tool</h2>
+{% for value in event_prevention_tool %}
+<p>{{ value }}</p>
+{% endfor %}
+
+<h2>Event Remediation</h2>
+{% for value in event_remediation %}
+<p>{{ value }}</p>
+{% endfor %}
+
+<h2>Event Status</h2>
+{% for value in event_status %}
+<p>{{ value }}</p>
+{% endfor %}
+
+<h2>Event Type</h2>
+{% for value in event_type %}
+<p>{{ value }}</p>
+{% endfor %}
+
+<h2>Indicator Confidence</h2>
+{% for value in indicator_confidence %}
+<p>{{ value }}</p>
+{% endfor %}
+
+<h2>Indicator Impact</h2>
+{% for value in indicator_impact %}
+<p>{{ value }}</p>
+{% endfor %}
+
+<h2>Indicator Status</h2>
+{% for value in indicator_status %}
+<p>{{ value }}</p>
+{% endfor %}
+
+<h2>Indicator Type</h2>
+{% for value in indicator_type %}
+<p>{{ value }}</p>
+{% endfor %}
+
+<h2>Intel Source</h2>
+{% for value in intel_source %}
+<p>{{ value }}</p>
+{% endfor %}
+
+<h2>Malware Type</h2>
+{% for value in malware_type %}
+<p>{{ value }}</p>
+{% endfor %}
+
+{% endblock %}
