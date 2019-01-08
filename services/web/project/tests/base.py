@@ -3,7 +3,7 @@ import os
 import uuid
 
 from flask_security import SQLAlchemyUserDatastore
-from flask_security.utils import encrypt_password
+from flask_security.utils import hash_password
 from flask_testing import TestCase
 
 from lib.constants import HOME_DIR
@@ -14,14 +14,15 @@ config_path = os.path.join(HOME_DIR, 'etc', 'setup.ini')
 if not os.path.exists(config_path):
     raise FileNotFoundError('Unable to locate setup.ini at: {}'.format(config_path))
 config = configparser.ConfigParser(allow_no_value=True)
-config.optionxform = str # This preserves case-sensitivity for the values
+config.optionxform = str  # This preserves case-sensitivity for the values
 config.read(config_path)
 
-TEST_APIKEY         = '11111111-1111-1111-1111-111111111111'
-TEST_ADMIN_APIKEY   = '22222222-2222-2222-2222-222222222222'
+TEST_APIKEY = '11111111-1111-1111-1111-111111111111'
+TEST_ADMIN_APIKEY = '22222222-2222-2222-2222-222222222222'
 TEST_ANALYST_APIKEY = '33333333-3333-3333-3333-333333333333'
 
 app = create_app()
+
 
 class BaseTestCase(TestCase):
     def create_app(self):
@@ -40,7 +41,7 @@ class BaseTestCase(TestCase):
         if not os.path.exists(config_path):
             raise FileNotFoundError('Unable to locate setup.ini at: {}'.format(config_path))
         config = configparser.ConfigParser(allow_no_value=True)
-        config.optionxform = str # This preserves case-sensitivity for the values
+        config.optionxform = str  # This preserves case-sensitivity for the values
         config.read(config_path)
 
         # Admin role
@@ -61,7 +62,8 @@ class BaseTestCase(TestCase):
             password = 'test'
             admin_role = models.Role.query.filter_by(name='admin').first()
             analyst_role = models.Role.query.filter_by(name='analyst').first()
-            user_datastore.create_user(email='test@localhost', password=encrypt_password(password), username='test', first_name='Test', last_name='Test', roles=[admin_role, analyst_role])
+            user_datastore.create_user(email='test@localhost', password=hash_password(password), username='test',
+                                       first_name='Test', last_name='Test', roles=[admin_role, analyst_role])
             db.session.commit()
             test_user = models.User.query.filter_by(username='test').first()
             test_user.apikey = uuid.UUID(TEST_APIKEY)
@@ -72,7 +74,8 @@ class BaseTestCase(TestCase):
             user_datastore = SQLAlchemyUserDatastore(db, models.User, models.Role)
             password = 'admin'
             admin_role = models.Role.query.filter_by(name='admin').first()
-            user_datastore.create_user(email='admin@localhost', password=encrypt_password(password), username='admin', first_name='Admin', last_name='Admin', roles=[admin_role])
+            user_datastore.create_user(email='admin@localhost', password=hash_password(password), username='admin',
+                                       first_name='Admin', last_name='Admin', roles=[admin_role])
             db.session.commit()
             admin_user = models.User.query.filter_by(username='admin').first()
             admin_user.apikey = uuid.UUID(TEST_ADMIN_APIKEY)
@@ -83,7 +86,9 @@ class BaseTestCase(TestCase):
             user_datastore = SQLAlchemyUserDatastore(db, models.User, models.Role)
             password = 'analyst'
             analyst_role = models.Role.query.filter_by(name='analyst').first()
-            user_datastore.create_user(email='analyst@localhost', password=encrypt_password(password), username='analyst', first_name='Analyst', last_name='Aanlyst', roles=[analyst_role])
+            user_datastore.create_user(email='analyst@localhost', password=hash_password(password),
+                                       username='analyst', first_name='Analyst', last_name='Aanlyst',
+                                       roles=[analyst_role])
             db.session.commit()
             analyst_user = models.User.query.filter_by(username='analyst').first()
             analyst_user.apikey = uuid.UUID(TEST_ANALYST_APIKEY)

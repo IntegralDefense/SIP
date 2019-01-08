@@ -8,6 +8,7 @@ from project import create_app
 
 app = create_app()
 
+
 class TestDevelopmentConfig(TestCase):
     def create_app(self):
         app.config.from_object('project.config.DevelopmentConfig')
@@ -17,6 +18,7 @@ class TestDevelopmentConfig(TestCase):
         self.assertEqual(app.config['SECRET_KEY'], '{{secret_key}}')
         self.assertFalse(current_app is None)
         self.assertEqual(app.config['SQLALCHEMY_DATABASE_URI'], os.environ.get('DATABASE_URL'))
+
 
 class TestTestingConfig(TestCase):
     def create_app(self):
@@ -28,6 +30,7 @@ class TestTestingConfig(TestCase):
         self.assertTrue(app.config['TESTING'])
         self.assertFalse(app.config['PRESERVE_CONTEXT_ON_EXCEPTION'])
         self.assertEqual(app.config['SQLALCHEMY_DATABASE_URI'], os.environ.get('DATABASE_TEST_URL'))
+
 
 class TestProductionConfig(TestCase):
     def create_app(self):

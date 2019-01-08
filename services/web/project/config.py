@@ -4,7 +4,8 @@ from dotenv import load_dotenv
 basedir = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(basedir, '.env'))
 
-class BaseConfig():
+
+class BaseConfig:
     """ Base Configuration """
 
     TESTING = False
@@ -26,12 +27,15 @@ class BaseConfig():
     SECURITY_SEND_PASSWORD_RESET_EMAIL = False
     SECURITY_SEND_PASSWORD_RESET_NOTICE_EMAIL = False
 
+
 class DevelopmentConfig(BaseConfig):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+
 
 class TestingConfig(BaseConfig):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_TEST_URL')
+
 
 class ProductionConfig(BaseConfig):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')

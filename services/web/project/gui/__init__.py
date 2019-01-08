@@ -1,7 +1,8 @@
 from flask import Blueprint
 
 from project import admin, db, models
-from project.gui.views import AdminView, AdminUserView, AnalystView, CampaignView, IndicatorView, LoginMenuLink, LogoutMenuLink
+from project.gui.views import AdminView, AdminUserView, AnalystView, CampaignView, IndicatorView, LoginMenuLink, \
+    LogoutMenuLink
 
 bp = Blueprint('gui', __name__)
 

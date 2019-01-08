@@ -5,8 +5,9 @@ from flask_admin.contrib.sqla import ModelView
 from flask_admin.form import SecureForm
 from flask_admin.menu import MenuLink
 from flask_security import current_user
-from flask_security.utils import encrypt_password
+from flask_security.utils import hash_password
 from wtforms import PasswordField
+
 
 # Restrict access to 'admin' users
 class AdminView(ModelView):
@@ -19,6 +20,7 @@ class AdminView(ModelView):
         if not self.is_accessible():
             return redirect(url_for('index'))
 
+
 # Restrict access to 'analyst' users
 class AnalystView(ModelView):
     form_base_class = SecureForm
@@ -30,27 +32,33 @@ class AnalystView(ModelView):
         if not self.is_accessible():
             return redirect(url_for('index'))
 
+
 # Restrict access to logged in users.
 class MyAdminIndexView(AdminIndexView):
     def is_accessible(self):
         return current_user.is_authenticated
+
 
 # Only show the Login link if user is logged out.
 class LoginMenuLink(MenuLink):
     def is_accessible(self):
         return not current_user.is_authenticated
 
+
 # Only show the Logout link if the user is logged in.
 class LogoutMenuLink(MenuLink):
     def is_accessible(self):
         return current_user.is_authenticated
 
+
 class CampaignView(AnalystView):
     form_excluded_columns = ('created_time', 'modified_time')
+
 
 class IndicatorView(AnalystView):
     column_exclude_list = ('_children', '_parent', '_equal_to',)
     form_excluded_columns = ('_children', '_parent', '_equal_to', 'created_time', 'modified_time',)
+
 
 # Enable editing of Users but replace the 'password' field with a separate one that gets hashed upon submit.
 class AdminUserView(AdminView):
@@ -89,7 +97,8 @@ class AdminUserView(AdminView):
 
             # ... then encrypt the new password prior to storing it in the database. If the password field is blank,
             # the existing password in the database will be retained.
-            model.password = encrypt_password(model.password2)
+            model.password = hash_password(model.password2)
+
 
 # Basic view that everyone can see
 class DefaultView(BaseView):

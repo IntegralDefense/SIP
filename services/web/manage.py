@@ -6,13 +6,14 @@ import unittest
 
 from flask.cli import FlaskGroup
 from flask_security import SQLAlchemyUserDatastore
-from flask_security.utils import encrypt_password
+from flask_security.utils import hash_password
 
 from lib.constants import HOME_DIR
 from project import create_app, db, models
 
 app = create_app()
 cli = FlaskGroup(create_app=create_app)
+
 
 @cli.command()
 def nukedb():
@@ -21,6 +22,7 @@ def nukedb():
     db.drop_all()
     db.create_all()
     db.session.commit()
+
 
 @cli.command()
 def test():
@@ -32,6 +34,7 @@ def test():
         return 0
     return 1
 
+
 @cli.command()
 def setup():
     """ Configures the database with the values in the setup.ini file """
@@ -41,7 +44,7 @@ def setup():
     if not os.path.exists(config_path):
         raise FileNotFoundError('Unable to locate setup.ini at: {}'.format(config_path))
     config = configparser.ConfigParser(allow_no_value=True)
-    config.optionxform = str # This preserves case-sensitivity for the values
+    config.optionxform = str  # This preserves case-sensitivity for the values
     config.read(config_path)
 
     # Admin role
@@ -147,7 +150,7 @@ def setup():
         user_datastore = SQLAlchemyUserDatastore(db, models.User, models.Role)
         password = ''.join(random.choice(string.ascii_letters + string.punctuation + string.digits) for x in range(20))
         admin_role = models.Role.query.filter_by(name='admin').first()
-        user_datastore.create_user(email='admin@localhost', password=encrypt_password(password), username='admin', first_name='Admin', last_name='Admin', roles=[admin_role])
+        user_datastore.create_user(email='admin@localhost', password=hash_password(password), username='admin', first_name='Admin', last_name='Admin', roles=[admin_role])
         db.session.commit()
         admin = models.User.query.filter_by(username='admin').first()
         app.logger.info('SETUP: Created admin user with password: {}'.format(password))

@@ -1,5 +1,3 @@
-
-
 def parse_boolean(string, default=False):
     string = str(string).lower()
 

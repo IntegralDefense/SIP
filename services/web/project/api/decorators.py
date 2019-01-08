@@ -7,6 +7,7 @@ from project import db
 from project.api.errors import error_response
 from project.models import User
 
+
 def api_admin(view_function):
     @wraps(view_function)
     def decorated_function(*args, **kwargs):
@@ -22,6 +23,7 @@ def api_admin(view_function):
                 return error_response(401, 'Insufficient privileges')
         return error_response(401, 'Bad or missing API key')
     return decorated_function
+
 
 def api_analyst(view_function):
     @wraps(view_function)

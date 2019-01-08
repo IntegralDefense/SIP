@@ -2,11 +2,11 @@ import logging
 from logging.handlers import TimedRotatingFileHandler
 import os
 
-from flask import Flask, jsonify, url_for
-from flask_admin import Admin, AdminIndexView
+from flask import Flask, url_for
+from flask_admin import Admin
 from flask_admin import helpers as admin_helpers
 from flask_migrate import Migrate
-from flask_security import Security, SQLAlchemyUserDatastore, current_user
+from flask_security import Security, SQLAlchemyUserDatastore
 from flask_sqlalchemy import SQLAlchemy
 
 from project.forms import ExtendedLoginForm
@@ -16,7 +16,8 @@ db = SQLAlchemy()
 migrate = Migrate()
 security = Security()
 
-def create_app(script_info=None):
+
+def create_app():
 
     # Create the app
     app = Flask(__name__)
@@ -72,5 +73,6 @@ def create_app(script_info=None):
         return {'app': app, 'db': db}
 
     return app
+
 
 from project import models

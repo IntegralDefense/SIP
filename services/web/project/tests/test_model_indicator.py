@@ -1,9 +1,9 @@
 import unittest
 
-from lib.constants import HOME_DIR
 from project import db
-from project.models import Indicator, IndicatorConfidence, IndicatorImpact, IndicatorStatus, IndicatorType
+from project.models import Indicator
 from project.tests.base import BaseTestCase
+
 
 class TestIndicatorModel(BaseTestCase):
     """ Tests for the Indicator database model """

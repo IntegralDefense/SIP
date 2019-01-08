@@ -5,11 +5,13 @@ from project.api import bp
 from project.api.decorators import api_admin, api_analyst
 from project.api.errors import error_response
 from project.api.helpers import parse_boolean
-from project.models import Indicator, IndicatorConfidence, IndicatorImpact, IndicatorStatus, IndicatorType, Tag
+from project.models import Indicator, IndicatorConfidence, IndicatorImpact, IndicatorStatus, IndicatorType
+
 
 """
 CREATE
 """
+
 
 @bp.route('/indicator', methods=['POST'])
 @api_analyst
@@ -19,7 +21,7 @@ def create_indicator():
     data = request.values or {}
 
     # Verify the required fields (type and value) are present.
-    if not 'type' in data or not 'value' in data:
+    if 'type' not in data or 'value' not in data:
         return error_response(400, 'Request must include "type" and "value"')
 
     # Verify the case-sensitive value (defaults to False).
@@ -29,7 +31,7 @@ def create_indicator():
         case_sensitive = False
 
     # Verify the confidence (has default).
-    if not 'confidence' in data:
+    if 'confidence' not in data:
         confidence = IndicatorConfidence.query.order_by(IndicatorConfidence.id).limit(1).first()
     else:
         confidence = IndicatorConfidence.query.filter_by(value=data['confidence']).first()
@@ -39,7 +41,7 @@ def create_indicator():
             return error_response(400, 'confidence must be one of: {}'.format(', '.join(acceptable)))
 
     # Verify the impact (has default).
-    if not 'impact' in data:
+    if 'impact' not in data:
         impact = IndicatorImpact.query.order_by(IndicatorImpact.id).limit(1).first()
     else:
         impact = IndicatorImpact.query.filter_by(value=data['impact']).first()
@@ -49,7 +51,7 @@ def create_indicator():
             return error_response(400, 'impact must be one of: {}'.format(', '.join(acceptable)))
 
     # Verify the status (has default).
-    if not 'status' in data:
+    if 'status' not in data:
         status = IndicatorStatus.query.order_by(IndicatorStatus.id).limit(1).first()
     else:
         status = IndicatorStatus.query.filter_by(value=data['status']).first()
@@ -74,9 +76,12 @@ def create_indicator():
     # Verify this type+value does not already exist.
     existing = Indicator.query.filter_by(_type_id=_type.id, value=data['value']).first()
     if existing:
-        return error_response(409, 'Indicator already exists: {}'.format(existing.id), url_for('api.get_indicator_by_id', id=existing.id))
+        return error_response(409, 'Indicator already exists: {}'.format(existing.id),
+                              url_for('api.get_indicator_by_id', id=existing.id))
 
-    indicator = Indicator(case_sensitive=case_sensitive, _confidence_id=confidence.id, _impact_id=impact.id, _status_id=status.id, substring=substring, _type_id=_type.id, value=data['value'])
+    # noinspection PyArgumentList
+    indicator = Indicator(case_sensitive=case_sensitive, _confidence_id=confidence.id, _impact_id=impact.id,
+                          _status_id=status.id, substring=substring, _type_id=_type.id, value=data['value'])
 
     db.session.add(indicator)
     db.session.commit()
@@ -86,12 +91,11 @@ def create_indicator():
     response.headers['Location'] = url_for('api.get_indicator_by_id', id=indicator.id)
     return response
 
+
 @bp.route('/indicator/relationship/<int:parent_id>/<int:child_id>', methods=['POST'])
 @api_analyst
 def create_relationship(parent_id, child_id):
     """ Creates a parent/child relationship between two indicators """
-
-    data = request.values or {}
 
     parent_indicator = Indicator.query.get(parent_id)
     if not parent_indicator:
@@ -111,12 +115,11 @@ def create_relationship(parent_id, child_id):
     else:
         return error_response(400, 'the child indicator already has a parent')
 
+
 @bp.route('/indicator/equal/<int:id1>/<int:id2>', methods=['POST'])
 @api_analyst
 def create_equal(id1, id2):
     """ Creates an equal to relationship between two indicators """
-
-    data = request.values or {}
 
     indicator1 = Indicator.query.get(id1)
     if not indicator1:
@@ -136,19 +139,22 @@ def create_equal(id1, id2):
     else:
         return error_response(400, 'the indicators are already equal')
 
+
 """
 READ
 """
 
-@bp.route('/indicator/<int:id>', methods=['GET'])
-def get_indicator_by_id(id):
+
+@bp.route('/indicator/<indicator_id>', methods=['GET'])
+def get_indicator_by_id(indicator_id):
     """ Gets a single indicator given its ID. """
 
-    indicator = Indicator.query.get(id)
+    indicator = Indicator.query.get(indicator_id)
     if not indicator:
-        return error_response(404, 'Indicator ID not found: {}'.format(id))
+        return error_response(404, 'Indicator ID not found: {}'.format(indicator_id))
 
     return jsonify(indicator.to_dict())
+
 
 @bp.route('/indicators', methods=['GET'])
 def search_indicators():
@@ -165,28 +171,28 @@ def search_indicators():
     if 'confidence' in request.args:
         confidence = IndicatorConfidence.query.filter_by(value=request.args.get('confidence')).first()
         if confidence:
-            id = confidence.id
+            confidence_id = confidence.id
         else:
-            id = -1
-        filters.add(Indicator._confidence_id == id)
+            confidence_id = -1
+        filters.add(Indicator._confidence_id == confidence_id)
 
     # Impact filter
     if 'impact' in request.args:
         impact = IndicatorImpact.query.filter_by(value=request.args.get('impact')).first()
         if impact:
-            id = impact.id
+            impact_id = impact.id
         else:
-            id = -1
-        filters.add(Indicator._impact_id == id)
+            impact_id = -1
+        filters.add(Indicator._impact_id == impact_id)
 
     # Status filter
     if 'status' in request.args:
         status = IndicatorStatus.query.filter_by(value=request.args.get('status')).first()
         if status:
-            id = status.id
+            status_id = status.id
         else:
-            id = -1
-        filters.add(Indicator._status_id == id)
+            status_id = -1
+        filters.add(Indicator._status_id == status_id)
 
     # Substring filter
     if 'substring' in request.args:
@@ -203,10 +209,10 @@ def search_indicators():
     if 'type' in request.args:
         _type = IndicatorType.query.filter_by(value=request.args.get('type')).first()
         if _type:
-            id = _type.id
+            type_id = _type.id
         else:
-            id = -1
-        filters.add(Indicator._type_id == id)
+            type_id = -1
+        filters.add(Indicator._type_id == type_id)
 
     # Value filter
     if 'value' in request.args:
@@ -215,18 +221,20 @@ def search_indicators():
     data = Indicator.to_collection_dict(Indicator.query.filter(*filters), 'api.search_indicators', **request.args)
     return jsonify(data)
 
+
 """
 UPDATE
 """
 
-@bp.route('/indicator/<int:id>', methods=['PUT'])
+
+@bp.route('/indicator/<indicator_id>', methods=['PUT'])
 @api_analyst
-def update_indicator(id):
+def update_indicator(indicator_id):
     """ Updates an existing indicator. """
 
-    indicator = Indicator.query.get(id)
+    indicator = Indicator.query.get(indicator_id)
     if not indicator:
-        return error_response(404, 'Indicator ID not found: {}'.format(id))
+        return error_response(404, 'Indicator ID not found: {}'.format(indicator_id))
 
     data = request.values or {}
 
@@ -239,7 +247,7 @@ def update_indicator(id):
             return error_response(400, 'confidence must be one of: {}'.format(', '.join(acceptable)))
         indicator.confidence = confidence
 
-    # Verify the imapct.
+    # Verify the impact.
     if 'impact' in data:
         impact = IndicatorImpact.query.filter_by(value=data['impact']).first()
         if not impact:
@@ -262,23 +270,26 @@ def update_indicator(id):
     response = jsonify(indicator.to_dict())
     return response
 
+
 """
 DELETE
 """
 
-@bp.route('/indicator/<int:id>', methods=['DELETE'])
+
+@bp.route('/indicator/<indicator_id>', methods=['DELETE'])
 @api_admin
-def delete_indicator(id):
+def delete_indicator(indicator_id):
     """ Deletes an indicator """
 
-    indicator = Indicator.query.get(id)
+    indicator = Indicator.query.get(indicator_id)
     if not indicator:
-        return error_response(404, 'Indicator ID not found: {}'.format(id))
+        return error_response(404, 'Indicator ID not found: {}'.format(indicator_id))
 
     db.session.delete(indicator)
     db.session.commit()
 
     return '', 204
+
 
 @bp.route('/indicator/relationship/<int:parent_id>/<int:child_id>', methods=['DELETE'])
 @api_analyst
@@ -299,6 +310,7 @@ def delete_relationship(parent_id, child_id):
     else:
         return error_response(400, 'Relationship does not exist')
 
+
 @bp.route('/indicator/equal/<int:id1>/<int:id2>', methods=['DELETE'])
 @api_analyst
 def delete_equal(id1, id2):
@@ -316,4 +328,4 @@ def delete_equal(id1, id2):
     if result:
         return '', 204
     else:
-        return error_message(400, 'Equal to relationship does not exist')
+        return error_response(400, 'Equal to relationship does not exist')

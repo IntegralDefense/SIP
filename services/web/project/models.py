@@ -1,6 +1,7 @@
 import logging
-import sqlalchemy
 import uuid
+from abc import ABC
+
 from project import db
 from datetime import datetime
 from flask import url_for
@@ -10,7 +11,8 @@ from sqlalchemy.dialects.postgresql import UUID
 
 logger = logging.getLogger(__name__)
 
-class GUID(TypeDecorator):
+
+class GUID(TypeDecorator, ABC):
     """Platform-independent GUID type.
 
     Uses Postgresql's UUID type, otherwise uses
@@ -42,11 +44,13 @@ class GUID(TypeDecorator):
         else:
             return uuid.UUID(value)
 
+
 """
 PAGINATED API QUERY MIXIN
 """
 
-class PaginatedAPIMixin():
+
+class PaginatedAPIMixin:
     @staticmethod
     def to_collection_dict(query, endpoint, **kwargs):
         """ Returns a paginated dictionary of a query. """
@@ -84,88 +88,98 @@ class PaginatedAPIMixin():
             },
             '_links': {
                 'self': url_for(endpoint, page=page, per_page=per_page, **args),
-                'next': url_for(endpoint, page=page+1, per_page=per_page, **args) if resources.has_next else None,
-                'prev': url_for(endpoint, page=page-1, per_page=per_page, **args) if resources.has_prev else None
+                'next': url_for(endpoint, page=page + 1, per_page=per_page, **args) if resources.has_next else None,
+                'prev': url_for(endpoint, page=page - 1, per_page=per_page, **args) if resources.has_prev else None
             }
         }
         return data
+
 
 """
 ASSOCIATION TABLES
 """
 
 event_attack_vector_association = db.Table('event_attack_vector_mapping',
-    db.Column('event_id', db.Integer, db.ForeignKey('event.id')),
-    db.Column('event_attack_vector_id', db.Integer, db.ForeignKey('event_attack_vector.id'))
-)
+                                           db.Column('event_id', db.Integer, db.ForeignKey('event.id')),
+                                           db.Column('event_attack_vector_id', db.Integer,
+                                                     db.ForeignKey('event_attack_vector.id'))
+                                           )
 
 event_malware_association = db.Table('event_malware_mapping',
-    db.Column('event_id', db.Integer, db.ForeignKey('event.id')),
-    db.Column('malware_id', db.Integer, db.ForeignKey('malware.id'))
-)
+                                     db.Column('event_id', db.Integer, db.ForeignKey('event.id')),
+                                     db.Column('malware_id', db.Integer, db.ForeignKey('malware.id'))
+                                     )
 
 event_prevention_tool_association = db.Table('event_prevention_tool_mapping',
-    db.Column('event_id', db.Integer, db.ForeignKey('event.id')),
-    db.Column('event_prevention_tool_id', db.Integer, db.ForeignKey('event_prevention_tool.id'))
-)
+                                             db.Column('event_id', db.Integer, db.ForeignKey('event.id')),
+                                             db.Column('event_prevention_tool_id', db.Integer,
+                                                       db.ForeignKey('event_prevention_tool.id'))
+                                             )
 
 event_reference_association = db.Table('event_reference_mapping',
-    db.Column('event_id', db.Integer, db.ForeignKey('event.id')),
-    db.Column('intel_reference_id', db.Integer, db.ForeignKey('intel_reference.id'))
-)
+                                       db.Column('event_id', db.Integer, db.ForeignKey('event.id')),
+                                       db.Column('intel_reference_id', db.Integer, db.ForeignKey('intel_reference.id'))
+                                       )
 
 event_remediation_association = db.Table('event_remediation_mapping',
-    db.Column('event_id', db.Integer, db.ForeignKey('event.id')),
-    db.Column('event_remediation_id', db.Integer, db.ForeignKey('event_remediation.id'))
-)
+                                         db.Column('event_id', db.Integer, db.ForeignKey('event.id')),
+                                         db.Column('event_remediation_id', db.Integer,
+                                                   db.ForeignKey('event_remediation.id'))
+                                         )
 
 event_tag_association = db.Table('event_tag_mapping',
-    db.Column('event_id', db.Integer, db.ForeignKey('event.id')),
-    db.Column('tag_id', db.Integer, db.ForeignKey('tag.id'))
-)
+                                 db.Column('event_id', db.Integer, db.ForeignKey('event.id')),
+                                 db.Column('tag_id', db.Integer, db.ForeignKey('tag.id'))
+                                 )
 
 event_type_association = db.Table('event_type_mapping',
-    db.Column('event_id', db.Integer, db.ForeignKey('event.id')),
-    db.Column('event_type_id', db.Integer, db.ForeignKey('event_type.id'))
-)
+                                  db.Column('event_id', db.Integer, db.ForeignKey('event.id')),
+                                  db.Column('event_type_id', db.Integer, db.ForeignKey('event_type.id'))
+                                  )
 
 indicator_campaign_association = db.Table('indicator_campaign_mapping',
-    db.Column('campaign_id', db.Integer, db.ForeignKey('campaign.id')),
-    db.Column('indicator_id', db.Integer, db.ForeignKey('indicator.id'))
-)
+                                          db.Column('campaign_id', db.Integer, db.ForeignKey('campaign.id')),
+                                          db.Column('indicator_id', db.Integer, db.ForeignKey('indicator.id'))
+                                          )
 
 indicator_equal_association = db.Table('indicator_equal_mapping',
-    db.Column('left_id', db.Integer, db.ForeignKey('indicator.id'), primary_key=True),
-    db.Column('right_id', db.Integer, db.ForeignKey('indicator.id'), primary_key=True)
-)
+                                       db.Column('left_id', db.Integer, db.ForeignKey('indicator.id'),
+                                                 primary_key=True),
+                                       db.Column('right_id', db.Integer, db.ForeignKey('indicator.id'),
+                                                 primary_key=True)
+                                       )
 
 indicator_reference_association = db.Table('indicator_reference_mapping',
-    db.Column('indicator_id', db.Integer, db.ForeignKey('indicator.id')),
-    db.Column('intel_reference_id', db.Integer, db.ForeignKey('intel_reference.id'))
-)
+                                           db.Column('indicator_id', db.Integer, db.ForeignKey('indicator.id')),
+                                           db.Column('intel_reference_id', db.Integer,
+                                                     db.ForeignKey('intel_reference.id'))
+                                           )
 
 indicator_relationship_association = db.Table('indicator_relationship_mapping',
-    db.Column('parent_id', db.Integer, db.ForeignKey('indicator.id'), primary_key=True),
-    db.Column('child_id', db.Integer, db.ForeignKey('indicator.id'), primary_key=True)
-)
+                                              db.Column('parent_id', db.Integer, db.ForeignKey('indicator.id'),
+                                                        primary_key=True),
+                                              db.Column('child_id', db.Integer, db.ForeignKey('indicator.id'),
+                                                        primary_key=True)
+                                              )
 
 indicator_tag_association = db.Table('indicator_tag_mapping',
-    db.Column('indicator_id', db.Integer, db.ForeignKey('indicator.id')),
-    db.Column('tag_id', db.Integer, db.ForeignKey('tag.id'))
-)
+                                     db.Column('indicator_id', db.Integer, db.ForeignKey('indicator.id')),
+                                     db.Column('tag_id', db.Integer, db.ForeignKey('tag.id'))
+                                     )
 
 malware_type_association = db.Table('malware_type_mapping',
-    db.Column('malware_id', db.Integer, db.ForeignKey('malware.id')),
-    db.Column('malware_type_id', db.Integer, db.ForeignKey('malware_type.id'))
-)
+                                    db.Column('malware_id', db.Integer, db.ForeignKey('malware.id')),
+                                    db.Column('malware_type_id', db.Integer, db.ForeignKey('malware_type.id'))
+                                    )
 
 roles_users_association = db.Table('role_user_mapping',
-    db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
-    db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
+                                   db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
+                                   db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
 
 """
 TABLE CLASS DEFINITIONS
 """
+
 
 class Role(db.Model, RoleMixin):
     __tablename__ = 'role'
@@ -177,12 +191,13 @@ class Role(db.Model, RoleMixin):
     def __str__(self):
         return str(self.name)
 
+
 class User(UserMixin, db.Model):
     __tablename__ = 'user'
 
     id = db.Column(db.Integer, primary_key=True, nullable=False)
     active = db.Column(db.Boolean(), nullable=False, default=True)
-    #apikey = db.Column(GUID(), unique=True, nullable=False, default=uuid.uuid4)
+    # apikey = db.Column(GUID(), unique=True, nullable=False, default=uuid.uuid4)
     apikey = db.Column(UUID(as_uuid=True), unique=True, nullable=False, default=uuid.uuid4)
     first_name = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(255), nullable=False, unique=True)
@@ -190,7 +205,7 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(255), nullable=False)
     roles = db.relationship('Role', secondary=roles_users_association, backref=db.backref('users', lazy='dynamic'))
     username = db.Column(db.String(255), nullable=False, unique=True)
-    
+
     """
     events = db.relationship('Event',
                      secondary='join(IntelReference, Event, IntelReference.id == Event.intel_reference_id)',
@@ -201,6 +216,7 @@ class User(UserMixin, db.Model):
 
     def __str__(self):
         return str(self.username)
+
 
 class Campaign(db.Model):
     __tablename__ = 'campaign'
@@ -214,6 +230,7 @@ class Campaign(db.Model):
     def __str__(self):
         return str(self.name)
 
+
 class CampaignAlias(db.Model):
     __tablename__ = 'campaign_alias'
 
@@ -223,6 +240,7 @@ class CampaignAlias(db.Model):
 
     def __str__(self):
         return str(self.alias)
+
 
 class Event(db.Model):
     __tablename__ = 'event'
@@ -259,6 +277,7 @@ class Event(db.Model):
     def __str__(self):
         return str(self.name)
 
+
 class EventAttackVector(db.Model):
     __tablename__ = 'event_attack_vector'
 
@@ -267,6 +286,7 @@ class EventAttackVector(db.Model):
 
     def __str__(self):
         return str(self.value)
+
 
 class EventDisposition(db.Model):
     __tablename__ = 'event_disposition'
@@ -277,6 +297,7 @@ class EventDisposition(db.Model):
     def __str__(self):
         return str(self.value)
 
+
 class EventPreventionTool(db.Model):
     __tablename__ = 'event_prevention_tool'
 
@@ -285,6 +306,7 @@ class EventPreventionTool(db.Model):
 
     def __str__(self):
         return str(self.value)
+
 
 class EventRemediation(db.Model):
     __tablename__ = 'event_remediation'
@@ -295,6 +317,7 @@ class EventRemediation(db.Model):
     def __str__(self):
         return str(self.value)
 
+
 class EventStatus(db.Model):
     __tablename__ = 'event_status'
 
@@ -304,6 +327,7 @@ class EventStatus(db.Model):
     def __str__(self):
         return str(self.value)
 
+
 class EventType(db.Model):
     __tablename__ = 'event_type'
 
@@ -312,6 +336,7 @@ class EventType(db.Model):
 
     def __str__(self):
         return str(self.value)
+
 
 class Indicator(PaginatedAPIMixin, db.Model):
     __tablename__ = 'indicator'
@@ -331,14 +356,14 @@ class Indicator(PaginatedAPIMixin, db.Model):
     references = db.relationship('IntelReference', secondary=indicator_reference_association)
 
     _children = db.relationship('Indicator', secondary=indicator_relationship_association,
-                   primaryjoin=(indicator_relationship_association.c.parent_id == id),
-                   secondaryjoin=(indicator_relationship_association.c.child_id == id),
-                   backref=db.backref('_parent', lazy='select'), lazy='select')
+                                primaryjoin=(indicator_relationship_association.c.parent_id == id),
+                                secondaryjoin=(indicator_relationship_association.c.child_id == id),
+                                backref=db.backref('_parent', lazy='select'), lazy='select')
 
     _equal = db.relationship('Indicator', secondary=indicator_equal_association,
-                   primaryjoin=(indicator_equal_association.c.left_id == id),
-                   secondaryjoin=(indicator_equal_association.c.right_id == id),
-                   lazy='select')
+                             primaryjoin=(indicator_equal_association.c.left_id == id),
+                             secondaryjoin=(indicator_equal_association.c.right_id == id),
+                             lazy='select')
 
     status = db.relationship('IndicatorStatus')
     _status_id = db.Column(db.Integer, db.ForeignKey('indicator_status.id'), nullable=False)
@@ -412,16 +437,16 @@ class Indicator(PaginatedAPIMixin, db.Model):
         except IndexError:
             return None
 
-    def get_children(self, grandchildren=True, _orig=None, _results=[]):
+    def get_children(self, grandchildren=True, _orig=None, _results=None):
         if not grandchildren:
             return self._children
 
-        if _orig == None:
+        if _orig is None:
             _orig = self
             _results = []
 
         for ind in self._children:
-            if not ind in _results:
+            if ind not in _results:
                 _results.append(ind)
                 _results = ind.get_children(_orig=_orig, _results=_results)
 
@@ -455,11 +480,13 @@ class Indicator(PaginatedAPIMixin, db.Model):
             pass
         return result
 
-    def get_equal(self, recursive=True, _orig=None, _already_checked=[], _results=[]):
+    def get_equal(self, recursive=True, _orig=None, _already_checked=None, _results=None):
+        if _already_checked is None:
+            _already_checked = []
         if not recursive:
             return self._equal
 
-        if _orig == None:
+        if _orig is None:
             _orig = self
             _already_checked = []
             _results = []
@@ -467,9 +494,9 @@ class Indicator(PaginatedAPIMixin, db.Model):
         for ind in self._equal:
             if ind == _orig:
                 continue
-            if not ind in _results:
+            if ind not in _results:
                 _results.append(ind)
-            if not ind in _already_checked:
+            if ind not in _already_checked:
                 _already_checked.append(ind)
                 _results = ind.get_equal(_orig=_orig, _already_checked=_already_checked, _results=_results)
 
@@ -480,6 +507,7 @@ class Indicator(PaginatedAPIMixin, db.Model):
 
         return _results
 
+
 class IndicatorConfidence(db.Model):
     __tablename__ = 'indicator_confidence'
 
@@ -488,6 +516,7 @@ class IndicatorConfidence(db.Model):
 
     def __str__(self):
         return str(self.value)
+
 
 class IndicatorImpact(db.Model):
     __tablename__ = 'indicator_impact'
@@ -498,6 +527,7 @@ class IndicatorImpact(db.Model):
     def __str__(self):
         return str(self.value)
 
+
 class IndicatorStatus(db.Model):
     __tablename__ = 'indicator_status'
 
@@ -506,6 +536,7 @@ class IndicatorStatus(db.Model):
 
     def __str__(self):
         return str(self.value)
+
 
 class IndicatorType(db.Model):
     __tablename__ = 'indicator_type'
@@ -516,6 +547,7 @@ class IndicatorType(db.Model):
     def __str__(self):
         return str(self.value)
 
+
 class IntelSource(db.Model):
     __tablename__ = 'intel_source'
 
@@ -524,6 +556,7 @@ class IntelSource(db.Model):
 
     def __str__(self):
         return str(self.value)
+
 
 class IntelReference(db.Model):
     __tablename__ = 'intel_reference'
@@ -541,6 +574,7 @@ class IntelReference(db.Model):
     def __str__(self):
         return str('{} : {}'.format(self.intel_source, self.reference))
 
+
 class Malware(db.Model):
     __tablename__ = 'malware'
 
@@ -551,6 +585,7 @@ class Malware(db.Model):
     def __str__(self):
         return str(self.name)
 
+
 class MalwareType(db.Model):
     __tablename__ = 'malware_type'
 
@@ -559,6 +594,7 @@ class MalwareType(db.Model):
 
     def __str__(self):
         return str(self.value)
+
 
 class Tag(db.Model):
     __tablename__ = 'tag'

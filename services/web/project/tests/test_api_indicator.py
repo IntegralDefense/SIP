@@ -1,12 +1,10 @@
-import configparser
 import json
-import os
 import unittest
 
-from lib.constants import HOME_DIR
 from project.tests.base import BaseTestCase
 from project.tests.base import config
 from project.tests.base import TEST_APIKEY, TEST_ADMIN_APIKEY, TEST_ANALYST_APIKEY
+
 
 class TestIndicator(BaseTestCase):
     """ Tests for the Indicator API calls """
@@ -16,7 +14,7 @@ class TestIndicator(BaseTestCase):
 
         for x in range(num_indicators):
             indicator = {'apikey': TEST_APIKEY, 'type': list(config['indicator_type'])[0], 'value': x}
-            request = self.client.post('/api/indicator', data=indicator)
+            self.client.post('/api/indicator', data=indicator)
 
     def test_missing_apikey(self):
         """ Ensure there is an API key present """
@@ -81,7 +79,8 @@ class TestIndicator(BaseTestCase):
         """ Ensure the given confidence is valid in the database """
 
         with self.client:
-            indicator = {'apikey': TEST_APIKEY, 'type': list(config['indicator_type'])[0], 'value': 'blah', 'confidence': 'asdfasdfasdf'}
+            indicator = {'apikey': TEST_APIKEY, 'type': list(config['indicator_type'])[0], 'value': 'blah',
+                         'confidence': 'asdfasdfasdf'}
             request = self.client.post('/api/indicator', data=indicator)
             data = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 400)
@@ -91,7 +90,8 @@ class TestIndicator(BaseTestCase):
         """ Ensure the given impact is valid in the database """
 
         with self.client:
-            indicator = {'apikey': TEST_APIKEY, 'type': list(config['indicator_type'])[0], 'value': 'blah', 'impact': 'asdfasdfasdf'}
+            indicator = {'apikey': TEST_APIKEY, 'type': list(config['indicator_type'])[0], 'value': 'blah',
+                         'impact': 'asdfasdfasdf'}
             request = self.client.post('/api/indicator', data=indicator)
             data = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 400)
@@ -101,7 +101,8 @@ class TestIndicator(BaseTestCase):
         """ Ensure the given status is valid in the database """
 
         with self.client:
-            indicator = {'apikey': TEST_APIKEY, 'type': list(config['indicator_type'])[0], 'value': 'blah', 'status': 'asdfasdfasdf'}
+            indicator = {'apikey': TEST_APIKEY, 'type': list(config['indicator_type'])[0], 'value': 'blah',
+                         'status': 'asdfasdfasdf'}
             request = self.client.post('/api/indicator', data=indicator)
             data = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 400)
@@ -187,9 +188,9 @@ class TestIndicator(BaseTestCase):
             self.assertEqual(orig['status'], list(config['indicator_status'])[0])
 
             update = {'apikey': TEST_APIKEY,
-                        'confidence': list(config['indicator_confidence'])[-1],
-                        'impact': list(config['indicator_impact'])[-1],
-                        'status': list(config['indicator_status'])[-1]}
+                      'confidence': list(config['indicator_confidence'])[-1],
+                      'impact': list(config['indicator_impact'])[-1],
+                      'status': list(config['indicator_status'])[-1]}
             request = self.client.put('/api/indicator/1', data=update)
             self.assertEqual(request.status_code, 200)
 
@@ -199,7 +200,7 @@ class TestIndicator(BaseTestCase):
             self.assertEqual(new['confidence'], list(config['indicator_confidence'])[-1])
             self.assertEqual(new['impact'], list(config['indicator_impact'])[-1])
             self.assertEqual(new['status'], list(config['indicator_status'])[-1])
-            
+
     def test_update_invalid_indicator(self):
         """ Ensure you cannot update an invalid indicator """
 
@@ -207,9 +208,9 @@ class TestIndicator(BaseTestCase):
             self.create_indicators(1)
 
             update = {'apikey': TEST_APIKEY,
-                        'confidence': list(config['indicator_confidence'])[-1],
-                        'impact': list(config['indicator_impact'])[-1],
-                        'status': list(config['indicator_status'])[-1]}
+                      'confidence': list(config['indicator_confidence'])[-1],
+                      'impact': list(config['indicator_impact'])[-1],
+                      'status': list(config['indicator_status'])[-1]}
             request = self.client.put('/api/indicator/2', data=update)
             data = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 404)
@@ -574,6 +575,7 @@ class TestIndicator(BaseTestCase):
             indicator4 = json.loads(request.data.decode())
             self.assertEqual(indicator4['equal'], [1])
             self.assertEqual(indicator4['equal_all'], [1])
+
 
 if __name__ == '__main__':
     unittest.main()
