@@ -15,7 +15,6 @@ class TestDevelopmentConfig(TestCase):
         return app
 
     def test_app_is_development(self):
-        self.assertEqual(app.config['SECRET_KEY'], '{{secret_key}}')
         self.assertFalse(current_app is None)
         self.assertEqual(app.config['SQLALCHEMY_DATABASE_URI'], os.environ.get('DATABASE_URL'))
 
@@ -26,7 +25,6 @@ class TestTestingConfig(TestCase):
         return app
 
     def test_app_is_testing(self):
-        self.assertEqual(app.config['SECRET_KEY'], '{{secret_key}}')
         self.assertTrue(app.config['TESTING'])
         self.assertFalse(app.config['PRESERVE_CONTEXT_ON_EXCEPTION'])
         self.assertEqual(app.config['SQLALCHEMY_DATABASE_URI'], os.environ.get('DATABASE_TEST_URL'))
@@ -38,7 +36,6 @@ class TestProductionConfig(TestCase):
         return app
 
     def test_app_is_production(self):
-        self.assertEqual(app.config['SECRET_KEY'], '{{secret_key}}')
         self.assertFalse(app.config['TESTING'])
 
 

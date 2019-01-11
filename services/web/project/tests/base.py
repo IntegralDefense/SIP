@@ -20,6 +20,7 @@ config.read(config_path)
 TEST_APIKEY = '11111111-1111-1111-1111-111111111111'
 TEST_ADMIN_APIKEY = '22222222-2222-2222-2222-222222222222'
 TEST_ANALYST_APIKEY = '33333333-3333-3333-3333-333333333333'
+TEST_INVALID_APIKEY = '99999999-9999-9999-9999-999999999999'
 
 app = create_app()
 
@@ -86,9 +87,8 @@ class BaseTestCase(TestCase):
             user_datastore = SQLAlchemyUserDatastore(db, models.User, models.Role)
             password = 'analyst'
             analyst_role = models.Role.query.filter_by(name='analyst').first()
-            user_datastore.create_user(email='analyst@localhost', password=hash_password(password),
-                                       username='analyst', first_name='Analyst', last_name='Aanlyst',
-                                       roles=[analyst_role])
+            user_datastore.create_user(email='analyst@localhost', password=hash_password(password), username='analyst',
+                                       first_name='Analyst', last_name='Analyst', roles=[analyst_role])
             db.session.commit()
             analyst_user = models.User.query.filter_by(username='analyst').first()
             analyst_user.apikey = uuid.UUID(TEST_ANALYST_APIKEY)

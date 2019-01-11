@@ -1,6 +1,5 @@
 import logging
 import uuid
-from abc import ABC
 
 from project import db
 from datetime import datetime
@@ -12,10 +11,10 @@ from sqlalchemy.dialects.postgresql import UUID
 logger = logging.getLogger(__name__)
 
 
-class GUID(TypeDecorator, ABC):
+class GUID(TypeDecorator):
     """Platform-independent GUID type.
 
-    Uses Postgresql's UUID type, otherwise uses
+    Uses PostgreSQL's UUID type, otherwise uses
     CHAR(36), storing as stringified hex values.
 
     """
@@ -378,21 +377,21 @@ class Indicator(PaginatedAPIMixin, db.Model):
 
     def to_dict(self):
         children = self.get_children(grandchildren=False)
-        children_all = self.get_children(grandchildren=True)
+        all_children = self.get_children(grandchildren=True)
 
         equal = self.get_equal(recursive=False)
-        equal_all = self.get_equal(recursive=True)
+        all_equal = self.get_equal(recursive=True)
 
         data = {
             'id': self.id,
+            'all_children': sorted([i.id for i in all_children]),
+            'all_equal': sorted([i.id for i in all_equal]),
             'campaigns': [c.name for c in self.campaigns],
             'case_sensitive': bool(self.case_sensitive),
             'children': [i.id for i in children],
-            'children_all': sorted([i.id for i in children_all]),
             'confidence': self.confidence.value,
             'created_time': self.created_time,
             'equal': [i.id for i in equal],
-            'equal_all': sorted([i.id for i in equal_all]),
             'impact': self.impact.value,
             'modified_time': self.modified_time,
             'parent': self.get_parent().id if self.get_parent() else None,
@@ -516,6 +515,9 @@ class IndicatorConfidence(db.Model):
 
     def __str__(self):
         return str(self.value)
+
+    def to_dict(self):
+        return {'id': self.id, 'value': self.value}
 
 
 class IndicatorImpact(db.Model):

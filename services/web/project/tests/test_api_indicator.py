@@ -1,5 +1,6 @@
 import json
-import unittest
+
+from flask import current_app
 
 from project.tests.base import BaseTestCase
 from project.tests.base import config
@@ -14,14 +15,14 @@ class TestIndicator(BaseTestCase):
 
         for x in range(num_indicators):
             indicator = {'apikey': TEST_APIKEY, 'type': list(config['indicator_type'])[0], 'value': x}
-            self.client.post('/api/indicator', data=indicator)
+            self.client.post('/api/indicators', data=indicator)
 
     def test_missing_apikey(self):
         """ Ensure there is an API key present """
 
         with self.client:
             indicator = {'type': 'blah', 'value': 'blah'}
-            request = self.client.post('/api/indicator', data=indicator)
+            request = self.client.post('/api/indicators', data=indicator)
             data = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 401)
             self.assertEqual(data['message'], 'Bad or missing API key')
@@ -31,7 +32,7 @@ class TestIndicator(BaseTestCase):
 
         with self.client:
             indicator = {'apikey': TEST_ADMIN_APIKEY, 'type': 'blah', 'value': 'blah'}
-            request = self.client.post('/api/indicator', data=indicator)
+            request = self.client.post('/api/indicators', data=indicator)
             data = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 401)
             self.assertEqual(data['message'], 'Insufficient privileges')
@@ -41,7 +42,7 @@ class TestIndicator(BaseTestCase):
 
         with self.client:
             indicator = {'apikey': TEST_APIKEY, 'value': 'blah'}
-            request = self.client.post('/api/indicator', data=indicator)
+            request = self.client.post('/api/indicators', data=indicator)
             data = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 400)
             self.assertEqual(data['message'], 'Request must include "type" and "value"')
@@ -51,7 +52,7 @@ class TestIndicator(BaseTestCase):
 
         with self.client:
             indicator = {'apikey': TEST_APIKEY, 'type': 'blah'}
-            request = self.client.post('/api/indicator', data=indicator)
+            request = self.client.post('/api/indicators', data=indicator)
             data = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 400)
             self.assertEqual(data['message'], 'Request must include "type" and "value"')
@@ -61,7 +62,7 @@ class TestIndicator(BaseTestCase):
 
         with self.client:
             indicator = {'apikey': TEST_APIKEY, 'type': list(config['indicator_type'])[0], 'value': 1}
-            request = self.client.post('/api/indicator', data=indicator)
+            request = self.client.post('/api/indicators', data=indicator)
             data = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 201)
             self.assertEqual(data['campaigns'], [])
@@ -81,7 +82,7 @@ class TestIndicator(BaseTestCase):
         with self.client:
             indicator = {'apikey': TEST_APIKEY, 'type': list(config['indicator_type'])[0], 'value': 'blah',
                          'confidence': 'asdfasdfasdf'}
-            request = self.client.post('/api/indicator', data=indicator)
+            request = self.client.post('/api/indicators', data=indicator)
             data = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 400)
             self.assertIn('confidence must be one of', data['message'])
@@ -92,7 +93,7 @@ class TestIndicator(BaseTestCase):
         with self.client:
             indicator = {'apikey': TEST_APIKEY, 'type': list(config['indicator_type'])[0], 'value': 'blah',
                          'impact': 'asdfasdfasdf'}
-            request = self.client.post('/api/indicator', data=indicator)
+            request = self.client.post('/api/indicators', data=indicator)
             data = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 400)
             self.assertIn('impact must be one of', data['message'])
@@ -103,7 +104,7 @@ class TestIndicator(BaseTestCase):
         with self.client:
             indicator = {'apikey': TEST_APIKEY, 'type': list(config['indicator_type'])[0], 'value': 'blah',
                          'status': 'asdfasdfasdf'}
-            request = self.client.post('/api/indicator', data=indicator)
+            request = self.client.post('/api/indicators', data=indicator)
             data = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 400)
             self.assertIn('status must be one of', data['message'])
@@ -113,8 +114,8 @@ class TestIndicator(BaseTestCase):
 
         with self.client:
             indicator = {'apikey': TEST_APIKEY, 'type': list(config['indicator_type'])[0], 'value': 'blah'}
-            request = self.client.post('/api/indicator', data=indicator)
-            request2 = self.client.post('/api/indicator', data=indicator)
+            request = self.client.post('/api/indicators', data=indicator)
+            request2 = self.client.post('/api/indicators', data=indicator)
             data = json.loads(request2.data.decode())
             self.assertEqual(request.status_code, 201)
             self.assertEqual(request2.status_code, 409)
@@ -126,12 +127,12 @@ class TestIndicator(BaseTestCase):
         with self.client:
             self.create_indicators(1)
 
-            request = self.client.get('/api/indicator/1')
+            request = self.client.get('/api/indicators/1')
             data = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 200)
             self.assertEqual(data['id'], 1)
 
-            request = self.client.get('/api/indicator/2')
+            request = self.client.get('/api/indicators/2')
             data = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 404)
             self.assertEqual(data['message'], 'Indicator ID not found: 2')
@@ -180,7 +181,7 @@ class TestIndicator(BaseTestCase):
             self.assertNotEqual(list(config['indicator_impact'])[0], list(config['indicator_impact'])[-1])
             self.assertNotEqual(list(config['indicator_status'])[0], list(config['indicator_status'])[-1])
 
-            request = self.client.get('/api/indicator/1')
+            request = self.client.get('/api/indicators/1')
             orig = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 200)
             self.assertEqual(orig['confidence'], list(config['indicator_confidence'])[0])
@@ -191,10 +192,10 @@ class TestIndicator(BaseTestCase):
                       'confidence': list(config['indicator_confidence'])[-1],
                       'impact': list(config['indicator_impact'])[-1],
                       'status': list(config['indicator_status'])[-1]}
-            request = self.client.put('/api/indicator/1', data=update)
+            request = self.client.put('/api/indicators/1', data=update)
             self.assertEqual(request.status_code, 200)
 
-            request = self.client.get('/api/indicator/1')
+            request = self.client.get('/api/indicators/1')
             new = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 200)
             self.assertEqual(new['confidence'], list(config['indicator_confidence'])[-1])
@@ -211,7 +212,7 @@ class TestIndicator(BaseTestCase):
                       'confidence': list(config['indicator_confidence'])[-1],
                       'impact': list(config['indicator_impact'])[-1],
                       'status': list(config['indicator_status'])[-1]}
-            request = self.client.put('/api/indicator/2', data=update)
+            request = self.client.put('/api/indicators/2', data=update)
             data = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 404)
             self.assertEqual(data['message'], 'Indicator ID not found: 2')
@@ -223,7 +224,7 @@ class TestIndicator(BaseTestCase):
             self.create_indicators(1)
 
             update = {'apikey': TEST_APIKEY, 'confidence': 'asdfasdfasdf'}
-            request = self.client.put('/api/indicator/1', data=update)
+            request = self.client.put('/api/indicators/1', data=update)
             data = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 400)
             self.assertIn('confidence must be one of', data['message'])
@@ -235,7 +236,7 @@ class TestIndicator(BaseTestCase):
             self.create_indicators(1)
 
             update = {'apikey': TEST_APIKEY, 'impact': 'asdfasdfasdf'}
-            request = self.client.put('/api/indicator/1', data=update)
+            request = self.client.put('/api/indicators/1', data=update)
             data = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 400)
             self.assertIn('impact must be one of', data['message'])
@@ -247,7 +248,7 @@ class TestIndicator(BaseTestCase):
             self.create_indicators(1)
 
             update = {'apikey': TEST_APIKEY, 'status': 'asdfasdfasdf'}
-            request = self.client.put('/api/indicator/1', data=update)
+            request = self.client.put('/api/indicators/1', data=update)
             data = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 400)
             self.assertIn('status must be one of', data['message'])
@@ -258,14 +259,14 @@ class TestIndicator(BaseTestCase):
         with self.client:
             self.create_indicators(1)
 
-            request = self.client.get('/api/indicator/1')
+            request = self.client.get('/api/indicators/1')
             self.assertEqual(request.status_code, 200)
 
             delete = {'apikey': TEST_APIKEY}
-            request = self.client.delete('/api/indicator/1', data=delete)
+            request = self.client.delete('/api/indicators/1', data=delete)
             self.assertEqual(request.status_code, 204)
 
-            request = self.client.get('/api/indicator/1')
+            request = self.client.get('/api/indicators/1')
             self.assertEqual(request.status_code, 404)
 
     def test_delete_invalid_indicator(self):
@@ -274,11 +275,11 @@ class TestIndicator(BaseTestCase):
         with self.client:
             self.create_indicators(1)
 
-            request = self.client.get('/api/indicator/1')
+            request = self.client.get('/api/indicators/1')
             self.assertEqual(request.status_code, 200)
 
             delete = {'apikey': TEST_APIKEY}
-            request = self.client.delete('/api/indicator/2', data=delete)
+            request = self.client.delete('/api/indicators/2', data=delete)
             data = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 404)
             self.assertEqual(data['message'], 'Indicator ID not found: 2')
@@ -289,11 +290,11 @@ class TestIndicator(BaseTestCase):
         with self.client:
             self.create_indicators(1)
 
-            request = self.client.get('/api/indicator/1')
+            request = self.client.get('/api/indicators/1')
             self.assertEqual(request.status_code, 200)
 
             delete = {'apikey': TEST_ANALYST_APIKEY}
-            request = self.client.delete('/api/indicator/1', data=delete)
+            request = self.client.delete('/api/indicators/1', data=delete)
             data = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 401)
             self.assertEqual(data['message'], 'Insufficient privileges')
@@ -305,41 +306,41 @@ class TestIndicator(BaseTestCase):
             self.create_indicators(4)
 
             # Ensure all 4 indicators have empty relationships
-            request = self.client.get('/api/indicator/1')
+            request = self.client.get('/api/indicators/1')
             indicator1 = json.loads(request.data.decode())
             self.assertEqual(indicator1['children'], [])
-            self.assertEqual(indicator1['children_all'], [])
+            self.assertEqual(indicator1['all_children'], [])
             self.assertEqual(indicator1['parent'], None)
 
-            request = self.client.get('/api/indicator/2')
+            request = self.client.get('/api/indicators/2')
             indicator2 = json.loads(request.data.decode())
             self.assertEqual(indicator2['children'], [])
-            self.assertEqual(indicator2['children_all'], [])
+            self.assertEqual(indicator2['all_children'], [])
             self.assertEqual(indicator2['parent'], None)
 
-            request = self.client.get('/api/indicator/3')
+            request = self.client.get('/api/indicators/3')
             indicator3 = json.loads(request.data.decode())
             self.assertEqual(indicator3['children'], [])
-            self.assertEqual(indicator3['children_all'], [])
+            self.assertEqual(indicator3['all_children'], [])
             self.assertEqual(indicator3['parent'], None)
 
-            request = self.client.get('/api/indicator/4')
+            request = self.client.get('/api/indicators/4')
             indicator4 = json.loads(request.data.decode())
             self.assertEqual(indicator4['children'], [])
-            self.assertEqual(indicator4['children_all'], [])
+            self.assertEqual(indicator4['all_children'], [])
             self.assertEqual(indicator4['parent'], None)
 
             # Create relationships
-            relationship = {'apikey': TEST_APIKEY}
-            request = self.client.post('/api/indicator/relationship/1/2', data=relationship)
+            relationship = {'apikey': TEST_APIKEY, 'parent_id': 1, 'child_id': 2}
+            request = self.client.post('/api/indicators/relationship', data=relationship)
             self.assertEqual(request.status_code, 204)
 
-            relationship = {'apikey': TEST_APIKEY}
-            request = self.client.post('/api/indicator/relationship/2/3', data=relationship)
+            relationship = {'apikey': TEST_APIKEY, 'parent_id': 2, 'child_id': 3}
+            request = self.client.post('/api/indicators/relationship', data=relationship)
             self.assertEqual(request.status_code, 204)
 
-            relationship = {'apikey': TEST_APIKEY}
-            request = self.client.post('/api/indicator/relationship/2/4', data=relationship)
+            relationship = {'apikey': TEST_APIKEY, 'parent_id': 2, 'child_id': 4}
+            request = self.client.post('/api/indicators/relationship', data=relationship)
             self.assertEqual(request.status_code, 204)
 
             """
@@ -353,61 +354,56 @@ class TestIndicator(BaseTestCase):
             """
 
             # Verify direct and indirect relationships
-            request = self.client.get('/api/indicator/1')
+            request = self.client.get('/api/indicators/1')
             indicator1 = json.loads(request.data.decode())
             self.assertEqual(indicator1['children'], [2])
-            self.assertEqual(indicator1['children_all'], [2, 3, 4])
+            self.assertEqual(indicator1['all_children'], [2, 3, 4])
             self.assertEqual(indicator1['parent'], None)
 
-            request = self.client.get('/api/indicator/2')
+            request = self.client.get('/api/indicators/2')
             indicator2 = json.loads(request.data.decode())
             self.assertEqual(indicator2['children'], [3, 4])
-            self.assertEqual(indicator2['children_all'], [3, 4])
+            self.assertEqual(indicator2['all_children'], [3, 4])
             self.assertEqual(indicator2['parent'], 1)
 
-            request = self.client.get('/api/indicator/3')
+            request = self.client.get('/api/indicators/3')
             indicator3 = json.loads(request.data.decode())
             self.assertEqual(indicator3['children'], [])
-            self.assertEqual(indicator3['children_all'], [])
+            self.assertEqual(indicator3['all_children'], [])
             self.assertEqual(indicator3['parent'], 2)
 
-            request = self.client.get('/api/indicator/4')
+            request = self.client.get('/api/indicators/4')
             indicator4 = json.loads(request.data.decode())
             self.assertEqual(indicator4['children'], [])
-            self.assertEqual(indicator4['children_all'], [])
+            self.assertEqual(indicator4['all_children'], [])
             self.assertEqual(indicator4['parent'], 2)
 
             # Try to make a relationship with nonexistent indicators.
-            relationship = {'apikey': TEST_APIKEY}
-            request = self.client.post('/api/indicator/relationship/5/6', data=relationship)
+            relationship = {'apikey': TEST_APIKEY, 'parent_id': 5, 'child_id': 6}
+            request = self.client.post('/api/indicators/relationship', data=relationship)
             data = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 404)
             self.assertIn('indicator not found', data['message'])
 
-            # Try to make a relationship with bogus indicator IDs.
-            relationship = {'apikey': TEST_APIKEY}
-            request = self.client.post('/api/indicator/relationship/one/two', data=relationship)
-            self.assertEqual(request.status_code, 404)
-
             # Try and add an indicator as its own child.
             # This shouldn't do anything.
-            relationship = {'apikey': TEST_APIKEY}
-            request = self.client.post('/api/indicator/relationship/1/1', data=relationship)
+            relationship = {'apikey': TEST_APIKEY, 'parent_id': 1, 'child_id': 1}
+            request = self.client.post('/api/indicators/relationship', data=relationship)
             data = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 400)
-            self.assertEqual(data['message'], 'cannot add indicator to its own children')
+            self.assertEqual(data['message'], 'Cannot add indicator to its own children')
 
             # Try to add a child to a second parent.
             # This shouldn't do anything since it's okay to be a single-parent.
-            relationship = {'apikey': TEST_APIKEY}
-            request = self.client.post('/api/indicator/relationship/1/3', data=relationship)
+            relationship = {'apikey': TEST_APIKEY, 'parent_id': 1, 'child_id': 3}
+            request = self.client.post('/api/indicators/relationship', data=relationship)
             data = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 400)
-            self.assertEqual(data['message'], 'the child indicator already has a parent')
+            self.assertEqual(data['message'], 'Child indicator already has a parent')
 
             # Remove relationship and emancipate a child.
-            relationship = {'apikey': TEST_APIKEY}
-            request = self.client.delete('/api/indicator/relationship/1/2', data=relationship)
+            relationship = {'apikey': TEST_APIKEY, 'parent_id': 1, 'child_id': 2}
+            request = self.client.delete('/api/indicators/relationship', data=relationship)
             self.assertEqual(request.status_code, 204)
 
             """
@@ -421,28 +417,28 @@ class TestIndicator(BaseTestCase):
             """
 
             # Verify direct and indirect relationships
-            request = self.client.get('/api/indicator/1')
+            request = self.client.get('/api/indicators/1')
             indicator1 = json.loads(request.data.decode())
             self.assertEqual(indicator1['children'], [])
-            self.assertEqual(indicator1['children_all'], [])
+            self.assertEqual(indicator1['all_children'], [])
             self.assertEqual(indicator1['parent'], None)
 
-            request = self.client.get('/api/indicator/2')
+            request = self.client.get('/api/indicators/2')
             indicator2 = json.loads(request.data.decode())
             self.assertEqual(indicator2['children'], [3, 4])
-            self.assertEqual(indicator2['children_all'], [3, 4])
+            self.assertEqual(indicator2['all_children'], [3, 4])
             self.assertEqual(indicator2['parent'], None)
 
-            request = self.client.get('/api/indicator/3')
+            request = self.client.get('/api/indicators/3')
             indicator3 = json.loads(request.data.decode())
             self.assertEqual(indicator3['children'], [])
-            self.assertEqual(indicator3['children_all'], [])
+            self.assertEqual(indicator3['all_children'], [])
             self.assertEqual(indicator3['parent'], 2)
 
-            request = self.client.get('/api/indicator/4')
+            request = self.client.get('/api/indicators/4')
             indicator4 = json.loads(request.data.decode())
             self.assertEqual(indicator4['children'], [])
-            self.assertEqual(indicator4['children_all'], [])
+            self.assertEqual(indicator4['all_children'], [])
             self.assertEqual(indicator4['parent'], 2)
 
     def test_create_equal(self):
@@ -452,37 +448,37 @@ class TestIndicator(BaseTestCase):
             self.create_indicators(4)
 
             # Ensure all 4 indicators have empty relationships
-            request = self.client.get('/api/indicator/1')
+            request = self.client.get('/api/indicators/1')
             indicator1 = json.loads(request.data.decode())
             self.assertEqual(indicator1['equal'], [])
-            self.assertEqual(indicator1['equal_all'], [])
+            self.assertEqual(indicator1['all_equal'], [])
 
-            request = self.client.get('/api/indicator/2')
+            request = self.client.get('/api/indicators/2')
             indicator2 = json.loads(request.data.decode())
             self.assertEqual(indicator2['equal'], [])
-            self.assertEqual(indicator2['equal_all'], [])
+            self.assertEqual(indicator2['all_equal'], [])
 
-            request = self.client.get('/api/indicator/3')
+            request = self.client.get('/api/indicators/3')
             indicator3 = json.loads(request.data.decode())
             self.assertEqual(indicator3['equal'], [])
-            self.assertEqual(indicator3['equal_all'], [])
+            self.assertEqual(indicator3['all_equal'], [])
 
-            request = self.client.get('/api/indicator/4')
+            request = self.client.get('/api/indicators/4')
             indicator4 = json.loads(request.data.decode())
             self.assertEqual(indicator4['equal'], [])
-            self.assertEqual(indicator4['equal_all'], [])
+            self.assertEqual(indicator4['all_equal'], [])
 
             # Create relationships
-            equal = {'apikey': TEST_APIKEY}
-            request = self.client.post('/api/indicator/equal/1/2', data=equal)
+            equal = {'apikey': TEST_APIKEY, 'a_id': 1, 'b_id': 2}
+            request = self.client.post('/api/indicators/equal', data=equal)
             self.assertEqual(request.status_code, 204)
 
-            equal = {'apikey': TEST_APIKEY}
-            request = self.client.post('/api/indicator/equal/2/3', data=equal)
+            equal = {'apikey': TEST_APIKEY, 'a_id': 2, 'b_id': 3}
+            request = self.client.post('/api/indicators/equal', data=equal)
             self.assertEqual(request.status_code, 204)
 
-            equal = {'apikey': TEST_APIKEY}
-            request = self.client.post('/api/indicator/equal/1/4', data=equal)
+            equal = {'apikey': TEST_APIKEY, 'a_id': 1, 'b_id': 4}
+            request = self.client.post('/api/indicators/equal', data=equal)
             self.assertEqual(request.status_code, 204)
 
             """
@@ -494,57 +490,52 @@ class TestIndicator(BaseTestCase):
             """
 
             # Verify direct and indirect relationships
-            request = self.client.get('/api/indicator/1')
+            request = self.client.get('/api/indicators/1')
             indicator1 = json.loads(request.data.decode())
             self.assertEqual(indicator1['equal'], [2, 4])
-            self.assertEqual(indicator1['equal_all'], [2, 3, 4])
+            self.assertEqual(indicator1['all_equal'], [2, 3, 4])
 
-            request = self.client.get('/api/indicator/2')
+            request = self.client.get('/api/indicators/2')
             indicator2 = json.loads(request.data.decode())
             self.assertEqual(indicator2['equal'], [1, 3])
-            self.assertEqual(indicator2['equal_all'], [1, 3, 4])
+            self.assertEqual(indicator2['all_equal'], [1, 3, 4])
 
-            request = self.client.get('/api/indicator/3')
+            request = self.client.get('/api/indicators/3')
             indicator3 = json.loads(request.data.decode())
             self.assertEqual(indicator3['equal'], [2])
-            self.assertEqual(indicator3['equal_all'], [1, 2, 4])
+            self.assertEqual(indicator3['all_equal'], [1, 2, 4])
 
-            request = self.client.get('/api/indicator/4')
+            request = self.client.get('/api/indicators/4')
             indicator4 = json.loads(request.data.decode())
             self.assertEqual(indicator4['equal'], [1])
-            self.assertEqual(indicator4['equal_all'], [1, 2, 3])
+            self.assertEqual(indicator4['all_equal'], [1, 2, 3])
 
             # Try to make a relationship with nonexistent indicators.
-            equal = {'apikey': TEST_APIKEY}
-            request = self.client.post('/api/indicator/equal/5/6', data=equal)
+            equal = {'apikey': TEST_APIKEY, 'a_id': 5, 'b_id': 6}
+            request = self.client.post('/api/indicators/equal', data=equal)
             data = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 404)
             self.assertIn('indicator not found', data['message'])
 
-            # Try to make a relationship with bogus indicator IDs.
-            equal = {'apikey': TEST_APIKEY}
-            request = self.client.post('/api/indicator/equal/one/two', data=equal)
-            self.assertEqual(request.status_code, 404)
-
             # Try to make an indicator equal to itself.
             # This shouldn't work.
-            equal = {'apikey': TEST_APIKEY}
-            request = self.client.post('/api/indicator/equal/1/1', data=equal)
+            equal = {'apikey': TEST_APIKEY, 'a_id': 1, 'b_id': 1}
+            request = self.client.post('/api/indicators/equal', data=equal)
             data = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 400)
-            self.assertEqual(data['message'], 'cannot make indicator equal to itself')
+            self.assertEqual(data['message'], 'Cannot make indicator equal to itself')
 
             # Try to add a redundant indirect relationship
             # This shouldn't do anything since 3 is already indirectly equal to 4.
-            equal = {'apikey': TEST_APIKEY}
-            request = self.client.post('/api/indicator/equal/3/4', data=equal)
+            equal = {'apikey': TEST_APIKEY, 'a_id': 3, 'b_id': 4}
+            request = self.client.post('/api/indicators/equal', data=equal)
             data = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 400)
-            self.assertEqual(data['message'], 'the indicators are already equal')
+            self.assertEqual(data['message'], 'The indicators are already equal')
 
             # Remove a relationship
-            equal = {'apikey': TEST_APIKEY}
-            request = self.client.delete('/api/indicator/equal/1/2', data=equal)
+            equal = {'apikey': TEST_APIKEY, 'a_id': 1, 'b_id': 2}
+            request = self.client.delete('/api/indicators/equal', data=equal)
             self.assertEqual(request.status_code, 204)
 
             """
@@ -556,26 +547,22 @@ class TestIndicator(BaseTestCase):
             """
 
             # Verify direct and indirect relationships
-            request = self.client.get('/api/indicator/1')
+            request = self.client.get('/api/indicators/1')
             indicator1 = json.loads(request.data.decode())
             self.assertEqual(indicator1['equal'], [4])
-            self.assertEqual(indicator1['equal_all'], [4])
+            self.assertEqual(indicator1['all_equal'], [4])
 
-            request = self.client.get('/api/indicator/2')
+            request = self.client.get('/api/indicators/2')
             indicator2 = json.loads(request.data.decode())
             self.assertEqual(indicator2['equal'], [3])
-            self.assertEqual(indicator2['equal_all'], [3])
+            self.assertEqual(indicator2['all_equal'], [3])
 
-            request = self.client.get('/api/indicator/3')
+            request = self.client.get('/api/indicators/3')
             indicator3 = json.loads(request.data.decode())
             self.assertEqual(indicator3['equal'], [2])
-            self.assertEqual(indicator3['equal_all'], [2])
+            self.assertEqual(indicator3['all_equal'], [2])
 
-            request = self.client.get('/api/indicator/4')
+            request = self.client.get('/api/indicators/4')
             indicator4 = json.loads(request.data.decode())
             self.assertEqual(indicator4['equal'], [1])
-            self.assertEqual(indicator4['equal_all'], [1])
-
-
-if __name__ == '__main__':
-    unittest.main()
+            self.assertEqual(indicator4['all_equal'], [1])

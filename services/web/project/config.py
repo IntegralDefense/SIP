@@ -27,6 +27,26 @@ class BaseConfig:
     SECURITY_SEND_PASSWORD_RESET_EMAIL = False
     SECURITY_SEND_PASSWORD_RESET_NOTICE_EMAIL = False
 
+    """
+    API PERMISSIONS
+    
+    The keys correspond to the HTTP method for the various API function calls.
+    The values assigned to them represent the user role required to perform the call.
+    Assigning the None role means that no roles or API keys are required to perform the call.
+    """
+
+    # Create functions
+    POST = 'analyst'
+
+    # Read functions
+    GET = None
+
+    # Update functions
+    PUT = 'analyst'
+
+    # Delete functions
+    DELETE = 'admin'
+
 
 class DevelopmentConfig(BaseConfig):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
