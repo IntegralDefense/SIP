@@ -37,6 +37,7 @@ class BaseTestCase(TestCase):
         db.create_all()
         db.session.commit()
 
+        """
         # Load the setup.ini config file
         config_path = os.path.join(HOME_DIR, 'etc', 'setup.ini')
         if not os.path.exists(config_path):
@@ -44,6 +45,7 @@ class BaseTestCase(TestCase):
         config = configparser.ConfigParser(allow_no_value=True)
         config.optionxform = str  # This preserves case-sensitivity for the values
         config.read(config_path)
+        """
 
         # Admin role
         if not models.Role.query.filter_by(name='admin').first():
@@ -94,6 +96,7 @@ class BaseTestCase(TestCase):
             analyst_user.apikey = uuid.UUID(TEST_ANALYST_APIKEY)
             db.session.commit()
 
+        """
         # Create the event attack vectors
         for value in config['event_attack_vector']:
             if not models.EventAttackVector.query.filter_by(value=value).first():
@@ -165,6 +168,7 @@ class BaseTestCase(TestCase):
             if not models.MalwareType.query.filter_by(value=value).first():
                 db.session.add(models.MalwareType(value=value))
                 db.session.commit()
+        """
 
     def tearDown(self):
         db.session.remove()

@@ -140,22 +140,41 @@ class TestIndicatorConfidence(BaseTestCase):
 
         with self.client:
             current_app.config['GET'] = None
+            current_app.config['POST'] = 'analyst'
+
+            data = {'apikey': TEST_ANALYST_APIKEY, 'value': 'asdf'}
+            request = self.client.post('/api/indicators/confidence', data=data)
+            self.assertEqual(request.status_code, 201)
+
+            data = {'apikey': TEST_ANALYST_APIKEY, 'value': 'asdf2'}
+            request = self.client.post('/api/indicators/confidence', data=data)
+            self.assertEqual(request.status_code, 201)
+
+            data = {'apikey': TEST_ANALYST_APIKEY, 'value': 'asdf3'}
+            request = self.client.post('/api/indicators/confidence', data=data)
+            self.assertEqual(request.status_code, 201)
 
             request = self.client.get('/api/indicators/confidence')
             response = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 200)
-            self.assertTrue(len(response) > 0)
+            self.assertEqual(len(response), 3)
 
     def test_read_by_id(self):
         """ Ensure values can be read by their ID """
 
         with self.client:
             current_app.config['GET'] = None
+            current_app.config['POST'] = 'analyst'
+
+            data = {'apikey': TEST_ANALYST_APIKEY, 'value': 'asdf'}
+            request = self.client.post('/api/indicators/confidence', data=data)
+            self.assertEqual(request.status_code, 201)
 
             request = self.client.get('/api/indicators/confidence/1')
             response = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 200)
             self.assertEqual(response['id'], 1)
+            self.assertEqual(response['value'], 'asdf')
 
     """
     UPDATE TESTS
@@ -177,7 +196,12 @@ class TestIndicatorConfidence(BaseTestCase):
         """ Ensure the 'value' parameter is given """
 
         with self.client:
+            current_app.config['POST'] = 'analyst'
             current_app.config['PUT'] = 'analyst'
+
+            data = {'apikey': TEST_ANALYST_APIKEY, 'value': 'asdf'}
+            request = self.client.post('/api/indicators/confidence', data=data)
+            self.assertEqual(request.status_code, 201)
 
             data = {'apikey': TEST_ANALYST_APIKEY}
             request = self.client.put('/api/indicators/confidence/1', data=data)
@@ -243,9 +267,14 @@ class TestIndicatorConfidence(BaseTestCase):
 
         with self.client:
             current_app.config['GET'] = None
+            current_app.config['POST'] = 'analyst'
             current_app.config['PUT'] = 'analyst'
 
             data = {'apikey': TEST_ANALYST_APIKEY, 'value': 'asdf'}
+            request = self.client.post('/api/indicators/confidence', data=data)
+            self.assertEqual(request.status_code, 201)
+
+            data = {'apikey': TEST_ANALYST_APIKEY, 'value': 'asdf2'}
             request = self.client.put('/api/indicators/confidence/1', data=data)
             self.assertEqual(request.status_code, 200)
 
@@ -253,7 +282,7 @@ class TestIndicatorConfidence(BaseTestCase):
             response = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 200)
             self.assertEqual(response['id'], 1)
-            self.assertEqual(response['value'], 'asdf')
+            self.assertEqual(response['value'], 'asdf2')
 
     """
     DELETE TESTS
@@ -312,6 +341,11 @@ class TestIndicatorConfidence(BaseTestCase):
         with self.client:
             current_app.config['DELETE'] = 'admin'
             current_app.config['GET'] = None
+            current_app.config['POST'] = 'analyst'
+
+            data = {'apikey': TEST_ANALYST_APIKEY, 'value': 'asdf'}
+            request = self.client.post('/api/indicators/confidence', data=data)
+            self.assertEqual(request.status_code, 201)
 
             data = {'apikey': TEST_ADMIN_APIKEY}
             request = self.client.delete('/api/indicators/confidence/1', data=data)

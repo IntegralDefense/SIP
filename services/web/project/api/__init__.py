@@ -7,3 +7,4 @@ from project.api.routes import indicator_confidence
 from project.api.routes import indicator_equal
 from project.api.routes import indicator_relationship
 from project.api.routes import indicator_status
+from project.api.routes import indicator_type

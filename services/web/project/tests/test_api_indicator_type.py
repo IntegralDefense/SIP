@@ -6,8 +6,8 @@ from project.tests.base import BaseTestCase
 from project.tests.base import TEST_ADMIN_APIKEY, TEST_ANALYST_APIKEY, TEST_INVALID_APIKEY
 
 
-class TestIndicatorStatus(BaseTestCase):
-    """ Tests for the Indicator Status API calls """
+class TestIndicatorType(BaseTestCase):
+    """ Tests for the Indicator Type API calls """
 
     """
     CREATE TESTS
@@ -20,7 +20,7 @@ class TestIndicatorStatus(BaseTestCase):
             current_app.config['POST'] = 'analyst'
 
             data = {'apikey': TEST_ANALYST_APIKEY}
-            request = self.client.post('/api/indicators/status', data=data)
+            request = self.client.post('/api/indicators/type', data=data)
             response = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 400)
             self.assertEqual(response['message'], 'Request must include "value"')
@@ -32,14 +32,14 @@ class TestIndicatorStatus(BaseTestCase):
             current_app.config['POST'] = 'analyst'
 
             data = {'apikey': TEST_ANALYST_APIKEY, 'value': 'asdf'}
-            request = self.client.post('/api/indicators/status', data=data)
+            request = self.client.post('/api/indicators/type', data=data)
             self.assertEqual(request.status_code, 201)
 
             data = {'apikey': TEST_ANALYST_APIKEY, 'value': 'asdf'}
-            request = self.client.post('/api/indicators/status', data=data)
+            request = self.client.post('/api/indicators/type', data=data)
             response = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 409)
-            self.assertEqual(response['message'], 'Indicator status already exists')
+            self.assertEqual(response['message'], 'Indicator type already exists')
 
     def test_create_missing_api_key(self):
         """ Ensure an API key is given if the config requires it """
@@ -48,7 +48,7 @@ class TestIndicatorStatus(BaseTestCase):
             current_app.config['POST'] = 'analyst'
 
             data = {'value': 'asdf'}
-            request = self.client.post('/api/indicators/status', data=data)
+            request = self.client.post('/api/indicators/type', data=data)
             response = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 401)
             self.assertEqual(response['message'], 'Bad or missing API key')
@@ -60,7 +60,7 @@ class TestIndicatorStatus(BaseTestCase):
             current_app.config['POST'] = 'analyst'
 
             data = {'apikey': TEST_INVALID_APIKEY, 'value': 'asdf'}
-            request = self.client.post('/api/indicators/status', data=data)
+            request = self.client.post('/api/indicators/type', data=data)
             response = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 401)
             self.assertEqual(response['message'], 'API user does not exist')
@@ -72,7 +72,7 @@ class TestIndicatorStatus(BaseTestCase):
             current_app.config['POST'] = 'user_does_not_have_this_role'
 
             data = {'apikey': TEST_ANALYST_APIKEY, 'value': 'asdf'}
-            request = self.client.post('/api/indicators/status', data=data)
+            request = self.client.post('/api/indicators/type', data=data)
             response = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 401)
             self.assertEqual(response['message'], 'Insufficient privileges')
@@ -84,7 +84,7 @@ class TestIndicatorStatus(BaseTestCase):
             current_app.config['POST'] = 'analyst'
 
             data = {'apikey': TEST_ANALYST_APIKEY, 'value': 'asdf'}
-            request = self.client.post('/api/indicators/status', data=data)
+            request = self.client.post('/api/indicators/type', data=data)
             self.assertEqual(request.status_code, 201)
 
     """
@@ -97,10 +97,10 @@ class TestIndicatorStatus(BaseTestCase):
         with self.client:
             current_app.config['GET'] = None
 
-            request = self.client.get('/api/indicators/status/100')
+            request = self.client.get('/api/indicators/type/100')
             response = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 404)
-            self.assertEqual(response['message'], 'Indicator status ID not found')
+            self.assertEqual(response['message'], 'Indicator type ID not found')
 
     def test_read_missing_api_key(self):
         """ Ensure an API key is given if the config requires it """
@@ -108,7 +108,7 @@ class TestIndicatorStatus(BaseTestCase):
         with self.client:
             current_app.config['GET'] = 'analyst'
 
-            request = self.client.get('/api/indicators/status/1')
+            request = self.client.get('/api/indicators/type/1')
             response = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 401)
             self.assertEqual(response['message'], 'Bad or missing API key')
@@ -119,7 +119,7 @@ class TestIndicatorStatus(BaseTestCase):
         with self.client:
             current_app.config['GET'] = 'analyst'
 
-            request = self.client.get('/api/indicators/status/1?apikey={}'.format(TEST_INVALID_APIKEY))
+            request = self.client.get('/api/indicators/type/1?apikey={}'.format(TEST_INVALID_APIKEY))
             response = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 401)
             self.assertEqual(response['message'], 'API user does not exist')
@@ -130,7 +130,7 @@ class TestIndicatorStatus(BaseTestCase):
         with self.client:
             current_app.config['GET'] = 'user_does_not_have_this_role'
 
-            request = self.client.get('/api/indicators/status/1?apikey={}'.format(TEST_ANALYST_APIKEY))
+            request = self.client.get('/api/indicators/type/1?apikey={}'.format(TEST_ANALYST_APIKEY))
             response = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 401)
             self.assertEqual(response['message'], 'Insufficient privileges')
@@ -143,18 +143,18 @@ class TestIndicatorStatus(BaseTestCase):
             current_app.config['POST'] = 'analyst'
 
             data = {'apikey': TEST_ANALYST_APIKEY, 'value': 'asdf'}
-            request = self.client.post('/api/indicators/status', data=data)
+            request = self.client.post('/api/indicators/type', data=data)
             self.assertEqual(request.status_code, 201)
 
             data = {'apikey': TEST_ANALYST_APIKEY, 'value': 'asdf2'}
-            request = self.client.post('/api/indicators/status', data=data)
+            request = self.client.post('/api/indicators/type', data=data)
             self.assertEqual(request.status_code, 201)
 
             data = {'apikey': TEST_ANALYST_APIKEY, 'value': 'asdf3'}
-            request = self.client.post('/api/indicators/status', data=data)
+            request = self.client.post('/api/indicators/type', data=data)
             self.assertEqual(request.status_code, 201)
 
-            request = self.client.get('/api/indicators/status')
+            request = self.client.get('/api/indicators/type')
             response = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 200)
             self.assertEqual(len(response), 3)
@@ -167,10 +167,10 @@ class TestIndicatorStatus(BaseTestCase):
             current_app.config['POST'] = 'analyst'
 
             data = {'apikey': TEST_ANALYST_APIKEY, 'value': 'asdf'}
-            request = self.client.post('/api/indicators/status', data=data)
+            request = self.client.post('/api/indicators/type', data=data)
             self.assertEqual(request.status_code, 201)
 
-            request = self.client.get('/api/indicators/status/1')
+            request = self.client.get('/api/indicators/type/1')
             response = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 200)
             self.assertEqual(response['id'], 1)
@@ -187,10 +187,10 @@ class TestIndicatorStatus(BaseTestCase):
             current_app.config['PUT'] = 'analyst'
 
             data = {'apikey': TEST_ANALYST_APIKEY, 'value': 'asdf'}
-            request = self.client.put('/api/indicators/status/100', data=data)
+            request = self.client.put('/api/indicators/type/100', data=data)
             response = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 404)
-            self.assertEqual(response['message'], 'Indicator status ID not found')
+            self.assertEqual(response['message'], 'Indicator type ID not found')
 
     def test_update_missing_value(self):
         """ Ensure the 'value' parameter is given """
@@ -200,11 +200,11 @@ class TestIndicatorStatus(BaseTestCase):
             current_app.config['PUT'] = 'analyst'
 
             data = {'apikey': TEST_ANALYST_APIKEY, 'value': 'asdf'}
-            request = self.client.post('/api/indicators/status', data=data)
+            request = self.client.post('/api/indicators/type', data=data)
             self.assertEqual(request.status_code, 201)
 
             data = {'apikey': TEST_ANALYST_APIKEY}
-            request = self.client.put('/api/indicators/status/1', data=data)
+            request = self.client.put('/api/indicators/type/1', data=data)
             response = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 400)
             self.assertEqual(response['message'], 'Request must include "value"')
@@ -217,14 +217,14 @@ class TestIndicatorStatus(BaseTestCase):
             current_app.config['PUT'] = 'analyst'
 
             data = {'apikey': TEST_ANALYST_APIKEY, 'value': 'asdf'}
-            request = self.client.post('/api/indicators/status', data=data)
+            request = self.client.post('/api/indicators/type', data=data)
             self.assertEqual(request.status_code, 201)
 
             data = {'apikey': TEST_ANALYST_APIKEY, 'value': 'asdf'}
-            request = self.client.put('/api/indicators/status/1', data=data)
+            request = self.client.put('/api/indicators/type/1', data=data)
             response = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 409)
-            self.assertIn(response['message'], 'Indicator status already exists')
+            self.assertIn(response['message'], 'Indicator type already exists')
 
     def test_update_missing_api_key(self):
         """ Ensure an API key is given if the config requires it """
@@ -233,7 +233,7 @@ class TestIndicatorStatus(BaseTestCase):
             current_app.config['PUT'] = 'analyst'
 
             data = {'value': 'asdf'}
-            request = self.client.put('/api/indicators/status/1', data=data)
+            request = self.client.put('/api/indicators/type/1', data=data)
             response = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 401)
             self.assertEqual(response['message'], 'Bad or missing API key')
@@ -245,7 +245,7 @@ class TestIndicatorStatus(BaseTestCase):
             current_app.config['PUT'] = 'analyst'
 
             data = {'apikey': TEST_INVALID_APIKEY, 'value': 'asdf'}
-            request = self.client.put('/api/indicators/status/1', data=data)
+            request = self.client.put('/api/indicators/type/1', data=data)
             response = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 401)
             self.assertEqual(response['message'], 'API user does not exist')
@@ -257,7 +257,7 @@ class TestIndicatorStatus(BaseTestCase):
             current_app.config['PUT'] = 'user_does_not_have_this_role'
 
             data = {'apikey': TEST_ANALYST_APIKEY, 'value': 'asdf'}
-            request = self.client.put('/api/indicators/status/1', data=data)
+            request = self.client.put('/api/indicators/type/1', data=data)
             response = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 401)
             self.assertEqual(response['message'], 'Insufficient privileges')
@@ -271,14 +271,14 @@ class TestIndicatorStatus(BaseTestCase):
             current_app.config['PUT'] = 'analyst'
 
             data = {'apikey': TEST_ANALYST_APIKEY, 'value': 'asdf'}
-            request = self.client.post('/api/indicators/status', data=data)
+            request = self.client.post('/api/indicators/type', data=data)
             self.assertEqual(request.status_code, 201)
 
             data = {'apikey': TEST_ANALYST_APIKEY, 'value': 'asdf2'}
-            request = self.client.put('/api/indicators/status/1', data=data)
+            request = self.client.put('/api/indicators/type/1', data=data)
             self.assertEqual(request.status_code, 200)
 
-            request = self.client.get('/api/indicators/status/1')
+            request = self.client.get('/api/indicators/type/1')
             response = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 200)
             self.assertEqual(response['id'], 1)
@@ -295,10 +295,10 @@ class TestIndicatorStatus(BaseTestCase):
             current_app.config['DELETE'] = 'admin'
 
             data = {'apikey': TEST_ADMIN_APIKEY}
-            request = self.client.delete('/api/indicators/status/100', data=data)
+            request = self.client.delete('/api/indicators/type/100', data=data)
             response = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 404)
-            self.assertEqual(response['message'], 'Indicator status ID not found')
+            self.assertEqual(response['message'], 'Indicator type ID not found')
 
     def test_delete_missing_api_key(self):
         """ Ensure an API key is given if the config requires it """
@@ -306,7 +306,7 @@ class TestIndicatorStatus(BaseTestCase):
         with self.client:
             current_app.config['DELETE'] = 'admin'
 
-            request = self.client.delete('/api/indicators/status/100')
+            request = self.client.delete('/api/indicators/type/100')
             response = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 401)
             self.assertEqual(response['message'], 'Bad or missing API key')
@@ -318,7 +318,7 @@ class TestIndicatorStatus(BaseTestCase):
             current_app.config['DELETE'] = 'admin'
 
             data = {'apikey': TEST_INVALID_APIKEY}
-            request = self.client.delete('/api/indicators/status/1', data=data)
+            request = self.client.delete('/api/indicators/type/1', data=data)
             response = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 401)
             self.assertEqual(response['message'], 'API user does not exist')
@@ -330,7 +330,7 @@ class TestIndicatorStatus(BaseTestCase):
             current_app.config['DELETE'] = 'user_does_not_have_this_role'
 
             data = {'apikey': TEST_ANALYST_APIKEY}
-            request = self.client.delete('/api/indicators/status/1', data=data)
+            request = self.client.delete('/api/indicators/type/1', data=data)
             response = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 401)
             self.assertEqual(response['message'], 'Insufficient privileges')
@@ -344,14 +344,14 @@ class TestIndicatorStatus(BaseTestCase):
             current_app.config['POST'] = 'analyst'
 
             data = {'apikey': TEST_ANALYST_APIKEY, 'value': 'asdf'}
-            request = self.client.post('/api/indicators/status', data=data)
+            request = self.client.post('/api/indicators/type', data=data)
             self.assertEqual(request.status_code, 201)
 
             data = {'apikey': TEST_ADMIN_APIKEY}
-            request = self.client.delete('/api/indicators/status/1', data=data)
+            request = self.client.delete('/api/indicators/type/1', data=data)
             self.assertEqual(request.status_code, 204)
 
-            request = self.client.get('/api/indicators/status/1')
+            request = self.client.get('/api/indicators/type/1')
             response = json.loads(request.data.decode())
             self.assertEqual(request.status_code, 404)
-            self.assertEqual(response['message'], 'Indicator status ID not found')
+            self.assertEqual(response['message'], 'Indicator type ID not found')
