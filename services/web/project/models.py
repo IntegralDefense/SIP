@@ -286,6 +286,9 @@ class EventAttackVector(db.Model):
     def __str__(self):
         return str(self.value)
 
+    def to_dict(self):
+        return {'id': self.id, 'value': self.value}
+
 
 class EventDisposition(db.Model):
     __tablename__ = 'event_disposition'
@@ -295,6 +298,9 @@ class EventDisposition(db.Model):
 
     def __str__(self):
         return str(self.value)
+
+    def to_dict(self):
+        return {'id': self.id, 'value': self.value}
 
 
 class EventPreventionTool(db.Model):
@@ -306,6 +312,9 @@ class EventPreventionTool(db.Model):
     def __str__(self):
         return str(self.value)
 
+    def to_dict(self):
+        return {'id': self.id, 'value': self.value}
+
 
 class EventRemediation(db.Model):
     __tablename__ = 'event_remediation'
@@ -315,6 +324,9 @@ class EventRemediation(db.Model):
 
     def __str__(self):
         return str(self.value)
+
+    def to_dict(self):
+        return {'id': self.id, 'value': self.value}
 
 
 class EventStatus(db.Model):
@@ -326,6 +338,9 @@ class EventStatus(db.Model):
     def __str__(self):
         return str(self.value)
 
+    def to_dict(self):
+        return {'id': self.id, 'value': self.value}
+
 
 class EventType(db.Model):
     __tablename__ = 'event_type'
@@ -335,6 +350,9 @@ class EventType(db.Model):
 
     def __str__(self):
         return str(self.value)
+
+    def to_dict(self):
+        return {'id': self.id, 'value': self.value}
 
 
 class Indicator(PaginatedAPIMixin, db.Model):
@@ -529,6 +547,9 @@ class IndicatorImpact(db.Model):
     def __str__(self):
         return str(self.value)
 
+    def to_dict(self):
+        return {'id': self.id, 'value': self.value}
+
 
 class IndicatorStatus(db.Model):
     __tablename__ = 'indicator_status'
@@ -538,6 +559,9 @@ class IndicatorStatus(db.Model):
 
     def __str__(self):
         return str(self.value)
+
+    def to_dict(self):
+        return {'id': self.id, 'value': self.value}
 
 
 class IndicatorType(db.Model):
@@ -549,6 +573,9 @@ class IndicatorType(db.Model):
     def __str__(self):
         return str(self.value)
 
+    def to_dict(self):
+        return {'id': self.id, 'value': self.value}
+
 
 class IntelSource(db.Model):
     __tablename__ = 'intel_source'
@@ -558,6 +585,9 @@ class IntelSource(db.Model):
 
     def __str__(self):
         return str(self.value)
+
+    def to_dict(self):
+        return {'id': self.id, 'value': self.value}
 
 
 class IntelReference(db.Model):
@@ -597,6 +627,9 @@ class MalwareType(db.Model):
     def __str__(self):
         return str(self.value)
 
+    def to_dict(self):
+        return {'id': self.id, 'value': self.value}
+
 
 class Tag(db.Model):
     __tablename__ = 'tag'
@@ -606,3 +639,6 @@ class Tag(db.Model):
 
     def __str__(self):
         return str(self.value)
+
+    def to_dict(self):
+        return {'id': self.id, 'value': self.value}
