@@ -1,10 +1,9 @@
 import json
-import urllib.parse
 
 from flask import current_app
 
 from project.tests.base import BaseTestCase
-from project.tests.base import TEST_APIKEY, TEST_ADMIN_APIKEY, TEST_ANALYST_APIKEY, TEST_INVALID_APIKEY
+from project.tests.base import TEST_ADMIN_APIKEY, TEST_ANALYST_APIKEY, TEST_INVALID_APIKEY
 
 
 class TestIndicatorConfidence(BaseTestCase):
