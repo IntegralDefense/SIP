@@ -3,6 +3,7 @@ from flask import Blueprint
 bp = Blueprint('api', __name__, url_prefix='/api')
 
 from project.api.routes import event_disposition
+from project.api.routes import event_prevention_tool
 from project.api.routes import event_status
 
 from project.api.routes import indicator
