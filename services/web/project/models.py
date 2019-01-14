@@ -617,6 +617,9 @@ class Malware(db.Model):
     def __str__(self):
         return str(self.name)
 
+    def to_dict(self):
+        return {'id': self.id, 'name': self.name, 'types': sorted([mt.value for mt in self.types])}
+
 
 class MalwareType(db.Model):
     __tablename__ = 'malware_type'
