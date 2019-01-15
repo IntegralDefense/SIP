@@ -17,6 +17,7 @@ from project.api.routes import indicator_relationship
 from project.api.routes import indicator_status
 from project.api.routes import indicator_type
 
+from project.api.routes import malware
 from project.api.routes import malware_type
 
 from project.api.routes import tag
