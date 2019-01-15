@@ -57,6 +57,18 @@ class TestIntelReference(BaseTestCase):
             self.assertEqual(request.status_code, 409)
             self.assertEqual(response['message'], 'Intel reference already exists')
 
+    def test_create_nonexistent_source(self):
+        """ Ensure a reference cannot be created with a nonexistent source """
+
+        with self.client:
+            current_app.config['POST'] = 'analyst'
+
+            data = {'apikey': TEST_ANALYST_APIKEY, 'reference': 'asdf', 'source': 'asdf'}
+            request = self.client.post('/api/intel/reference', data=data)
+            response = json.loads(request.data.decode())
+            self.assertEqual(request.status_code, 400)
+            self.assertEqual(response['message'], 'Intel source not found')
+
     def test_create_missing_api_key(self):
         """ Ensure an API key is given if the config requires it """
 
