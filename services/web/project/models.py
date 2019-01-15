@@ -599,12 +599,16 @@ class IntelReference(db.Model):
     id = db.Column(db.Integer, primary_key=True, nullable=False)
     user = db.relationship('User')
     _user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    intel_source = db.relationship('IntelSource')
-    _intel_source_id = db.Column(db.Integer, db.ForeignKey('intel_source.id'), nullable=False)
     reference = db.Column(db.String(512), index=True, nullable=False)
+    source = db.relationship('IntelSource')
+    _intel_source_id = db.Column(db.Integer, db.ForeignKey('intel_source.id'), nullable=False)
 
     def __str__(self):
-        return str('{} : {}'.format(self.intel_source, self.reference))
+        return str('{} : {}'.format(self.source, self.reference))
+
+    def to_dict(self):
+        return {'id': self.id, 'reference': self.reference, 'source': self.source.value,
+                'user': self.user.username}
 
 
 class Malware(db.Model):

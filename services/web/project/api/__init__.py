@@ -17,6 +17,7 @@ from project.api.routes import indicator_relationship
 from project.api.routes import indicator_status
 from project.api.routes import indicator_type
 
+from project.api.routes import intel_reference
 from project.api.routes import intel_source
 
 from project.api.routes import malware
