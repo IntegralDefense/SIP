@@ -2,6 +2,8 @@ from flask import Blueprint
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
+from project.api.routes import campaign
+
 from project.api.routes import event_attack_vector
 from project.api.routes import event_disposition
 from project.api.routes import event_prevention_tool

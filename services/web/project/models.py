@@ -229,6 +229,10 @@ class Campaign(db.Model):
     def __str__(self):
         return str(self.name)
 
+    def to_dict(self):
+        return {'id': self.id, 'aliases': sorted([a.alias for a in self.aliases]), 'created_time': self.created_time,
+                'modified_time': self.modified_time, 'name': self.name}
+
 
 class CampaignAlias(db.Model):
     __tablename__ = 'campaign_alias'
