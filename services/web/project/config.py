@@ -33,6 +33,10 @@ class BaseConfig:
     The keys correspond to the HTTP method for the various API function calls.
     The values assigned to them represent the user role required to perform the call.
     Assigning the None role means that no roles or API keys are required to perform the call.
+    
+    NOTE: You can change these API roles to whatever you want, but do not delete or edit the
+    admin role from the database. It is a required role to provide API functionality
+    for creating and modifying user accounts and additional roles. 
     """
 
     # Create functions

@@ -50,3 +50,38 @@ def check_apikey(function):
             return error_response(401, 'Bad or missing API key')
 
     return decorated_function
+
+
+def verify_admin(function):
+    """ Verifies that the calling user has the admin role. """
+
+    @wraps(function)
+    def decorated_function(*args, **kwargs):
+
+        # Get the role of the function name in the config.
+        required_role = 'admin'
+
+        # Get the API key if there is one.
+        apikey = None
+        if 'apikey' in request.values:
+            try:
+                apikey = uuid.UUID(request.values.get('apikey'))
+            except ValueError:
+                pass
+
+        # If there is an API key, look it up and get the user's roles.
+        if apikey:
+            user = db.session.query(User).filter_by(apikey=apikey).first()
+
+            # If the user exists and they have the required role, return the function.
+            if user:
+                if any(role.name.lower() == required_role for role in user.roles):
+                    return function(*args, **kwargs)
+                else:
+                    return error_response(401, 'Insufficient privileges')
+            else:
+                return error_response(401, 'API user does not exist')
+        else:
+            return error_response(401, 'Bad or missing API key')
+
+    return decorated_function

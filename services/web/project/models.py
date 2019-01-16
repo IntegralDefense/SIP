@@ -190,6 +190,9 @@ class Role(db.Model, RoleMixin):
     def __str__(self):
         return str(self.name)
 
+    def to_dict(self):
+        return {'id': self.id, 'description': self.description, 'name': self.name}
+
 
 class User(UserMixin, db.Model):
     __tablename__ = 'user'
