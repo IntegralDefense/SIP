@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 9c7023c5e62f
+Revision ID: b7a8e0f623c8
 Revises: 
-Create Date: 2018-12-19 17:54:59.240131
+Create Date: 2019-01-15 22:36:11.713969
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '9c7023c5e62f'
+revision = 'b7a8e0f623c8'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -134,8 +134,8 @@ def upgrade():
     op.create_table('campaign_alias',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('alias', sa.String(length=255), nullable=False),
-    sa.Column('campaign_id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['campaign_id'], ['campaign.id'], ),
+    sa.Column('_campaign_id', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['_campaign_id'], ['campaign.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('alias')
     )
@@ -173,8 +173,8 @@ def upgrade():
     op.create_table('intel_reference',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('_user_id', sa.Integer(), nullable=False),
-    sa.Column('_intel_source_id', sa.Integer(), nullable=False),
     sa.Column('reference', sa.String(length=512), nullable=False),
+    sa.Column('_intel_source_id', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['_intel_source_id'], ['intel_source.id'], ),
     sa.ForeignKeyConstraint(['_user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id'),
@@ -241,7 +241,7 @@ def upgrade():
     sa.ForeignKeyConstraint(['campaign_id'], ['campaign.id'], ),
     sa.ForeignKeyConstraint(['indicator_id'], ['indicator.id'], )
     )
-    op.create_table('indicator_equal_to_mapping',
+    op.create_table('indicator_equal_mapping',
     sa.Column('left_id', sa.Integer(), nullable=False),
     sa.Column('right_id', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['left_id'], ['indicator.id'], ),
@@ -275,7 +275,7 @@ def downgrade():
     op.drop_table('indicator_tag_mapping')
     op.drop_table('indicator_relationship_mapping')
     op.drop_table('indicator_reference_mapping')
-    op.drop_table('indicator_equal_to_mapping')
+    op.drop_table('indicator_equal_mapping')
     op.drop_table('indicator_campaign_mapping')
     op.drop_table('event_type_mapping')
     op.drop_table('event_tag_mapping')

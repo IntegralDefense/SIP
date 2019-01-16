@@ -239,10 +239,14 @@ class CampaignAlias(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, nullable=False)
     alias = db.Column(db.String(255), unique=True, nullable=False)
-    campaign_id = db.Column(db.Integer, db.ForeignKey('campaign.id'), nullable=False)
+    campaign = db.relationship('Campaign')
+    _campaign_id = db.Column(db.Integer, db.ForeignKey('campaign.id'), nullable=False)
 
     def __str__(self):
         return str(self.alias)
+
+    def to_dict(self):
+        return {'id': self.id, 'alias': self.alias, 'campaign': self.campaign.name}
 
 
 class Event(db.Model):
