@@ -1,3 +1,4 @@
+import click
 import configparser
 import os
 import random
@@ -16,6 +17,7 @@ cli = FlaskGroup(create_app=create_app)
 
 
 @cli.command()
+@click.option('--yes', is_flag=True, expose_value=False, prompt='Are you sure?')
 def nukedb():
     """ Destroys and recreates the database. CAUTION! """
 
@@ -155,6 +157,7 @@ def setup():
         admin = models.User.query.filter_by(username='admin').first()
         app.logger.info('SETUP: Created admin user with password: {}'.format(password))
         app.logger.info('SETUP: Created admin user with API key: {}'.format(admin.apikey))
+
 
 if __name__ == '__main__':
     cli()
