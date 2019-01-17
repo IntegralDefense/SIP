@@ -70,5 +70,6 @@ print()
 print('Review the setup config (and edit if necessary): ./services/web/etc/setup.ini')
 answer = input('Did you review it (y/n)? ')
 if answer.lower() == 'y':
+    print('Erasing the database...')
     os.system('docker-compose run web python manage.py nukedb')
     os.system('docker-compose run web python manage.py setup')
