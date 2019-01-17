@@ -256,7 +256,7 @@ class CampaignAlias(db.Model):
         return {'id': self.id, 'alias': self.alias, 'campaign': self.campaign.name}
 
 
-class Event(db.Model):
+class Event(PaginatedAPIMixin, db.Model):
     __tablename__ = 'event'
 
     id = db.Column(db.Integer, primary_key=True, nullable=False)
@@ -279,6 +279,7 @@ class Event(db.Model):
     """
 
     malware = db.relationship('Malware', secondary=event_malware_association)
+    modified_time = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     name = db.Column(db.String(255), unique=True, nullable=False)
     prevention_tools = db.relationship('EventPreventionTool', secondary=event_prevention_tool_association)
     references = db.relationship('IntelReference', secondary=event_reference_association)
@@ -290,6 +291,21 @@ class Event(db.Model):
 
     def __str__(self):
         return str(self.name)
+
+    def to_dict(self):
+        return {'id': self.id,
+                'attack_vectors': sorted([at.value for at in self.attack_vectors]),
+                'campaign': self.campaign.to_dict() if self.campaign else None,
+                'created_time': self.created_time,
+                'disposition': self.disposition.value,
+                'malware': [m.to_dict() for m in self.malware],
+                'modified_time': self.modified_time,
+                'name': self.name,
+                'prevention_tools': sorted([p.value for p in self.prevention_tools]),
+                'references': [r.to_dict() for r in self.references],
+                'status': self.status.value,
+                'tags': sorted([t.value for t in self.tags]),
+                'types': sorted([t.value for t in self.types])}
 
 
 class EventAttackVector(db.Model):

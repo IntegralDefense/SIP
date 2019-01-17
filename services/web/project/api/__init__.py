@@ -5,6 +5,7 @@ bp = Blueprint('api', __name__, url_prefix='/api')
 from project.api.routes import campaign
 from project.api.routes import campaign_alias
 
+from project.api.routes import event
 from project.api.routes import event_attack_vector
 from project.api.routes import event_disposition
 from project.api.routes import event_prevention_tool
