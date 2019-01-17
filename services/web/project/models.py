@@ -201,8 +201,8 @@ class User(UserMixin, db.Model):
     active = db.Column(db.Boolean(), nullable=False, default=True)
     # apikey = db.Column(GUID(), unique=True, nullable=False, default=uuid.uuid4)
     apikey = db.Column(UUID(as_uuid=True), unique=True, nullable=False, default=uuid.uuid4)
-    first_name = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(255), nullable=False, unique=True)
+    first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(50), nullable=False)
     password = db.Column(db.String(255), nullable=False)
     roles = db.relationship('Role', secondary=roles_users_association, backref=db.backref('users', lazy='dynamic'))
@@ -218,6 +218,10 @@ class User(UserMixin, db.Model):
 
     def __str__(self):
         return str(self.username)
+
+    def to_dict(self):
+        return {'id': self.id, 'active': self.active, 'email': self.email, 'first_name': self.first_name,
+                'last_name': self.last_name, 'roles': sorted([r.name for r in self.roles]), 'username': self.username}
 
 
 class Campaign(db.Model):

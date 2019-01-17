@@ -29,3 +29,5 @@ from project.api.routes import malware_type
 from project.api.routes import role
 
 from project.api.routes import tag
+
+from project.api.routes import user
