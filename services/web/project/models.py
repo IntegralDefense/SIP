@@ -5,43 +5,11 @@ from project import db
 from datetime import datetime
 from flask import url_for
 from flask_security import UserMixin, RoleMixin
-from sqlalchemy.types import TypeDecorator, CHAR
-from sqlalchemy.dialects.postgresql import UUID
-
 logger = logging.getLogger(__name__)
 
 
-class GUID(TypeDecorator):
-    """Platform-independent GUID type.
-
-    Uses PostgreSQL's UUID type, otherwise uses
-    CHAR(36), storing as stringified hex values.
-
-    """
-    impl = CHAR
-
-    def load_dialect_impl(self, dialect):
-        if dialect.name == 'postgresql':
-            return dialect.type_descriptor(UUID())
-        else:
-            return dialect.type_descriptor(CHAR(36))
-
-    def process_bind_param(self, value, dialect):
-        if value is None:
-            return value
-        elif dialect.name == 'postgresql':
-            return str(value)
-        else:
-            if not isinstance(value, uuid.UUID):
-                return str(uuid.uuid4())
-            else:
-                return str(value)
-
-    def process_result_value(self, value, dialect):
-        if value is None:
-            return value
-        else:
-            return uuid.UUID(value)
+def generate_apikey():
+    return str(uuid.uuid4())
 
 
 """
@@ -199,8 +167,7 @@ class User(UserMixin, db.Model):
 
     id = db.Column(db.Integer, primary_key=True, nullable=False)
     active = db.Column(db.Boolean(), nullable=False, default=True)
-    # apikey = db.Column(GUID(), unique=True, nullable=False, default=uuid.uuid4)
-    apikey = db.Column(UUID(as_uuid=True), unique=True, nullable=False, default=uuid.uuid4)
+    apikey = db.Column(db.String(36), unique=True, nullable=False, default=generate_apikey)
     email = db.Column(db.String(255), nullable=False, unique=True)
     first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(50), nullable=False)
@@ -220,8 +187,13 @@ class User(UserMixin, db.Model):
         return str(self.username)
 
     def to_dict(self):
-        return {'id': self.id, 'active': self.active, 'email': self.email, 'first_name': self.first_name,
-                'last_name': self.last_name, 'roles': sorted([r.name for r in self.roles]), 'username': self.username}
+        return {'id': self.id,
+                'active': self.active,
+                'email': self.email,
+                'first_name': self.first_name,
+                'last_name': self.last_name,
+                'roles': sorted([r.name for r in self.roles]),
+                'username': self.username}
 
 
 class Campaign(db.Model):
@@ -237,8 +209,11 @@ class Campaign(db.Model):
         return str(self.name)
 
     def to_dict(self):
-        return {'id': self.id, 'aliases': sorted([a.alias for a in self.aliases]), 'created_time': self.created_time,
-                'modified_time': self.modified_time, 'name': self.name}
+        return {'id': self.id,
+                'aliases': sorted([a.alias for a in self.aliases]),
+                'created_time': self.created_time,
+                'modified_time': self.modified_time,
+                'name': self.name}
 
 
 class CampaignAlias(db.Model):
@@ -253,7 +228,9 @@ class CampaignAlias(db.Model):
         return str(self.alias)
 
     def to_dict(self):
-        return {'id': self.id, 'alias': self.alias, 'campaign': self.campaign.name}
+        return {'id': self.id,
+                'alias': self.alias,
+                'campaign': self.campaign.name}
 
 
 class Event(PaginatedAPIMixin, db.Model):
@@ -318,7 +295,8 @@ class EventAttackVector(db.Model):
         return str(self.value)
 
     def to_dict(self):
-        return {'id': self.id, 'value': self.value}
+        return {'id': self.id,
+                'value': self.value}
 
 
 class EventDisposition(db.Model):
@@ -331,7 +309,8 @@ class EventDisposition(db.Model):
         return str(self.value)
 
     def to_dict(self):
-        return {'id': self.id, 'value': self.value}
+        return {'id': self.id,
+                'value': self.value}
 
 
 class EventPreventionTool(db.Model):
@@ -344,7 +323,8 @@ class EventPreventionTool(db.Model):
         return str(self.value)
 
     def to_dict(self):
-        return {'id': self.id, 'value': self.value}
+        return {'id': self.id,
+                'value': self.value}
 
 
 class EventRemediation(db.Model):
@@ -357,7 +337,8 @@ class EventRemediation(db.Model):
         return str(self.value)
 
     def to_dict(self):
-        return {'id': self.id, 'value': self.value}
+        return {'id': self.id,
+                'value': self.value}
 
 
 class EventStatus(db.Model):
@@ -370,7 +351,8 @@ class EventStatus(db.Model):
         return str(self.value)
 
     def to_dict(self):
-        return {'id': self.id, 'value': self.value}
+        return {'id': self.id,
+                'value': self.value}
 
 
 class EventType(db.Model):
@@ -383,7 +365,8 @@ class EventType(db.Model):
         return str(self.value)
 
     def to_dict(self):
-        return {'id': self.id, 'value': self.value}
+        return {'id': self.id,
+                'value': self.value}
 
 
 class Indicator(PaginatedAPIMixin, db.Model):
@@ -566,7 +549,8 @@ class IndicatorConfidence(db.Model):
         return str(self.value)
 
     def to_dict(self):
-        return {'id': self.id, 'value': self.value}
+        return {'id': self.id,
+                'value': self.value}
 
 
 class IndicatorImpact(db.Model):
@@ -579,7 +563,8 @@ class IndicatorImpact(db.Model):
         return str(self.value)
 
     def to_dict(self):
-        return {'id': self.id, 'value': self.value}
+        return {'id': self.id,
+                'value': self.value}
 
 
 class IndicatorStatus(db.Model):
@@ -592,7 +577,8 @@ class IndicatorStatus(db.Model):
         return str(self.value)
 
     def to_dict(self):
-        return {'id': self.id, 'value': self.value}
+        return {'id': self.id,
+                'value': self.value}
 
 
 class IndicatorType(db.Model):
@@ -605,7 +591,8 @@ class IndicatorType(db.Model):
         return str(self.value)
 
     def to_dict(self):
-        return {'id': self.id, 'value': self.value}
+        return {'id': self.id,
+                'value': self.value}
 
 
 class IntelSource(db.Model):
@@ -618,7 +605,8 @@ class IntelSource(db.Model):
         return str(self.value)
 
     def to_dict(self):
-        return {'id': self.id, 'value': self.value}
+        return {'id': self.id,
+                'value': self.value}
 
 
 class IntelReference(db.Model):
@@ -638,7 +626,9 @@ class IntelReference(db.Model):
         return str('{} : {}'.format(self.source, self.reference))
 
     def to_dict(self):
-        return {'id': self.id, 'reference': self.reference, 'source': self.source.value,
+        return {'id': self.id,
+                'reference': self.reference,
+                'source': self.source.value,
                 'user': self.user.username}
 
 
@@ -653,7 +643,9 @@ class Malware(db.Model):
         return str(self.name)
 
     def to_dict(self):
-        return {'id': self.id, 'name': self.name, 'types': sorted([mt.value for mt in self.types])}
+        return {'id': self.id,
+                'name': self.name,
+                'types': sorted([mt.value for mt in self.types])}
 
 
 class MalwareType(db.Model):
@@ -666,7 +658,8 @@ class MalwareType(db.Model):
         return str(self.value)
 
     def to_dict(self):
-        return {'id': self.id, 'value': self.value}
+        return {'id': self.id,
+                'value': self.value}
 
 
 class Tag(db.Model):
@@ -679,4 +672,5 @@ class Tag(db.Model):
         return str(self.value)
 
     def to_dict(self):
-        return {'id': self.id, 'value': self.value}
+        return {'id': self.id,
+                'value': self.value}

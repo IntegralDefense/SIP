@@ -1,11 +1,8 @@
 #!/bin/sh
 
-echo 'Waiting for PostgreSQL...'
-
-while ! nc -z db 5432; do
-	sleep 1
+while ! mysqladmin ping -h"db" -P"3306" --silent; do
+    echo "Waiting for MySQL to be up..."
+    sleep 1
 done
 
-echo 'PostgreSQL started'
-
-gunicorn -b 0.0.0.0:5000 manage:app
+exec gunicorn -b 0.0.0.0:5000 manage:app

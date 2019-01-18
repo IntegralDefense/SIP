@@ -1,5 +1,3 @@
-import uuid
-
 from flask_security import SQLAlchemyUserDatastore
 from flask_security.utils import hash_password
 from flask_testing import TestCase
@@ -44,7 +42,7 @@ class BaseTestCase(TestCase):
             user_datastore.create_user(email='test@localhost', password=hash_password('test'), username='test',
                                        first_name='Test', last_name='Test', roles=[admin_role, analyst_role])
             test_user = models.User.query.filter_by(username='test').first()
-            test_user.apikey = uuid.UUID(TEST_APIKEY)
+            test_user.apikey = TEST_APIKEY
 
         # Admin user
         if not models.User.query.filter_by(username='admin').first():
@@ -53,7 +51,7 @@ class BaseTestCase(TestCase):
             user_datastore.create_user(email='admin@localhost', password=hash_password('admin'), username='admin',
                                        first_name='Admin', last_name='Admin', roles=[admin_role])
             admin_user = models.User.query.filter_by(username='admin').first()
-            admin_user.apikey = uuid.UUID(TEST_ADMIN_APIKEY)
+            admin_user.apikey = TEST_ADMIN_APIKEY
 
         # Analyst user
         if not models.User.query.filter_by(username='analyst').first():
@@ -62,7 +60,7 @@ class BaseTestCase(TestCase):
             user_datastore.create_user(email='analyst@localhost', password=hash_password('analyst'), username='analyst',
                                        first_name='Analyst', last_name='Analyst', roles=[analyst_role])
             analyst_user = models.User.query.filter_by(username='analyst').first()
-            analyst_user.apikey = uuid.UUID(TEST_ANALYST_APIKEY)
+            analyst_user.apikey = TEST_ANALYST_APIKEY
 
         db.session.commit()
 

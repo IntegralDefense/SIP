@@ -13,6 +13,7 @@ class BaseConfig:
 
     # Database
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ECHO = False
 
     # Flask-Security
     SECURITY_PASSWORD_HASH = 'pbkdf2_sha512'

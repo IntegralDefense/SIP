@@ -1,4 +1,5 @@
 *.env
+services/db/create.sql
 services/nginx/certs/*
 
 # macOS things

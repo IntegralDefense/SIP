@@ -1,5 +1,3 @@
-import uuid
-
 from flask import jsonify, request, url_for
 
 from project import db
@@ -39,7 +37,7 @@ def create_intel_reference():
     apikey = None
     if 'apikey' in request.values:
         try:
-            apikey = uuid.UUID(data['apikey'])
+            apikey = data['apikey']
         except ValueError:
             pass
 

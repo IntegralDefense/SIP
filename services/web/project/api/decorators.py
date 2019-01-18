@@ -1,5 +1,3 @@
-import uuid
-
 from flask import current_app, request
 from functools import wraps
 
@@ -30,7 +28,7 @@ def check_apikey(function):
         apikey = None
         if 'apikey' in request.values:
             try:
-                apikey = uuid.UUID(request.values.get('apikey'))
+                apikey = request.values.get('apikey')
             except ValueError:
                 pass
 
@@ -65,7 +63,7 @@ def verify_admin(function):
         apikey = None
         if 'apikey' in request.values:
             try:
-                apikey = uuid.UUID(request.values.get('apikey'))
+                apikey = request.values.get('apikey')
             except ValueError:
                 pass
 

@@ -2,8 +2,7 @@ FROM python:3.7-alpine
 
 RUN apk update && \
 	apk add --virtual build-deps gcc python-dev musl-dev && \
-	apk add postgresql-dev && \
-	apk add netcat-openbsd
+	apk add mysql-client
 
 WORKDIR /usr/src/app
 

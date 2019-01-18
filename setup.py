@@ -5,38 +5,6 @@ import os
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
 
-# Set the PostgreSQL username/password
-postgres_user = input('User for PostgreSQL database: ')
-postgres_pass = True
-postgres_pass2 = False
-while postgres_pass != postgres_pass2:
-    postgres_pass = getpass.getpass('Password for PostgreSQL user: ')
-    postgres_pass2 = getpass.getpass('Confirm password: ')
-
-# Write the services/web/docker.env file
-output = """FLASK_ENV=production
-APP_SETTINGS=project.config.ProductionConfig
-DATABASE_URL=postgres://{user}:{password}@db:5432/intelooper
-DATABASE_TEST_URL=postgres://{user}:{password}@db:5432/intelooper_test
-""".format(user=postgres_user, password=postgres_pass)
-
-print()
-
-with open('./services/web/docker.env', 'w') as f:
-    f.write(output)
-    print('Review the environment variables: ./services/web/docker.env')
-
-# Write the services/web/project/db/docker.env file
-output = """POSTGRES_USER={user}
-POSTGRES_PASSWORD={password}
-""".format(user=postgres_user, password=postgres_pass)
-
-with open('./services/web/project/db/docker.env', 'w') as f:
-    f.write(output)
-    print('Review the environment variables: ./services/web/project/db/docker.env')
-
-print()
-
 # Generate a certificate
 cert_path = os.path.join(this_dir, 'services', 'nginx', 'certs', 'cert.pem')
 key_path = os.path.join(this_dir, 'services', 'nginx', 'certs', 'key.pem')
@@ -45,31 +13,90 @@ print()
 if generate.lower() == 'y':
     os.system('openssl req -x509 -newkey rsa:2048 -nodes -keyout {key} -out {cert} -days 1095'.format(key=key_path, cert=cert_path))
 else:
-    print('!!! You chose not to create a self-signed certificate !!!')
-    print('!!! You must supply your own certificate !!!')
-    print()
-    print('Place certificate here: {}'.format(cert_path))
-    print('Place key here: {}'.format(key_path))
+    if not os.path.exists(cert_path) or not os.path.exists(key_path):
+        print('!!! You chose not to create a self-signed certificate !!!')
+        print('!!! You must supply your own certificate !!!')
+        print()
+        print('Place certificate here: {}'.format(cert_path))
+        print('Place key here: {}'.format(key_path))
+        print()
+
+# Set the MySQL root password
+mysql_root_pass = True
+mysql_root_pass2 = False
+while mysql_root_pass != mysql_root_pass2:
+    mysql_root_pass = getpass.getpass('Password for MySQL root user: ')
+    mysql_root_pass2 = getpass.getpass('Confirm password: ')
+
+# Set the MySQL username/password
+mysql_user = input('User for MySQL database: ')
+mysql_pass = True
+mysql_pass2 = False
+while mysql_pass != mysql_pass2:
+    mysql_pass = getpass.getpass('Password for MySQL user: ')
+    mysql_pass2 = getpass.getpass('Confirm password: ')
 
 print()
 
-# Write the services/web/project/.env file
+# Write the services/db/create.sql file
+output = """CREATE DATABASE intelooper;
+CREATE DATABASE intelooper_test;
+
+CREATE USER '{user}'@'localhost' IDENTIFIED BY '{password}';
+
+GRANT ALL PRIVILEGES ON intelooper.* TO '{user}'@localhost;
+GRANT ALL PRIVILEGES ON intelooper.* TO '{user}'@'%';
+GRANT ALL PRIVILEGES ON intelooper_test.* TO '{user}'@localhost;
+GRANT ALL PRIVILEGES ON intelooper_test.* TO '{user}'@'%';
+""".format(user=mysql_user, password=mysql_pass)
+
+with open('./services/db/create.sql', 'w') as f:
+    f.write(output)
+    print('Review the create.sql: ./services/db/create.sql')
+
+# Write the services/db/.env file
+output = """MYSQL_HOST=localhost
+MYSQL_ROOT_PASSWORD={root_password}
+MYSQL_USER={user}
+MYSQL_PASSWORD={password}
+""".format(root_password=mysql_root_pass, user=mysql_user, password=mysql_pass)
+
+output = """MYSQL_HOST=localhost
+MYSQL_ROOT_PASSWORD={root_password}
+""".format(root_password=mysql_root_pass)
+
+with open('./services/db/.env', 'w') as f:
+    f.write(output)
+    print('Review the environment variables: ./services/db/.env')
+
+# Write the services/web/docker.env file
+output = """FLASK_ENV=production
+APP_SETTINGS=project.config.ProductionConfig
+DATABASE_URL=mysql+pymysql://{user}:{password}@db:3306/intelooper
+DATABASE_TEST_URL=mysql+pymysql://{user}:{password}@db:3306/intelooper_test
+""".format(user=mysql_user, password=mysql_pass)
+
+with open('./services/web/docker.env', 'w') as f:
+    f.write(output)
+    print('Review the environment variables: ./services/web/docker.env')
+
+# Write the services/web/project/docker.env file
 secret_key = os.urandom(48).hex()
 security_password_salt = os.urandom(48).hex()
 output = """SECRET_KEY={secret_key}
 SECURITY_PASSWORD_SALT={security_password_salt}
 """.format(secret_key=secret_key, security_password_salt=security_password_salt)
 
-with open('./services/web/project/.env', 'w') as f:
+with open('./services/web/project/docker.env', 'w') as f:
     f.write(output)
-    print('Review the Flask environment variables: ./services/web/project/.env')
+    print('Review the Flask environment variables: ./services/web/project/docker.env')
 
 print()
 
-# Run the manage.py setup command
-print('Review the setup config (and edit if necessary): ./services/web/etc/setup.ini')
-answer = input('Did you review it (y/n)? ')
+# Erase any existing database
+answer = input('Erase any existing database (y/n)? ')
 if answer.lower() == 'y':
-    print('Erasing the database...')
-    os.system('docker-compose run web python manage.py nukedb')
-    os.system('docker-compose run web python manage.py setup')
+    os.system('docker-compose down -v')
+
+# Build the containers
+os.system('docker-compose build')

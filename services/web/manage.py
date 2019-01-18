@@ -18,7 +18,7 @@ cli = FlaskGroup(create_app=create_app)
 
 @cli.command()
 @click.option('--yes', is_flag=True, expose_value=False, prompt='Are you sure?')
-def nukedb():
+def setupdb():
     """ Destroys and recreates the database. CAUTION! """
 
     db.drop_all()
@@ -38,8 +38,8 @@ def test():
 
 
 @cli.command()
-def setup():
-    """ Configures the database with the values in the setup.ini file """
+def seeddb():
+    """ Seeds the database with the values in the setup.ini file """
 
     # Load the setup.ini config file
     config_path = os.path.join(HOME_DIR, 'etc', 'setup.ini')

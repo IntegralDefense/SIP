@@ -131,7 +131,7 @@ def update_user(user_id):
     # Verify apikey if it was specified. Defaults to True.
     if 'apikey_refresh' in data:
         if parse_boolean(data['apikey_refresh'], default=True):
-            user.apikey = uuid.uuid4()
+            user.apikey = str(uuid.uuid4())
 
     # Verify email if one was specified.
     if 'email' in data:

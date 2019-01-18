@@ -19,15 +19,16 @@ services:
 
     db:
         build:
-            context: ./services/web/project/db
+            context: ./services/db
             dockerfile: Dockerfile
         restart: on-failure
         ports:
-            - 5435:5432
+            - 3306:3306
         volumes:
-            - postgres:/var/lib/postgresql/data
+            - mysql:/var/lib/mysql
         env_file:
-            - ./services/web/project/db/docker.env
+            - ./services/db/docker.env
+        command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --explicit_defaults_for_timestamp
 
     nginx:
         build:
@@ -43,5 +44,5 @@ services:
             - web
 
 volumes:
-    postgres:
+    mysql:
         driver: local
