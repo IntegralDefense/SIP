@@ -5,7 +5,7 @@ from project.api import bp
 from project.api.decorators import check_apikey
 from project.api.errors import error_response
 from project.api.helpers import parse_boolean
-from project.models import Indicator, IndicatorConfidence, IndicatorImpact, IndicatorStatus, IndicatorType
+from project.models import Indicator, IndicatorConfidence, IndicatorImpact, IndicatorStatus, IndicatorType, User
 
 
 """
@@ -20,9 +20,25 @@ def create_indicator():
 
     data = request.values or {}
 
-    # Verify the required fields (type and value) are present.
-    if 'type' not in data or 'value' not in data:
-        return error_response(400, 'Request must include "type" and "value"')
+    # Verify the required fields (type, username, value) are present.
+    if 'type' not in data or 'username' not in data or 'value' not in data:
+        return error_response(400, 'Request must include: type, username, value')
+
+    # Verify the type.
+    _type = IndicatorType.query.filter_by(value=data['type']).first()
+    if not _type:
+        return error_response(404, 'Indicator type not found')
+
+    # Verify the username.
+    user = db.session.query(User).filter_by(username=data['username']).first()
+    if not user:
+        return error_response(404, 'Username not found')
+
+    # Verify this type+value does not already exist.
+    existing = Indicator.query.filter_by(_type_id=_type.id, value=data['value']).first()
+    if existing:
+        return error_response(409, 'Indicator already exists: {}'.format(existing.id),
+                              url_for('api.read_indicator', indicator_id=existing.id))
 
     # Verify the case-sensitive value (defaults to False).
     if 'case_sensitive' in data:
@@ -66,21 +82,14 @@ def create_indicator():
     else:
         substring = False
 
-    # Verify the type.
-    _type = IndicatorType.query.filter_by(value=data['type']).first()
-    if not _type:
-        results = IndicatorType.query.all()
-        acceptable = sorted([r.value for r in results])
-        return error_response(400, 'type must be one of: {}'.format(', '.join(acceptable)))
-
-    # Verify this type+value does not already exist.
-    existing = Indicator.query.filter_by(_type_id=_type.id, value=data['value']).first()
-    if existing:
-        return error_response(409, 'Indicator already exists: {}'.format(existing.id),
-                              url_for('api.read_indicator', indicator_id=existing.id))
-
-    indicator = Indicator(case_sensitive=case_sensitive, _confidence_id=confidence.id, _impact_id=impact.id,
-                          _status_id=status.id, substring=substring, _type_id=_type.id, value=data['value'])
+    indicator = Indicator(case_sensitive=case_sensitive,
+                          confidence=confidence,
+                          impact=impact,
+                          status=status,
+                          substring=substring,
+                          type=_type,
+                          user=user,
+                          value=data['value'])
 
     db.session.add(indicator)
     db.session.commit()

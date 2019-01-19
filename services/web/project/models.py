@@ -265,6 +265,8 @@ class Event(PaginatedAPIMixin, db.Model):
     _status_id = db.Column(db.Integer, db.ForeignKey('event_status.id'), nullable=False)
     tags = db.relationship('Tag', secondary=event_tag_association)
     types = db.relationship('EventType', secondary=event_type_association)
+    _user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user = db.relationship('User')
 
     def __str__(self):
         return str(self.name)
@@ -402,6 +404,8 @@ class Indicator(PaginatedAPIMixin, db.Model):
     tags = db.relationship('Tag', secondary=indicator_tag_association)
     type = db.relationship('IndicatorType')
     _type_id = db.Column(db.Integer, db.ForeignKey('indicator_type.id'), nullable=False)
+    _user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user = db.relationship('User')
     value = db.Column(db.String(512), nullable=False)
 
     def __str__(self):
@@ -432,6 +436,7 @@ class Indicator(PaginatedAPIMixin, db.Model):
             'substring': bool(self.substring),
             'tags': [t.value for t in self.tags],
             'type': self.type.value,
+            'user': self.user.username,
             'value': self.value
         }
         return data
