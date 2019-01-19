@@ -106,6 +106,6 @@ class DefaultView(BaseView):
     def __init__(self, *args, **kwargs):
         self._default_view = True
         super(DefaultView, self).__init__(*args, **kwargs)
-        self.admin = Admin(name='Intelooper', url='/intelooper')
+        self.admin = Admin(name='SIP', url='/SIP')
         self.admin.add_link(LoginMenuLink(name='Login', url='/login'))
         self.admin.add_link(LogoutMenuLink(name='Logout', url='/logout'))

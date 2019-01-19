@@ -39,15 +39,15 @@ while mysql_pass != mysql_pass2:
 print()
 
 # Write the services/db/create.sql file
-output = """CREATE DATABASE intelooper;
-CREATE DATABASE intelooper_test;
+output = """CREATE DATABASE SIP;
+CREATE DATABASE SIP_test;
 
 CREATE USER '{user}'@'localhost' IDENTIFIED BY '{password}';
 
-GRANT ALL PRIVILEGES ON intelooper.* TO '{user}'@localhost;
-GRANT ALL PRIVILEGES ON intelooper.* TO '{user}'@'%';
-GRANT ALL PRIVILEGES ON intelooper_test.* TO '{user}'@localhost;
-GRANT ALL PRIVILEGES ON intelooper_test.* TO '{user}'@'%';
+GRANT ALL PRIVILEGES ON SIP.* TO '{user}'@localhost;
+GRANT ALL PRIVILEGES ON SIP.* TO '{user}'@'%';
+GRANT ALL PRIVILEGES ON SIP_test.* TO '{user}'@localhost;
+GRANT ALL PRIVILEGES ON SIP_test.* TO '{user}'@'%';
 """.format(user=mysql_user, password=mysql_pass)
 
 with open('./services/db/create.sql', 'w') as f:
@@ -72,8 +72,8 @@ with open('./services/db/.env', 'w') as f:
 # Write the services/web/docker.env file
 output = """FLASK_ENV=production
 APP_SETTINGS=project.config.ProductionConfig
-DATABASE_URL=mysql+pymysql://{user}:{password}@db:3306/intelooper
-DATABASE_TEST_URL=mysql+pymysql://{user}:{password}@db:3306/intelooper_test
+DATABASE_URL=mysql+pymysql://{user}:{password}@db:3306/SIP
+DATABASE_TEST_URL=mysql+pymysql://{user}:{password}@db:3306/SIP_test
 """.format(user=mysql_user, password=mysql_pass)
 
 with open('./services/web/docker.env', 'w') as f:
