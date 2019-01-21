@@ -11,7 +11,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 from project.forms import ExtendedLoginForm
 
-admin = Admin(name='Intelooper', url='/SIP')
+admin = Admin(name='SIP', url='/SIP')
 db = SQLAlchemy()
 migrate = Migrate()
 security = Security()
@@ -34,7 +34,7 @@ def create_app():
     file_handler.setLevel(logging.INFO)
     app.logger.addHandler(file_handler)
     app.logger.setLevel(logging.INFO)
-    app.logger.info('Intelooper starting')
+    app.logger.info('SIP starting')
 
     # Flask-SQLAlchemy
     db.init_app(app)
