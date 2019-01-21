@@ -12,6 +12,7 @@ generate = input('Generate a self-signed certificate (y/n)? ')
 print()
 if generate.lower() == 'y':
     os.system('openssl req -x509 -newkey rsa:2048 -nodes -keyout {key} -out {cert} -days 1095'.format(key=key_path, cert=cert_path))
+    print()
 else:
     if not os.path.exists(cert_path) or not os.path.exists(key_path):
         print('!!! You chose not to create a self-signed certificate !!!')
@@ -27,6 +28,8 @@ mysql_root_pass2 = False
 while mysql_root_pass != mysql_root_pass2:
     mysql_root_pass = getpass.getpass('Password for MySQL root user: ')
     mysql_root_pass2 = getpass.getpass('Confirm password: ')
+
+print()
 
 # Set the MySQL username/password
 mysql_user = input('User for MySQL database: ')
@@ -50,46 +53,38 @@ GRANT ALL PRIVILEGES ON SIP_test.* TO '{user}'@localhost;
 GRANT ALL PRIVILEGES ON SIP_test.* TO '{user}'@'%';
 """.format(user=mysql_user, password=mysql_pass)
 
-with open('./services/db/create.sql', 'w') as f:
+create_sql_path = os.path.join(this_dir, 'services', 'db', 'create.sql')
+with open(create_sql_path, 'w') as f:
     f.write(output)
-    print('Review the create.sql: ./services/db/create.sql')
+    print('Review the create.sql: {}'.format(create_sql_path))
 
-# Write the services/db/.env file
+# Write the services/db/docker.env file
 output = """MYSQL_HOST=localhost
 MYSQL_ROOT_PASSWORD={root_password}
 MYSQL_USER={user}
 MYSQL_PASSWORD={password}
 """.format(root_password=mysql_root_pass, user=mysql_user, password=mysql_pass)
 
-output = """MYSQL_HOST=localhost
-MYSQL_ROOT_PASSWORD={root_password}
-""".format(root_password=mysql_root_pass)
-
-with open('./services/db/.env', 'w') as f:
+db_docker_env_path = os.path.join(this_dir, 'services', 'db', 'docker.env')
+with open(db_docker_env_path, 'w') as f:
     f.write(output)
-    print('Review the environment variables: ./services/db/.env')
+    print('Review the environment variables: {}'.format(db_docker_env_path))
 
 # Write the services/web/docker.env file
+secret_key = os.urandom(48).hex()
+security_password_salt = os.urandom(48).hex()
 output = """FLASK_ENV=production
 APP_SETTINGS=project.config.ProductionConfig
 DATABASE_URL=mysql+pymysql://{user}:{password}@db:3306/SIP
 DATABASE_TEST_URL=mysql+pymysql://{user}:{password}@db:3306/SIP_test
-""".format(user=mysql_user, password=mysql_pass)
-
-with open('./services/web/docker.env', 'w') as f:
-    f.write(output)
-    print('Review the environment variables: ./services/web/docker.env')
-
-# Write the services/web/project/docker.env file
-secret_key = os.urandom(48).hex()
-security_password_salt = os.urandom(48).hex()
-output = """SECRET_KEY={secret_key}
+SECRET_KEY={secret_key}
 SECURITY_PASSWORD_SALT={security_password_salt}
-""".format(secret_key=secret_key, security_password_salt=security_password_salt)
+""".format(user=mysql_user, password=mysql_pass, secret_key=secret_key, security_password_salt=security_password_salt)
 
-with open('./services/web/project/docker.env', 'w') as f:
+web_docker_env_path = os.path.join(this_dir, 'services', 'web', 'docker.env')
+with open(web_docker_env_path, 'w') as f:
     f.write(output)
-    print('Review the Flask environment variables: ./services/web/project/docker.env')
+    print('Review the environment variables: {}'.format(web_docker_env_path))
 
 print()
 

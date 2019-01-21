@@ -1,6 +1,7 @@
 *.env
 services/db/create.sql
-services/nginx/certs/*
+services/nginx/certs/cert.pem
+services/nginx/certs/key.pem
 
 # macOS things
 .DS_Store
