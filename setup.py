@@ -6,8 +6,11 @@ import os
 this_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Generate a certificate
+certs_dir = os.path.join(this_dir, 'services', 'nginx', 'certs')
 cert_path = os.path.join(this_dir, 'services', 'nginx', 'certs', 'cert.pem')
 key_path = os.path.join(this_dir, 'services', 'nginx', 'certs', 'key.pem')
+if not os.path.exists(certs_dir):
+    os.makedirs(certs_dir)
 generate = input('Generate a self-signed certificate (y/n)? ')
 print()
 if generate.lower() == 'y':
