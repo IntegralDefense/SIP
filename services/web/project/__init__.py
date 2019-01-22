@@ -11,7 +11,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 from project.forms import ExtendedLoginForm
 
-admin = Admin(name='Intelooper', url='/intelooper')
+admin = Admin(name='SIP', url='/SIP')
 db = SQLAlchemy()
 migrate = Migrate()
 security = Security()
@@ -29,12 +29,12 @@ def create_app():
     # Start logging
     if not os.path.exists('logs'):
         os.mkdir('logs')
-    file_handler = TimedRotatingFileHandler('logs/intelooper.log',  when='midnight', interval=1, backupCount=6)
+    file_handler = TimedRotatingFileHandler('logs/SIP.log',  when='midnight', interval=1, backupCount=6)
     file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(filename)s:%(lineno)d - %(message)s'))
     file_handler.setLevel(logging.INFO)
     app.logger.addHandler(file_handler)
     app.logger.setLevel(logging.INFO)
-    app.logger.info('Intelooper starting')
+    app.logger.info('SIP starting')
 
     # Flask-SQLAlchemy
     db.init_app(app)

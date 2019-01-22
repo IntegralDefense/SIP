@@ -1,8 +1,6 @@
-FROM python:3.7-alpine
+FROM pypy:3
 
-RUN apk update && \
-	apk add --virtual build-deps gcc python-dev musl-dev && \
-	apk add mysql-client
+RUN apt-get update && apt-get install -y mysql-client
 
 WORKDIR /usr/src/app
 
