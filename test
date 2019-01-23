@@ -1,0 +1,5 @@
+#!/bin/bash
+
+docker-compose up -d db
+docker-compose run --rm web pytest
+docker-compose down
