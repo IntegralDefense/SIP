@@ -1,5 +1,11 @@
 venv
 .dockerignore
-Dockerfile-dev
-Dockerfile-prod
-#migrations
+Dockerfile
+*__pycache__*
+*.pyc
+*.pyo
+*.pyd
+pip-log.txt
+pip-delete-this-directory.txt
+.cache
+.git
