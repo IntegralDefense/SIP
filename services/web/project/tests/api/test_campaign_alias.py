@@ -11,10 +11,27 @@ CREATE TESTS
 def test_create_missing_parameter(client):
     """ Ensure the required parameters are given """
 
-    request = client.post('/api/campaigns')
+    data = {'alias': 'asdf'}
+    request = client.post('/api/campaigns/alias', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['message'] == 'Request must include "name"'
+    assert response['message'] == 'Request must include: alias, campaign'
+
+    data = {'campaign': 'asdf'}
+    request = client.post('/api/campaigns/alias', data=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert response['message'] == 'Request must include: alias, campaign'
+
+
+def test_create_nonexistent_source(client):
+    """ Ensure an alias cannot be created with a nonexistent campaign """
+
+    data = {'alias': 'asdf', 'campaign': 'asdf'}
+    request = client.post('/api/campaigns/alias', data=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert response['message'] == 'Campaign does not exist'
 
 
 def test_create_duplicate(client):
@@ -24,11 +41,15 @@ def test_create_duplicate(client):
     request = client.post('/api/campaigns', data=data)
     assert request.status_code == 201
 
-    data = {'name': 'asdf'}
-    request = client.post('/api/campaigns', data=data)
+    data = {'alias': 'asdf', 'campaign': 'asdf'}
+    request = client.post('/api/campaigns/alias', data=data)
+    assert request.status_code == 201
+
+    data = {'alias': 'asdf', 'campaign': 'asdf'}
+    request = client.post('/api/campaigns/alias', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
-    assert response['message'] == 'Campaign already exists'
+    assert response['message'] == 'Campaign alias already exists'
 
 
 def test_create_missing_api_key(app, client):
@@ -36,8 +57,8 @@ def test_create_missing_api_key(app, client):
 
     app.config['POST'] = 'analyst'
 
-    data = {'name': 'asdf'}
-    request = client.post('/api/campaigns', data=data)
+    data = {'alias': 'asdf', 'campaign': 'asdf'}
+    request = client.post('/api/campaigns/alias', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['message'] == 'Bad or missing API key'
@@ -48,8 +69,8 @@ def test_create_invalid_api_key(app, client):
 
     app.config['POST'] = 'analyst'
 
-    data = {'apikey': TEST_INVALID_APIKEY, 'name': 'asdf'}
-    request = client.post('/api/campaigns', data=data)
+    data = {'apikey': TEST_INVALID_APIKEY, 'alias': 'asdf', 'campaign': 'asdf'}
+    request = client.post('/api/campaigns/alias', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['message'] == 'API user does not exist'
@@ -60,8 +81,8 @@ def test_create_invalid_role(app, client):
 
     app.config['POST'] = 'user_does_not_have_this_role'
 
-    data = {'apikey': TEST_ANALYST_APIKEY, 'name': 'asdf'}
-    request = client.post('/api/campaigns', data=data)
+    data = {'apikey': TEST_ANALYST_APIKEY, 'alias': 'asdf', 'campaign': 'asdf'}
+    request = client.post('/api/campaigns/alias', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['message'] == 'Insufficient privileges'
@@ -74,6 +95,10 @@ def test_create(client):
     request = client.post('/api/campaigns', data=data)
     assert request.status_code == 201
 
+    data = {'alias': 'asdf', 'campaign': 'asdf'}
+    request = client.post('/api/campaigns/alias', data=data)
+    assert request.status_code == 201
+
 
 """
 READ TESTS
@@ -83,10 +108,10 @@ READ TESTS
 def test_read_nonexistent_id(client):
     """ Ensure a nonexistent ID does not work """
 
-    request = client.get('/api/campaigns/100000')
+    request = client.get('/api/campaigns/alias/100000')
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'Campaign ID not found'
+    assert response['message'] == 'Campaign alias ID not found'
 
 
 def test_read_missing_api_key(app, client):
@@ -129,15 +154,19 @@ def test_read_all_values(client):
     request = client.post('/api/campaigns', data=data)
     assert request.status_code == 201
 
-    data = {'name': 'asdf2'}
-    request = client.post('/api/campaigns', data=data)
+    data = {'alias': 'asdf', 'campaign': 'asdf'}
+    request = client.post('/api/campaigns/alias', data=data)
     assert request.status_code == 201
 
-    data = {'name': 'asdf3'}
-    request = client.post('/api/campaigns', data=data)
+    data = {'alias': 'asdf2', 'campaign': 'asdf'}
+    request = client.post('/api/campaigns/alias', data=data)
     assert request.status_code == 201
 
-    request = client.get('/api/campaigns')
+    data = {'alias': 'asdf3', 'campaign': 'asdf'}
+    request = client.post('/api/campaigns/alias', data=data)
+    assert request.status_code == 201
+
+    request = client.get('/api/campaigns/alias')
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert len(response) == 3
@@ -148,15 +177,19 @@ def test_read_by_id(client):
 
     data = {'name': 'asdf'}
     request = client.post('/api/campaigns', data=data)
+    assert request.status_code == 201
+
+    data = {'alias': 'asdf', 'campaign': 'asdf'}
+    request = client.post('/api/campaigns/alias', data=data)
     response = json.loads(request.data.decode())
     _id = response['id']
     assert request.status_code == 201
 
-    request = client.get('/api/campaigns/{}'.format(_id))
+    request = client.get('/api/campaigns/alias/{}'.format(_id))
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert response['id'] == _id
-    assert response['name'] == 'asdf'
+    assert response['alias'] == 'asdf'
 
 
 """
@@ -167,11 +200,11 @@ UPDATE TESTS
 def test_update_nonexistent_id(client):
     """ Ensure a nonexistent ID does not work """
 
-    data = {'name': 'asdf'}
-    request = client.put('/api/campaigns/100000', data=data)
+    data = {'alias': 'asdf', 'campaign': 'asdf'}
+    request = client.put('/api/campaigns/alias/100000', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'Campaign ID not found'
+    assert response['message'] == 'Campaign alias ID not found'
 
 
 def test_update_missing_parameter(client):
@@ -179,14 +212,18 @@ def test_update_missing_parameter(client):
 
     data = {'name': 'asdf'}
     request = client.post('/api/campaigns', data=data)
+    assert request.status_code == 201
+
+    data = {'alias': 'asdf', 'campaign': 'asdf'}
+    request = client.post('/api/campaigns/alias', data=data)
     response = json.loads(request.data.decode())
     _id = response['id']
     assert request.status_code == 201
 
-    request = client.put('/api/campaigns/{}'.format(_id))
+    request = client.put('/api/campaigns/alias/{}'.format(_id))
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['message'] == 'Request must include: name'
+    assert response['message'] == 'Request must include at least alias or campaign'
 
 
 def test_update_duplicate(client):
@@ -194,15 +231,39 @@ def test_update_duplicate(client):
 
     data = {'name': 'asdf'}
     request = client.post('/api/campaigns', data=data)
+    assert request.status_code == 201
+
+    data = {'alias': 'asdf', 'campaign': 'asdf'}
+    request = client.post('/api/campaigns/alias', data=data)
     response = json.loads(request.data.decode())
     _id = response['id']
     assert request.status_code == 201
 
-    data = {'name': 'asdf'}
-    request = client.put('/api/campaigns/{}'.format(_id), data=data)
+    data = {'alias': 'asdf', 'campaign': 'asdf'}
+    request = client.put('/api/campaigns/alias/{}'.format(_id), data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
-    assert response['message'] == 'Campaign already exists'
+    assert response['message'] == 'Campaign alias already exists'
+
+
+def test_update_nonexistent_campaign(client):
+    """ Ensure an alias cannot be updated with a nonexistent campaign """
+
+    data = {'name': 'asdf'}
+    request = client.post('/api/campaigns', data=data)
+    assert request.status_code == 201
+
+    data = {'alias': 'asdf', 'campaign': 'asdf'}
+    request = client.post('/api/campaigns/alias', data=data)
+    response = json.loads(request.data.decode())
+    _id = response['id']
+    assert request.status_code == 201
+
+    data = {'campaign': 'asdf2'}
+    request = client.put('/api/campaigns/alias/{}'.format(_id), data=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 404
+    assert response['message'] == 'Campaign not found'
 
 
 def test_update_missing_api_key(app, client):
@@ -210,7 +271,7 @@ def test_update_missing_api_key(app, client):
 
     app.config['PUT'] = 'analyst'
 
-    data = {'name': 'asdf'}
+    data = {'alias': 'asdf', 'campaign': 'asdf'}
     request = client.put('/api/campaigns/1', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
@@ -222,7 +283,7 @@ def test_update_invalid_api_key(app, client):
 
     app.config['PUT'] = 'analyst'
 
-    data = {'apikey': TEST_INVALID_APIKEY, 'name': 'asdf'}
+    data = {'apikey': TEST_INVALID_APIKEY, 'alias': 'asdf', 'campaign': 'asdf'}
     request = client.put('/api/campaigns/1', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
@@ -234,7 +295,7 @@ def test_update_invalid_role(app, client):
 
     app.config['PUT'] = 'user_does_not_have_this_role'
 
-    data = {'apikey': TEST_ANALYST_APIKEY, 'name': 'asdf'}
+    data = {'apikey': TEST_ANALYST_APIKEY, 'alias': 'asdf', 'campaign': 'asdf'}
     request = client.put('/api/campaigns/1', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
@@ -246,19 +307,23 @@ def test_update(client):
 
     data = {'name': 'asdf'}
     request = client.post('/api/campaigns', data=data)
+    assert request.status_code == 201
+
+    data = {'alias': 'asdf', 'campaign': 'asdf'}
+    request = client.post('/api/campaigns/alias', data=data)
     response = json.loads(request.data.decode())
     _id = response['id']
     assert request.status_code == 201
 
-    data = {'name': 'asdf2'}
-    request = client.put('/api/campaigns/{}'.format(_id), data=data)
+    data = {'alias': 'asdf2'}
+    request = client.put('/api/campaigns/alias/{}'.format(_id), data=data)
     assert request.status_code == 200
 
-    request = client.get('/api/campaigns/{}'.format(_id))
+    request = client.get('/api/campaigns/alias/{}'.format(_id))
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert response['id'] == _id
-    assert response['name'] == 'asdf2'
+    assert response['alias'] == 'asdf2'
 
 
 """
@@ -269,10 +334,10 @@ DELETE TESTS
 def test_delete_nonexistent_id(client):
     """ Ensure a nonexistent ID does not work """
 
-    request = client.delete('/api/campaigns/100000')
+    request = client.delete('/api/campaigns/alias/100000')
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'Campaign ID not found'
+    assert response['message'] == 'Campaign alias ID not found'
 
 
 def test_delete_missing_api_key(app, client):
@@ -280,7 +345,7 @@ def test_delete_missing_api_key(app, client):
 
     app.config['DELETE'] = 'admin'
 
-    request = client.delete('/api/campaigns/1')
+    request = client.delete('/api/campaigns/alias/1')
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['message'] == 'Bad or missing API key'
@@ -292,7 +357,7 @@ def test_delete_invalid_api_key(app, client):
     app.config['DELETE'] = 'admin'
 
     data = {'apikey': TEST_INVALID_APIKEY}
-    request = client.delete('/api/campaigns/1', data=data)
+    request = client.delete('/api/campaigns/alias/1', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['message'] == 'API user does not exist'
@@ -304,7 +369,7 @@ def test_delete_invalid_role(app, client):
     app.config['DELETE'] = 'user_does_not_have_this_role'
 
     data = {'apikey': TEST_ANALYST_APIKEY}
-    request = client.delete('/api/campaigns/1', data=data)
+    request = client.delete('/api/campaigns/alias/1', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['message'] == 'Insufficient privileges'
@@ -315,14 +380,18 @@ def test_delete(client):
 
     data = {'name': 'asdf'}
     request = client.post('/api/campaigns', data=data)
+    assert request.status_code == 201
+
+    data = {'alias': 'asdf', 'campaign': 'asdf'}
+    request = client.post('/api/campaigns/alias', data=data)
     response = json.loads(request.data.decode())
     _id = response['id']
     assert request.status_code == 201
 
-    request = client.delete('/api/campaigns/{}'.format(_id))
+    request = client.delete('/api/campaigns/alias/{}'.format(_id))
     assert request.status_code == 204
 
-    request = client.get('/api/campaigns/{}'.format(_id))
+    request = client.get('/api/campaigns/alias/{}'.format(_id))
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'Campaign ID not found'
+    assert response['message'] == 'Campaign alias ID not found'
