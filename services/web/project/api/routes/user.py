@@ -127,7 +127,7 @@ def update_user(user_id):
     # Verify at least one required field was specified.
     required = ['active', 'apikey_refresh', 'email', 'first_name', 'last_name', 'password', 'roles', 'username']
     if not any(r in data for r in required):
-        return error_response(400, 'Request must include at least one of: {}'.format(', '.join(required)))
+        return error_response(400, 'Request must include at least one of: {}'.format(', '.join(sorted(required))))
 
     # Verify active if it was specified. Defaults to False.
     if 'active' in data:
