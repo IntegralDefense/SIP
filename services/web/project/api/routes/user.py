@@ -124,6 +124,11 @@ def update_user(user_id):
     if not user:
         return error_response(404, 'User ID not found')
 
+    # Verify at least one required field was specified.
+    required = ['active', 'apikey_refresh', 'email', 'first_name', 'last_name', 'password', 'roles', 'username']
+    if not any(r in data for r in required):
+        return error_response(400, 'Request must include at least one of: {}'.format(', '.join(required)))
+
     # Verify active if it was specified. Defaults to False.
     if 'active' in data:
         user.active = parse_boolean(data['active'], default=False)

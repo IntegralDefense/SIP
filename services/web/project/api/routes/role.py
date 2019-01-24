@@ -86,6 +86,10 @@ def update_role(role_id):
     if not role:
         return error_response(404, 'Role ID not found')
 
+    # Verify at least one required field was specified.
+    if 'name' not in data and 'description' not in data:
+        return error_response(400, 'Request must include at least name or description')
+
     # Verify name if one was specified.
     if 'name' in data:
 

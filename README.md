@@ -14,7 +14,7 @@ docker-compose run web pypy3 manage.py seeddb
 ## To run the unit/integration tests:
 
 ```
-docker-compose run web pypy3 manage.py test
+./test
 ```
 
 ## To perform database schema migration/upgrades (via Flask-Migrate):

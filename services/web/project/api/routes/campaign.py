@@ -81,6 +81,10 @@ def update_campaign(campaign_id):
     if not campaign:
         return error_response(404, 'Campaign ID not found')
 
+    # Verify the required fields were specified.
+    if 'name' not in data:
+        return error_response(400, 'Request must include: name')
+
     # Verify name if one was specified.
     if 'name' in data:
 
