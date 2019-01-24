@@ -284,7 +284,8 @@ class Event(PaginatedAPIMixin, db.Model):
                 'references': [r.to_dict() for r in self.references],
                 'status': self.status.value,
                 'tags': sorted([t.value for t in self.tags]),
-                'types': sorted([t.value for t in self.types])}
+                'types': sorted([t.value for t in self.types]),
+                'user': self.user.username}
 
 
 class EventAttackVector(db.Model):
