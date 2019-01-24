@@ -30,9 +30,9 @@ def create_indicator():
         return error_response(404, 'Indicator type not found')
 
     # Verify the username.
-    user = db.session.query(User).filter_by(username=data['username']).first()
+    user = User.query.filter_by(username=data['username']).first()
     if not user:
-        return error_response(404, 'Username not found')
+        return error_response(404, 'User username not found')
 
     # Verify this type+value does not already exist.
     existing = Indicator.query.filter_by(_type_id=_type.id, value=data['value']).first()
@@ -136,7 +136,7 @@ def read_indicators():
             confidence_id = confidence.id
         else:
             confidence_id = -1
-        filters.add(Indicator._confidence_id == confidence_id)
+        filters.add(Indicator.confidence.id == confidence_id)
 
     # Impact filter
     if 'impact' in request.args:
@@ -145,7 +145,7 @@ def read_indicators():
             impact_id = impact.id
         else:
             impact_id = -1
-        filters.add(Indicator._impact_id == impact_id)
+        filters.add(Indicator.impact.id == impact_id)
 
     # Status filter
     if 'status' in request.args:
@@ -154,7 +154,7 @@ def read_indicators():
             status_id = status.id
         else:
             status_id = -1
-        filters.add(Indicator._status_id == status_id)
+        filters.add(Indicator.status.id == status_id)
 
     # Substring filter
     if 'substring' in request.args:
@@ -174,7 +174,7 @@ def read_indicators():
             type_id = _type.id
         else:
             type_id = -1
-        filters.add(Indicator._type_id == type_id)
+        filters.add(Indicator.type.id == type_id)
 
     # Value filter
     if 'value' in request.args:
@@ -194,11 +194,17 @@ UPDATE
 def update_indicator(indicator_id):
     """ Updates an existing indicator. """
 
+    data = request.values or {}
+
+    # Verify the ID exists.
     indicator = Indicator.query.get(indicator_id)
     if not indicator:
         return error_response(404, 'Indicator ID not found: {}'.format(indicator_id))
 
-    data = request.values or {}
+    # Verify at least one required field was specified.
+    required = ['confidence', 'impact', 'status', 'username']
+    if not any(r in data for r in required):
+        return error_response(400, 'Request must include at least one of: {}'.format(', '.join(sorted(required))))
 
     # Verify the confidence.
     if 'confidence' in data:
@@ -226,6 +232,13 @@ def update_indicator(indicator_id):
             acceptable = sorted([r.value for r in results])
             return error_response(400, 'status must be one of: {}'.format(', '.join(acceptable)))
         indicator.status = status
+
+    # Verify username if one was specified.
+    if 'username' in data:
+        user = User.query.filter_by(username=data['username'])
+        if not user:
+            return error_response(404, 'User username not found: {}'.format(data['username']))
+        indicator.user = user
 
     db.session.commit()
 
