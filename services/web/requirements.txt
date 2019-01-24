@@ -6,3 +6,4 @@ Flask-SQLAlchemy==2.3.2
 gunicorn==19.9.0
 pymysql==0.9.3
 pytest==4.1.1
+python-dateutil==2.7.5
