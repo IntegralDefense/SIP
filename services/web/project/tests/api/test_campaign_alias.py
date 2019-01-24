@@ -41,15 +41,29 @@ def test_create_duplicate(client):
     request = client.post('/api/campaigns', data=data)
     assert request.status_code == 201
 
-    data = {'alias': 'asdf', 'campaign': 'asdf'}
+    data = {'alias': 'asdf2', 'campaign': 'asdf'}
     request = client.post('/api/campaigns/alias', data=data)
+    assert request.status_code == 201
+
+    data = {'alias': 'asdf2', 'campaign': 'asdf'}
+    request = client.post('/api/campaigns/alias', data=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 409
+    assert response['message'] == 'Campaign alias already exists'
+
+
+def test_create_same_value(client):
+    """ Ensure an alias cannot have the same value as the campaign name """
+
+    data = {'name': 'asdf'}
+    request = client.post('/api/campaigns', data=data)
     assert request.status_code == 201
 
     data = {'alias': 'asdf', 'campaign': 'asdf'}
     request = client.post('/api/campaigns/alias', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
-    assert response['message'] == 'Campaign alias already exists'
+    assert response['message'] == 'Campaign alias cannot be the same as its name'
 
 
 def test_create_missing_api_key(app, client):
@@ -95,7 +109,7 @@ def test_create(client):
     request = client.post('/api/campaigns', data=data)
     assert request.status_code == 201
 
-    data = {'alias': 'asdf', 'campaign': 'asdf'}
+    data = {'alias': 'asdf2', 'campaign': 'asdf'}
     request = client.post('/api/campaigns/alias', data=data)
     assert request.status_code == 201
 
@@ -154,15 +168,15 @@ def test_read_all_values(client):
     request = client.post('/api/campaigns', data=data)
     assert request.status_code == 201
 
-    data = {'alias': 'asdf', 'campaign': 'asdf'}
-    request = client.post('/api/campaigns/alias', data=data)
-    assert request.status_code == 201
-
     data = {'alias': 'asdf2', 'campaign': 'asdf'}
     request = client.post('/api/campaigns/alias', data=data)
     assert request.status_code == 201
 
     data = {'alias': 'asdf3', 'campaign': 'asdf'}
+    request = client.post('/api/campaigns/alias', data=data)
+    assert request.status_code == 201
+
+    data = {'alias': 'asdf4', 'campaign': 'asdf'}
     request = client.post('/api/campaigns/alias', data=data)
     assert request.status_code == 201
 
@@ -179,7 +193,7 @@ def test_read_by_id(client):
     request = client.post('/api/campaigns', data=data)
     assert request.status_code == 201
 
-    data = {'alias': 'asdf', 'campaign': 'asdf'}
+    data = {'alias': 'asdf2', 'campaign': 'asdf'}
     request = client.post('/api/campaigns/alias', data=data)
     response = json.loads(request.data.decode())
     _id = response['id']
@@ -189,7 +203,7 @@ def test_read_by_id(client):
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert response['id'] == _id
-    assert response['alias'] == 'asdf'
+    assert response['alias'] == 'asdf2'
 
 
 """
@@ -200,7 +214,7 @@ UPDATE TESTS
 def test_update_nonexistent_id(client):
     """ Ensure a nonexistent ID does not work """
 
-    data = {'alias': 'asdf', 'campaign': 'asdf'}
+    data = {'alias': 'asdf2', 'campaign': 'asdf'}
     request = client.put('/api/campaigns/alias/100000', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 404
@@ -214,7 +228,7 @@ def test_update_missing_parameter(client):
     request = client.post('/api/campaigns', data=data)
     assert request.status_code == 201
 
-    data = {'alias': 'asdf', 'campaign': 'asdf'}
+    data = {'alias': 'asdf2', 'campaign': 'asdf'}
     request = client.post('/api/campaigns/alias', data=data)
     response = json.loads(request.data.decode())
     _id = response['id']
@@ -233,17 +247,35 @@ def test_update_duplicate(client):
     request = client.post('/api/campaigns', data=data)
     assert request.status_code == 201
 
-    data = {'alias': 'asdf', 'campaign': 'asdf'}
+    data = {'alias': 'asdf2', 'campaign': 'asdf'}
     request = client.post('/api/campaigns/alias', data=data)
     response = json.loads(request.data.decode())
     _id = response['id']
     assert request.status_code == 201
 
-    data = {'alias': 'asdf', 'campaign': 'asdf'}
+    data = {'alias': 'asdf2', 'campaign': 'asdf'}
     request = client.put('/api/campaigns/alias/{}'.format(_id), data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
     assert response['message'] == 'Campaign alias already exists'
+
+
+def test_update_same_value(client):
+    """ Ensure an alias cannot have the same value as the campaign name """
+
+    data = {'name': 'asdf'}
+    request = client.post('/api/campaigns', data=data)
+    assert request.status_code == 201
+
+    data = {'alias': 'asdf2', 'campaign': 'asdf'}
+    request = client.post('/api/campaigns/alias', data=data)
+    assert request.status_code == 201
+
+    data = {'alias': 'asdf', 'campaign': 'asdf'}
+    request = client.post('/api/campaigns/alias', data=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 409
+    assert response['message'] == 'Campaign alias cannot be the same as its name'
 
 
 def test_update_nonexistent_campaign(client):
@@ -253,7 +285,7 @@ def test_update_nonexistent_campaign(client):
     request = client.post('/api/campaigns', data=data)
     assert request.status_code == 201
 
-    data = {'alias': 'asdf', 'campaign': 'asdf'}
+    data = {'alias': 'asdf2', 'campaign': 'asdf'}
     request = client.post('/api/campaigns/alias', data=data)
     response = json.loads(request.data.decode())
     _id = response['id']
@@ -309,13 +341,13 @@ def test_update(client):
     request = client.post('/api/campaigns', data=data)
     assert request.status_code == 201
 
-    data = {'alias': 'asdf', 'campaign': 'asdf'}
+    data = {'alias': 'asdf2', 'campaign': 'asdf'}
     request = client.post('/api/campaigns/alias', data=data)
     response = json.loads(request.data.decode())
     _id = response['id']
     assert request.status_code == 201
 
-    data = {'alias': 'asdf2'}
+    data = {'alias': 'asdf3'}
     request = client.put('/api/campaigns/alias/{}'.format(_id), data=data)
     assert request.status_code == 200
 
@@ -323,7 +355,7 @@ def test_update(client):
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert response['id'] == _id
-    assert response['alias'] == 'asdf2'
+    assert response['alias'] == 'asdf3'
 
 
 """
@@ -382,7 +414,7 @@ def test_delete(client):
     request = client.post('/api/campaigns', data=data)
     assert request.status_code == 201
 
-    data = {'alias': 'asdf', 'campaign': 'asdf'}
+    data = {'alias': 'asdf2', 'campaign': 'asdf'}
     request = client.post('/api/campaigns/alias', data=data)
     response = json.loads(request.data.decode())
     _id = response['id']

@@ -32,6 +32,10 @@ def create_campaign_alias():
     if existing:
         return error_response(409, 'Campaign alias already exists')
 
+    # Verify the alias is not the same as the campaign name.
+    if data['alias'].lower() == data['campaign'].lower():
+        return error_response(409, 'Campaign alias cannot be the same as its name')
+
     # Create and add the new name.
     campaign_alias = CampaignAlias(alias=data['alias'], campaign=campaign)
     db.session.add(campaign_alias)
@@ -92,6 +96,10 @@ def update_campaign_alias(campaign_alias_id):
 
     # Verify alias if one was specified.
     if 'alias' in data:
+
+        # Verify the alias is not the same as the campaign name.
+        if data['alias'].lower() == campaign_alias.campaign.name.lower():
+            return error_response(409, 'Campaign alias cannot be the same as its name')
 
         # Verify this alias does not already exist.
         existing = CampaignAlias.query.filter_by(alias=data['alias']).first()
