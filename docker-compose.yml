@@ -7,7 +7,7 @@ services:
             dockerfile: Dockerfile
         restart: on-failure
         volumes:
-            - './services/web:/usr/src/app'
+            - './services/web/migrations:/usr/src/app/migrations'
         expose:
             - 5000
         links:
