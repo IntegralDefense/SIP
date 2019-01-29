@@ -1,3 +1,6 @@
+import datetime
+
+from dateutil.parser import parse
 from flask import jsonify, request, url_for
 from sqlalchemy import exc
 
@@ -149,6 +152,22 @@ def read_indicators():
         arg = parse_boolean(request.args.get('case_sensitive'), default=None)
         filters.add(Indicator.case_sensitive.is_(arg))
 
+    # Created after filter
+    if 'created_after' in request.args:
+        try:
+            created_after = parse(request.args.get('created_after'), ignoretz=True)
+        except (ValueError, OverflowError):
+            created_after = datetime.date.max
+        filters.add(created_after < Indicator.created_time)
+
+    # Created before filter
+    if 'created_before' in request.args:
+        try:
+            created_before = parse(request.args.get('created_before'), ignoretz=True)
+        except (ValueError, OverflowError):
+            created_before = datetime.date.min
+        filters.add(Indicator.created_time < created_before)
+
     # Confidence filter
     if 'confidence' in request.args:
         confidence = IndicatorConfidence.query.filter_by(value=request.args.get('confidence')).first()
@@ -166,6 +185,22 @@ def read_indicators():
         else:
             impact_id = -1
         filters.add(Indicator.impact.id == impact_id)
+
+    # Modified after filter
+    if 'modified_after' in request.args:
+        try:
+            modified_after = parse(request.args.get('modified_after'))
+        except (ValueError, OverflowError):
+            modified_after = datetime.date.max
+        filters.add(modified_after < Indicator.modified_time)
+
+    # Modified before filter
+    if 'modified_before' in request.args:
+        try:
+            modified_before = parse(request.args.get('modified_before'))
+        except (ValueError, OverflowError):
+            modified_before = datetime.date.min
+        filters.add(Indicator.modified_time < modified_before)
 
     # Status filter
     if 'status' in request.args:
