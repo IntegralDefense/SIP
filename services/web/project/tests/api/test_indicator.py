@@ -319,7 +319,146 @@ def test_read_by_id(client):
 def test_read_with_filters(client):
     """ Ensure indicators can be read using the various filters """
 
-    pass
+    indicator1_request, indicator1_response = create_indicator(client, 'IP', '1.1.1.1', 'analyst',
+                                                               campaigns='Derpsters',
+                                                               case_sensitive=True,
+                                                               confidence='HIGH',
+                                                               impact='HIGH',
+                                                               intel_reference='http://blahblah.com',
+                                                               intel_source='OSINT',
+                                                               status='Analyzed',
+                                                               substring=True,
+                                                               tags='phish')
+    assert indicator1_request.status_code == 201
+
+    time.sleep(1)
+
+    indicator2_request, indicator2_response = create_indicator(client, 'Email', 'asdf@asdf.com', 'admin',
+                                                               campaigns='LOLcats',
+                                                               case_sensitive=False,
+                                                               confidence='LOW',
+                                                               impact='LOW',
+                                                               intel_reference='http://blahblah2.com',
+                                                               intel_source='VirusTotal',
+                                                               status='New',
+                                                               substring=False,
+                                                               tags='nanocore')
+    assert indicator2_request.status_code == 201
+
+    time.sleep(1)
+
+    # Filter by case_sensitive
+    request = client.get('/api/indicators?case_sensitive=true')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 1
+    assert response['items'][0]['case_sensitive'] is True
+
+    # Filter by created_before
+    request = client.get('/api/indicators?created_before={}'.format(datetime.datetime.now()))
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 2
+    request = client.get('/api/indicators?created_before={}'.format(indicator2_response['created_time']))
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 1
+    assert response['items'][0]['value'] == '1.1.1.1'
+
+    # Filter by created_after
+    request = client.get('/api/indicators?created_after={}'.format(datetime.datetime.min))
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 2
+    request = client.get('/api/indicators?created_after={}'.format(indicator1_response['created_time']))
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 1
+    assert response['items'][0]['value'] == 'asdf@asdf.com'
+
+    # Filter by confidence
+    request = client.get('/api/indicators?confidence=HIGH')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 1
+    assert response['items'][0]['value'] == '1.1.1.1'
+
+    # Filter by impact
+    request = client.get('/api/indicators?impact=HIGH')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 1
+    assert response['items'][0]['value'] == '1.1.1.1'
+
+    # Filter by modified_before
+    request = client.get('/api/indicators?modified_before={}'.format(datetime.datetime.now()))
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 2
+    request = client.get('/api/indicators?modified_before={}'.format(indicator2_response['modified_time']))
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 1
+    assert response['items'][0]['value'] == '1.1.1.1'
+
+    # Filter by modified_after
+    request = client.get('/api/indicators?modified_after={}'.format(datetime.datetime.min))
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 2
+    request = client.get('/api/indicators?modified_after={}'.format(indicator1_response['modified_time']))
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 1
+    assert response['items'][0]['value'] == 'asdf@asdf.com'
+
+    # Filter by status
+    request = client.get('/api/indicators?status=Analyzed')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 1
+    assert response['items'][0]['value'] == '1.1.1.1'
+
+    # Filter by tag
+    request = client.get('/api/indicators?tags=phish')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 1
+    assert response['items'][0]['value'] == '1.1.1.1'
+
+    # Filter by type
+    request = client.get('/api/indicators?type=IP')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 1
+    assert response['items'][0]['value'] == '1.1.1.1'
+
+    # Filter by value
+    request = client.get('/api/indicators?value=1.1')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 1
+    assert response['items'][0]['value'] == '1.1.1.1'
+
+    # Filter by intel source
+    request = client.get('/api/indicators?sources=OSINT')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 1
+    assert response['items'][0]['value'] == '1.1.1.1'
+
+    # Filter by multiple
+    request = client.get('/api/indicators?tags=phish&type=IP')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 1
+    assert response['items'][0]['value'] == '1.1.1.1'
+
+    # Filter by multiple (conflicting)
+    request = client.get('/api/indicators?tags=phish&type=Email')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 0
 
 
 """
