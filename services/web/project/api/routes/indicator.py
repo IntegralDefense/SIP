@@ -10,7 +10,7 @@ from project.api.decorators import check_apikey
 from project.api.errors import error_response
 from project.api.helpers import parse_boolean
 from project.models import Campaign, Indicator, IndicatorConfidence, IndicatorImpact, IndicatorStatus, IndicatorType, \
-    IntelReference, Tag, User
+    IntelReference, IntelSource, Tag, User
 
 """
 CREATE
@@ -175,7 +175,7 @@ def read_indicators():
             confidence_id = confidence.id
         else:
             confidence_id = -1
-        filters.add(Indicator.confidence.id == confidence_id)
+        filters.add(Indicator._confidence_id == confidence_id)
 
     # Impact filter
     if 'impact' in request.args:
@@ -184,7 +184,7 @@ def read_indicators():
             impact_id = impact.id
         else:
             impact_id = -1
-        filters.add(Indicator.impact.id == impact_id)
+        filters.add(Indicator._impact_id == impact_id)
 
     # Modified after filter
     if 'modified_after' in request.args:
@@ -202,6 +202,17 @@ def read_indicators():
             modified_before = datetime.date.min
         filters.add(Indicator.modified_time < modified_before)
 
+    # Source filter (IntelReference)
+    if 'sources' in request.args:
+        sources = request.args.get('sources').split(',')
+        for s in sources:
+            source = IntelSource.query.filter_by(value=s).first()
+            if source:
+                source_id = source.id
+            else:
+                source_id = -1
+            filters.add(Indicator.references.any(_intel_source_id=source_id))
+
     # Status filter
     if 'status' in request.args:
         status = IndicatorStatus.query.filter_by(value=request.args.get('status')).first()
@@ -209,7 +220,7 @@ def read_indicators():
             status_id = status.id
         else:
             status_id = -1
-        filters.add(Indicator.status.id == status_id)
+        filters.add(Indicator._status_id == status_id)
 
     # Substring filter
     if 'substring' in request.args:
@@ -229,7 +240,7 @@ def read_indicators():
             type_id = _type.id
         else:
             type_id = -1
-        filters.add(Indicator.type.id == type_id)
+        filters.add(Indicator._type_id == type_id)
 
     # Value filter
     if 'value' in request.args:
