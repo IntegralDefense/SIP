@@ -304,37 +304,6 @@ def test_read_by_id(client):
 def test_read_with_filters(client):
     """ Ensure events can be read using the various filters """
 
-    # TODO: Write the test_read_with_filters test
-
-    """
-    create_event_attack_vector(client, 'CORPORATE EMAIL')
-    create_event_attack_vector(client, 'USB')
-
-    create_event_disposition(client, 'EXPLOITATION')
-    create_event_disposition(client, 'DELIVERY')
-
-    create_event_prevention_tool(client, 'ANTIVIRUS')
-    create_event_prevention_tool(client, 'PROXY')
-
-    create_event_remediation(client, 'REMOVED FROM INBOX')
-    create_event_remediation(client, 'REIMAGED')
-
-    create_event_status(client, 'OPEN')
-    create_event_status(client, 'CLOSED')
-
-    create_event_type(client, 'PHISH')
-    create_event_type(client, 'HOST COMPROMISE')
-
-    create_campaign(client, 'Derpsters')
-    create_campaign(client, 'LOLcats')
-
-    create_malware(client, 'Nanocore')
-    create_malware(client, 'Remcos')
-
-    create_tag(client, 'phish')
-    create_tag(client, 'remcos')
-    """
-
     event1_request, event1_response = create_event(client, '20190125 Nanocore phish', 'analyst',
                                                    attack_vector='CORPORATE EMAIL',
                                                    disposition='EXPLOITATION',
