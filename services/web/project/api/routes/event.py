@@ -34,7 +34,7 @@ def create_event():
         return error_response(409, 'Event name already exists')
 
     # Verify the username exists.
-    user = User.query.filter_by(username=data['username'])
+    user = User.query.filter_by(username=data['username']).first()
     if not user:
         return error_response(404, 'User username not found: {}'.format(data['username']))
 
@@ -66,7 +66,7 @@ def create_event():
 
     # Verify campaign if one was specified.
     if 'campaign' in data:
-        campaign = Campaign.query.filter_by(name=data['campaign'])
+        campaign = Campaign.query.filter_by(name=data['campaign']).first()
         if not campaign:
             return error_response(404, 'Campaign not found: {}'.format(data['campaign']))
         event.campaign = campaign
@@ -155,8 +155,12 @@ def read_events():
 
     # Campaign filter
     if 'campaign' in request.args:
-        campaign = request.args.get('campaign')
-        filters.add(Event.campaign.name == campaign)
+        campaign = Campaign.query.filter_by(name=request.args.get('campaign')).first()
+        if campaign:
+            campaign_id = campaign.id
+        else:
+            campaign_id = -1
+        filters.add(Event._campaign_id == campaign_id)
 
     # Created after filter
     if 'created_after' in request.args:
@@ -176,8 +180,12 @@ def read_events():
 
     # Disposition filter
     if 'disposition' in request.args:
-        disposition = request.args.get('disposition')
-        filters.add(Event.disposition.value == disposition)
+        disposition = EventDisposition.query.filter_by(value=request.args.get('disposition')).first()
+        if disposition:
+            disposition_id = disposition.id
+        else:
+            disposition_id = -1
+        filters.add(Event._disposition_id == disposition_id)
 
     # Malware filter
     if 'malware' in request.args:
@@ -211,19 +219,31 @@ def read_events():
         for prevention_tool in prevention_tools:
             filters.add(Event.prevention_tools.any(value=prevention_tool))
 
+    # Remediation filter
+    if 'remediations' in request.args:
+        remediations = request.args.get('remediations').split(',')
+        for remediation in remediations:
+            filters.add(Event.remediations.any(value=remediation))
+
     # Source filter (IntelReference)
-    if 'source' in request.args:
-        source = IntelSource.query.filter_by(value=request.args.get('source')).first()
-        if source:
-            source_id = source.id
-        else:
-            source_id = -1
-        filters.add(Event.references.any(_intel_source_id=source_id))
+    if 'sources' in request.args:
+        sources = request.args.get('sources').split(',')
+        for s in sources:
+            source = IntelSource.query.filter_by(value=s).first()
+            if source:
+                source_id = source.id
+            else:
+                source_id = -1
+            filters.add(Event.references.any(_intel_source_id=source_id))
 
     # Status filter
     if 'status' in request.args:
-        status = request.args.get('status')
-        filters.add(Event.status.value == status)
+        status = EventStatus.query.filter_by(value=request.args.get('status')).first()
+        if status:
+            status_id = status.id
+        else:
+            status_id = -1
+        filters.add(Event._status_id == status_id)
 
     # Tags filter
     if 'tags' in request.args:
@@ -269,7 +289,7 @@ def update_event(event_id):
 
     # Verify at least one required field was specified.
     required = ['attack_vectors', 'campaign', 'disposition', 'malware', 'prevention_tools', 'references',
-                'remediations', 'tags', 'types']
+                'remediations', 'tags', 'types', 'username']
     if not any(r in data for r in required):
         return error_response(400, 'Request must include at least one of: {}'.format(', '.join(sorted(required))))
 
@@ -287,14 +307,14 @@ def update_event(event_id):
 
     # Verify campaign if one was specified.
     if 'campaign' in data:
-        campaign = Campaign.query.filter_by(name=data['campaign'])
+        campaign = Campaign.query.filter_by(name=data['campaign']).first()
         if not campaign:
             return error_response(404, 'Campaign not found: {}'.format(data['campaign']))
         event.campaign = campaign
 
     # Verify disposition if one was specified.
     if 'disposition' in data:
-        disposition = EventDisposition.query.filter_by(value=data['disposition'])
+        disposition = EventDisposition.query.filter_by(value=data['disposition']).first()
         if not disposition:
             return error_response(404, 'Event disposition not found: {}'.format(data['disposition']))
         event.disposition = disposition
@@ -373,7 +393,7 @@ def update_event(event_id):
 
     # Verify username if one was specified.
     if 'username' in data:
-        user = User.query.filter_by(username=data['username'])
+        user = User.query.filter_by(username=data['username']).first()
         if not user:
             return error_response(404, 'User username not found: {}'.format(data['username']))
         event.user = user
