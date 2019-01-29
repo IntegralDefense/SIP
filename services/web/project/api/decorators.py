@@ -38,10 +38,13 @@ def check_apikey(function):
 
             # If the user exists and they have the required role, return the function.
             if user:
-                if any(role.name.lower() == required_role for role in user.roles):
-                    return function(*args, **kwargs)
+                if user.active:
+                    if any(role.name.lower() == required_role for role in user.roles):
+                        return function(*args, **kwargs)
+                    else:
+                        return error_response(401, 'Insufficient privileges')
                 else:
-                    return error_response(401, 'Insufficient privileges')
+                    return error_response(401, 'API user is not active')
             else:
                 return error_response(401, 'API user does not exist')
         else:
@@ -73,10 +76,13 @@ def verify_admin(function):
 
             # If the user exists and they have the required role, return the function.
             if user:
-                if any(role.name.lower() == required_role for role in user.roles):
-                    return function(*args, **kwargs)
+                if user.active:
+                    if any(role.name.lower() == required_role for role in user.roles):
+                        return function(*args, **kwargs)
+                    else:
+                        return error_response(401, 'Insufficient privileges')
                 else:
-                    return error_response(401, 'Insufficient privileges')
+                    return error_response(401, 'API user is not active')
             else:
                 return error_response(401, 'API user does not exist')
         else:
