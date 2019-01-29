@@ -7,7 +7,7 @@ from project import create_app
 from project import db as _db
 from project.models import Role, User
 
-TEST_APIKEY = '11111111-1111-1111-1111-111111111111'
+TEST_INACTIVE_APIKEY = '11111111-1111-1111-1111-111111111111'
 TEST_ADMIN_APIKEY = '22222222-2222-2222-2222-222222222222'
 TEST_ANALYST_APIKEY = '33333333-3333-3333-3333-333333333333'
 TEST_INVALID_APIKEY = '99999999-9999-9999-9999-999999999999'
@@ -47,15 +47,15 @@ def db(app):
         analyst_role = Role(name='analyst')
         _db.session.add(analyst_role)
 
-    # Test user
-    if not User.query.filter_by(username='test').first():
+    # Inactive user
+    if not User.query.filter_by(username='inactive').first():
         user_datastore = SQLAlchemyUserDatastore(_db, User, Role)
-        admin_role = Role.query.filter_by(name='admin').first()
         analyst_role = Role.query.filter_by(name='analyst').first()
-        user_datastore.create_user(email='test@localhost', password=hash_password('test'), username='test',
-                                   first_name='Test', last_name='Test', roles=[admin_role, analyst_role])
-        test_user = User.query.filter_by(username='test').first()
-        test_user.apikey = TEST_APIKEY
+        user_datastore.create_user(email='inactive@localhost', password=hash_password('inactive'), username='inactive',
+                                   first_name='Inactive', last_name='Inactive', roles=[analyst_role])
+        inactive_user = User.query.filter_by(username='inactive').first()
+        inactive_user.active = False
+        inactive_user.apikey = TEST_INACTIVE_APIKEY
 
     # Admin user
     if not User.query.filter_by(username='admin').first():
