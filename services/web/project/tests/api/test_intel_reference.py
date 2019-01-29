@@ -1,6 +1,6 @@
 import json
 
-from project.tests.conftest import TEST_ANALYST_APIKEY, TEST_INVALID_APIKEY
+from project.tests.conftest import TEST_ANALYST_APIKEY, TEST_INACTIVE_APIKEY, TEST_INVALID_APIKEY
 
 
 """
@@ -82,6 +82,18 @@ def test_create_invalid_api_key(app, client):
     assert response['message'] == 'API user does not exist'
 
 
+def test_create_inactive_api_key(app, client):
+    """ Ensure an inactive API key does not work """
+
+    app.config['POST'] = 'analyst'
+
+    data = {'apikey': TEST_INACTIVE_APIKEY, 'name': 'asdf'}
+    request = client.post('/api/intel/reference', data=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['message'] == 'API user is not active'
+
+
 def test_create_invalid_role(app, client):
     """ Ensure the given API key has the proper role access """
 
@@ -140,6 +152,17 @@ def test_read_invalid_api_key(app, client):
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['message'] == 'API user does not exist'
+
+
+def test_read_inactive_api_key(app, client):
+    """ Ensure an inactive API key does not work """
+
+    app.config['GET'] = 'analyst'
+
+    request = client.get('/api/intel/reference/1?apikey={}'.format(TEST_INACTIVE_APIKEY))
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['message'] == 'API user is not active'
 
 
 def test_read_invalid_role(app, client):
@@ -296,6 +319,18 @@ def test_update_invalid_api_key(app, client):
     assert response['message'] == 'API user does not exist'
 
 
+def test_update_inactive_api_key(app, client):
+    """ Ensure an inactive API key does not work """
+
+    app.config['PUT'] = 'analyst'
+
+    data = {'apikey': TEST_INACTIVE_APIKEY, 'name': 'asdf'}
+    request = client.put('/api/intel/reference/1', data=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['message'] == 'API user is not active'
+
+
 def test_update_invalid_role(app, client):
     """ Ensure the given API key has the proper role access """
 
@@ -367,6 +402,18 @@ def test_delete_invalid_api_key(app, client):
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['message'] == 'API user does not exist'
+    
+    
+def test_delete_inactive_api_key(app, client):
+    """ Ensure an inactive API key does not work """
+
+    app.config['DELETE'] = 'admin'
+
+    data = {'apikey': TEST_INACTIVE_APIKEY}
+    request = client.delete('/api/intel/reference/1', data=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['message'] == 'API user is not active'
 
 
 def test_delete_invalid_role(app, client):
