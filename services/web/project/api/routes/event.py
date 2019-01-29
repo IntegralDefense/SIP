@@ -38,6 +38,10 @@ def create_event():
     if not user:
         return error_response(404, 'User username not found: {}'.format(data['username']))
 
+    # Verify the user is active.
+    if not user.active:
+        return error_response(401, 'Cannot create an event with an inactive user')
+
     # Verify the disposition (has default).
     if 'disposition' not in data:
         disposition = EventDisposition.query.order_by(EventDisposition.id).limit(1).first()
@@ -396,6 +400,10 @@ def update_event(event_id):
         user = User.query.filter_by(username=data['username']).first()
         if not user:
             return error_response(404, 'User username not found: {}'.format(data['username']))
+
+        if not user.active:
+            return error_response(401, 'Cannot update an event with an inactive user')
+
         event.user = user
 
     db.session.commit()

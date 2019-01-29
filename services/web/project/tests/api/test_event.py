@@ -2,7 +2,7 @@ import datetime
 import json
 import time
 
-from project.tests.conftest import TEST_ANALYST_APIKEY, TEST_INVALID_APIKEY
+from project.tests.conftest import TEST_ANALYST_APIKEY, TEST_INACTIVE_APIKEY, TEST_INVALID_APIKEY
 
 """
 HELPER FUNCTIONS
@@ -174,8 +174,9 @@ def test_create_nonexistent_username(client):
 def test_create_inactive_username(client):
     """ Ensure an event cannot be created with an inactive username """
 
-    # TODO: Write the test_create_inactive_username test
-    pass
+    request, response = create_event(client, 'asdf', 'inactive')
+    assert request.status_code == 401
+    assert response['message'] == 'Cannot create an event with an inactive user'
 
 
 def test_create_missing_api_key(app, client):
@@ -200,6 +201,18 @@ def test_create_invalid_api_key(app, client):
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['message'] == 'API user does not exist'
+
+
+def test_create_inactive_api_key(app, client):
+    """ Ensure an inactive API key does not work """
+
+    app.config['POST'] = 'analyst'
+
+    data = {'apikey': TEST_INACTIVE_APIKEY, 'name': 'asdf', 'username': 'analyst'}
+    request = client.post('/api/events', data=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['message'] == 'API user is not active'
 
 
 def test_create_invalid_role(app, client):
@@ -255,6 +268,17 @@ def test_read_invalid_api_key(app, client):
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['message'] == 'API user does not exist'
+
+
+def test_read_inactive_api_key(app, client):
+    """ Ensure an inactive API key does not work """
+
+    app.config['GET'] = 'analyst'
+
+    request = client.get('/api/events/1?apikey={}'.format(TEST_INACTIVE_APIKEY))
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['message'] == 'API user is not active'
 
 
 def test_read_invalid_role(app, client):
@@ -487,8 +511,15 @@ def test_update_nonexistent_username(client):
 def test_update_inactive_username(client):
     """ Ensure an event cannot be updated with an inactive username """
 
-    # TODO: Write the test_create_inactive_username test
-    pass
+    request, response = create_event(client, 'asdf', 'analyst')
+    _id = response['id']
+    assert request.status_code == 201
+
+    data = {'username': 'inactive'}
+    request = client.put('/api/events/{}'.format(_id), data=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['message'] == 'Cannot update an event with an inactive user'
 
 
 def test_update_nonexistent_id(client):
@@ -536,6 +567,18 @@ def test_update_invalid_api_key(app, client):
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['message'] == 'API user does not exist'
+
+
+def test_update_inactive_api_key(app, client):
+    """ Ensure an inactive API key does not work """
+
+    app.config['PUT'] = 'analyst'
+
+    data = {'apikey': TEST_INACTIVE_APIKEY, 'username': 'analyst'}
+    request = client.put('/api/events/1', data=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['message'] == 'API user is not active'
 
 
 def test_update_invalid_role(app, client):
@@ -745,6 +788,18 @@ def test_delete_invalid_api_key(app, client):
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['message'] == 'API user does not exist'
+
+
+def test_delete_inactive_api_key(app, client):
+    """ Ensure an inactive API key does not work """
+
+    app.config['DELETE'] = 'admin'
+
+    data = {'apikey': TEST_INACTIVE_APIKEY}
+    request = client.delete('/api/events/1', data=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['message'] == 'API user is not active'
 
 
 def test_delete_invalid_role(app, client):
