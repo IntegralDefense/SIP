@@ -102,7 +102,7 @@ def create_event(client, name, username, attack_vector='', campaign='', disposit
     if malware:
         malware = malware.split(',')
         for m in malware:
-            create_malware(client, malware)
+            create_malware(client, m)
         data['malware'] = malware
     if prevention_tool:
         create_event_prevention_tool(client, prevention_tool)
@@ -230,8 +230,24 @@ def test_create_invalid_role(app, client):
 def test_create(client):
     """ Ensure a proper request actually works """
 
-    request, response = create_event(client, 'asdf', 'analyst')
+    request, response = create_event(client, 'asdf', 'analyst', attack_vector='WEBMAIL', campaign='Derpsters',
+                                     disposition='DELIVERY', malware='Remcos,Nanocore',
+                                     prevention_tool='IPS', remediation='REIMAGED', status='CLOSED',
+                                     tags='phish,nanocore', types='recon,phish', intel_reference='http://blahblah.com',
+                                     intel_source='OSINT')
     assert request.status_code == 201
+    assert response['name'] == 'asdf'
+    assert response['user'] == 'analyst'
+    assert response['attack_vectors'] == ['WEBMAIL']
+    assert response['campaign']['name'] == 'Derpsters'
+    assert response['disposition'] == 'DELIVERY'
+    assert sorted([response['malware'][0]['name'], response['malware'][1]['name']]) == ['Nanocore', 'Remcos']
+    assert response['prevention_tools'] == ['IPS']
+    assert response['references'][0]['reference'] == 'http://blahblah.com'
+    assert response['remediations'] == ['REIMAGED']
+    assert response['status'] == 'CLOSED'
+    assert sorted(response['tags']) == ['nanocore', 'phish']
+    assert sorted(response['types']) == ['phish', 'recon']
 
 
 """
@@ -307,7 +323,7 @@ def test_read_all_values(client):
     request = client.get('/api/events')
     response = json.loads(request.data.decode())
     assert request.status_code == 200
-    assert len(response) == 3
+    assert len(response['items']) == 3
 
 
 def test_read_by_id(client):

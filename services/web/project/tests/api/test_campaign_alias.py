@@ -1,6 +1,6 @@
 import json
 
-from project.tests.conftest import TEST_ANALYST_APIKEY, TEST_INVALID_APIKEY
+from project.tests.conftest import TEST_ANALYST_APIKEY, TEST_INACTIVE_APIKEY, TEST_INVALID_APIKEY
 
 
 """
@@ -90,6 +90,18 @@ def test_create_invalid_api_key(app, client):
     assert response['message'] == 'API user does not exist'
 
 
+def test_create_inactive_api_key(app, client):
+    """ Ensure an inactive API key does not work """
+
+    app.config['POST'] = 'analyst'
+
+    data = {'apikey': TEST_INACTIVE_APIKEY, 'name': 'asdf'}
+    request = client.post('/api/campaigns/alias', data=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['message'] == 'API user is not active'
+
+
 def test_create_invalid_role(app, client):
     """ Ensure the given API key has the proper role access """
 
@@ -133,7 +145,7 @@ def test_read_missing_api_key(app, client):
 
     app.config['GET'] = 'analyst'
 
-    request = client.get('/api/campaigns/1')
+    request = client.get('/api/campaigns/alias/1')
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['message'] == 'Bad or missing API key'
@@ -144,10 +156,21 @@ def test_read_invalid_api_key(app, client):
 
     app.config['GET'] = 'analyst'
 
-    request = client.get('/api/campaigns/1?apikey={}'.format(TEST_INVALID_APIKEY))
+    request = client.get('/api/campaigns/alias/1?apikey={}'.format(TEST_INVALID_APIKEY))
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['message'] == 'API user does not exist'
+
+
+def test_read_inactive_api_key(app, client):
+    """ Ensure an inactive API key does not work """
+
+    app.config['GET'] = 'analyst'
+
+    request = client.get('/api/campaigns/alias/1?apikey={}'.format(TEST_INACTIVE_APIKEY))
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['message'] == 'API user is not active'
 
 
 def test_read_invalid_role(app, client):
@@ -155,7 +178,7 @@ def test_read_invalid_role(app, client):
 
     app.config['GET'] = 'user_does_not_have_this_role'
 
-    request = client.get('/api/campaigns/1?apikey={}'.format(TEST_ANALYST_APIKEY))
+    request = client.get('/api/campaigns/alias/1?apikey={}'.format(TEST_ANALYST_APIKEY))
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['message'] == 'Insufficient privileges'
@@ -304,7 +327,7 @@ def test_update_missing_api_key(app, client):
     app.config['PUT'] = 'analyst'
 
     data = {'alias': 'asdf', 'campaign': 'asdf'}
-    request = client.put('/api/campaigns/1', data=data)
+    request = client.put('/api/campaigns/alias/1', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['message'] == 'Bad or missing API key'
@@ -316,10 +339,22 @@ def test_update_invalid_api_key(app, client):
     app.config['PUT'] = 'analyst'
 
     data = {'apikey': TEST_INVALID_APIKEY, 'alias': 'asdf', 'campaign': 'asdf'}
-    request = client.put('/api/campaigns/1', data=data)
+    request = client.put('/api/campaigns/alias/1', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['message'] == 'API user does not exist'
+
+
+def test_update_inactive_api_key(app, client):
+    """ Ensure an inactive API key does not work """
+
+    app.config['PUT'] = 'analyst'
+
+    data = {'apikey': TEST_INACTIVE_APIKEY, 'name': 'asdf'}
+    request = client.put('/api/campaigns/alias/1', data=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['message'] == 'API user is not active'
 
 
 def test_update_invalid_role(app, client):
@@ -328,7 +363,7 @@ def test_update_invalid_role(app, client):
     app.config['PUT'] = 'user_does_not_have_this_role'
 
     data = {'apikey': TEST_ANALYST_APIKEY, 'alias': 'asdf', 'campaign': 'asdf'}
-    request = client.put('/api/campaigns/1', data=data)
+    request = client.put('/api/campaigns/alias/1', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['message'] == 'Insufficient privileges'
@@ -393,6 +428,18 @@ def test_delete_invalid_api_key(app, client):
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['message'] == 'API user does not exist'
+
+
+def test_delete_inactive_api_key(app, client):
+    """ Ensure an inactive API key does not work """
+
+    app.config['DELETE'] = 'admin'
+
+    data = {'apikey': TEST_INACTIVE_APIKEY}
+    request = client.delete('/api/campaigns/alias/1', data=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['message'] == 'API user is not active'
 
 
 def test_delete_invalid_role(app, client):
