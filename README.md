@@ -16,6 +16,8 @@ The setup script will walk you through:
 
 Once you answer the setup script's questions, it will generate files containing the environment variables for the MySQL and Flask Docker containers.
 
+**MAKE SURE TO NOTE THE ADMIN PASSWORD AND API KEY REPORTED BY THE SETUP SCRIPT!**
+
 If you created a dev or a production environment, their containers will be built and initialized with the default database values specified in the setup.ini file:
 
 ```
