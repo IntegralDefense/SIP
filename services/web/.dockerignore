@@ -1,6 +1,9 @@
 venv
-Dockerfile
+Dockerfile-DEV
+Dockerfile-TEST
+Dockerfile-PROD
 **/__pycache__
+**.env
 **.pyc
 **.pyo
 **.pyd

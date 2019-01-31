@@ -1,48 +1,54 @@
 version: '3'
 
 services:
-    web:
+    web-prod:
         build:
             context: ./services/web
-            dockerfile: Dockerfile
+            dockerfile: Dockerfile-PROD
+        networks:
+            - prod
         restart: on-failure
-        volumes:
-            - './services/web/migrations:/usr/src/app/migrations'
-        expose:
-            - 5000
         links:
-            - db:db
+            - db-prod:db
         env_file:
-            - ./services/web/docker.env
+            - ./services/web/docker-PROD.env
         depends_on:
-            - db
+            - db-prod
 
-    db:
+    db-prod:
         build:
             context: ./services/db
-            dockerfile: Dockerfile
+            dockerfile: Dockerfile-PROD
+        networks:
+            - prod
         restart: on-failure
         ports:
             - 3306:3306
         volumes:
-            - mysql:/var/lib/mysql
+            - mysql-prod:/var/lib/mysql
         env_file:
-            - ./services/db/docker.env
+            - ./services/db/docker-PROD.env
         command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --explicit_defaults_for_timestamp
 
-    nginx:
+    nginx-prod:
         build:
             context: ./services/nginx
-            dockerfile: Dockerfile
+            dockerfile: Dockerfile-PROD
+        networks:
+            - prod
         restart: on-failure
         ports:
             - 80:80
             - 443:443
         links:
-            - web:web
+            - web-prod:web
         depends_on:
-            - web
+            - web-prod
+
+networks:
+    prod:
+        driver: bridge
 
 volumes:
-    mysql:
+    mysql-prod:
         driver: local

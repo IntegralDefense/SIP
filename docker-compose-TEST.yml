@@ -1,0 +1,52 @@
+version: '3'
+
+services:
+    web-test:
+        build:
+            context: ./services/web
+            dockerfile: Dockerfile-TEST
+        networks:
+            - test
+        restart: on-failure
+        links:
+            - db-test:db
+        env_file:
+            - ./services/web/docker-TEST.env
+        depends_on:
+            - db-test
+
+    db-test:
+        build:
+            context: ./services/db
+            dockerfile: Dockerfile-TEST
+        networks:
+            - test
+        restart: on-failure
+        volumes:
+            - mysql-test:/var/lib/mysql
+        env_file:
+            - ./services/db/docker-TEST.env
+        command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --explicit_defaults_for_timestamp
+
+    nginx-test:
+        build:
+            context: ./services/nginx
+            dockerfile: Dockerfile-TEST
+        networks:
+            - test
+        restart: on-failure
+        ports:
+            - 8081:80
+            - 4444:443
+        links:
+            - web-test:web
+        depends_on:
+            - web-test
+
+networks:
+    test:
+        driver: bridge
+
+volumes:
+    mysql-test:
+        driver: local

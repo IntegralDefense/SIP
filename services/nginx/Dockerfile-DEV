@@ -1,0 +1,5 @@
+FROM nginx:1.15.6-alpine
+
+RUN rm /etc/nginx/conf.d/default.conf
+COPY ./server-DEV.conf /etc/nginx/conf.d
+ADD certs/ /etc/nginx/certs

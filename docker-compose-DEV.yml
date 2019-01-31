@@ -1,0 +1,56 @@
+version: '3'
+
+services:
+    web-dev:
+        build:
+            context: ./services/web
+            dockerfile: Dockerfile-DEV
+        networks:
+            - dev
+        restart: on-failure
+        volumes:
+            - './services/web:/usr/src/app'
+        links:
+            - db-dev:db
+        env_file:
+            - ./services/web/docker-DEV.env
+        depends_on:
+            - db-dev
+
+    db-dev:
+        build:
+            context: ./services/db
+            dockerfile: Dockerfile-DEV
+        networks:
+            - dev
+        restart: on-failure
+        ports:
+            - 3307:3306
+        volumes:
+            - mysql-dev:/var/lib/mysql
+        env_file:
+            - ./services/db/docker-DEV.env
+        command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --explicit_defaults_for_timestamp
+
+    nginx-dev:
+        build:
+            context: ./services/nginx
+            dockerfile: Dockerfile-DEV
+        networks:
+            - dev
+        restart: on-failure
+        ports:
+            - 8080:8080
+            - 4443:4443
+        links:
+            - web-dev:web
+        depends_on:
+            - web-dev
+
+networks:
+    dev:
+        driver: bridge
+
+volumes:
+    mysql-dev:
+        driver: local
