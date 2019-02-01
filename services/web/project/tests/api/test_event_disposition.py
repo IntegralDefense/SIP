@@ -1,6 +1,7 @@
 import json
 
 from project.tests.conftest import TEST_ANALYST_APIKEY, TEST_INACTIVE_APIKEY, TEST_INVALID_APIKEY
+from project.tests.helpers import *
 
 
 """
@@ -355,6 +356,20 @@ def test_delete_invalid_role(app, client):
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['message'] == 'Insufficient privileges'
+
+
+def test_delete_foreign_key(client):
+    """ Ensure you cannot delete with foreign key constraints """
+
+    disposition_request, disposition_response = create_event_disposition(client, 'DELIVERY')
+    event_request, event_response = create_event(client, 'test_event', 'analyst', disposition='DELIVERY')
+    assert disposition_request.status_code == 201
+    assert event_request.status_code == 201
+
+    request = client.delete('/api/events/disposition/{}'.format(disposition_response['id']))
+    response = json.loads(request.data.decode())
+    assert request.status_code == 409
+    assert response['message'] == 'Unable to delete event disposition due to foreign key constraints'
 
 
 def test_delete(client):

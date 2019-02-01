@@ -1,4 +1,5 @@
 from flask import jsonify, request, url_for
+from sqlalchemy import exc
 
 from project import db
 from project.api import bp
@@ -113,7 +114,11 @@ def delete_indicator_confidence(indicator_confidence_id):
     if not indicator_confidence:
         return error_response(404, 'Indicator confidence ID not found')
 
-    db.session.delete(indicator_confidence)
-    db.session.commit()
+    try:
+        db.session.delete(indicator_confidence)
+        db.session.commit()
+    except exc.IntegrityError:
+        db.session.rollback()
+        return error_response(409, 'Unable to delete indicator confidence due to foreign key constraints')
 
     return '', 204

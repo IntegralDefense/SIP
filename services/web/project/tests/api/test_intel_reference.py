@@ -1,6 +1,7 @@
 import json
 
 from project.tests.conftest import TEST_ANALYST_APIKEY, TEST_INACTIVE_APIKEY, TEST_INVALID_APIKEY
+from project.tests.helpers import *
 
 
 """
@@ -15,19 +16,19 @@ def test_create_missing_parameter(client):
     request = client.post('/api/intel/reference', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['message'] == 'Request must include: apikey, reference, source'
+    assert response['message'] == 'Request must include: reference, source, username'
 
-    data = {'apikey': TEST_ANALYST_APIKEY, 'source': 'asdf'}
+    data = {'username': 'analyst', 'source': 'asdf'}
     request = client.post('/api/intel/reference', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['message'] == 'Request must include: apikey, reference, source'
+    assert response['message'] == 'Request must include: reference, source, username'
 
-    data = {'apikey': TEST_ANALYST_APIKEY, 'reference': 'asdf'}
+    data = {'username': 'analyst', 'reference': 'asdf'}
     request = client.post('/api/intel/reference', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['message'] == 'Request must include: apikey, reference, source'
+    assert response['message'] == 'Request must include: reference, source, username'
 
 
 def test_create_duplicate(client):
@@ -37,11 +38,11 @@ def test_create_duplicate(client):
     request = client.post('/api/intel/source', data=data)
     assert request.status_code == 201
 
-    data = {'apikey': TEST_ANALYST_APIKEY, 'reference': 'asdf', 'source': 'asdf'}
+    data = {'username': 'analyst', 'reference': 'asdf', 'source': 'asdf'}
     request = client.post('/api/intel/reference', data=data)
     assert request.status_code == 201
 
-    data = {'apikey': TEST_ANALYST_APIKEY, 'reference': 'asdf', 'source': 'asdf'}
+    data = {'username': 'analyst', 'reference': 'asdf', 'source': 'asdf'}
     request = client.post('/api/intel/reference', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
@@ -51,7 +52,7 @@ def test_create_duplicate(client):
 def test_create_nonexistent_source(client):
     """ Ensure a reference cannot be created with a nonexistent source """
 
-    data = {'apikey': TEST_ANALYST_APIKEY, 'reference': 'asdf', 'source': 'asdf'}
+    data = {'username': 'analyst', 'reference': 'asdf', 'source': 'asdf'}
     request = client.post('/api/intel/reference', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
@@ -99,7 +100,7 @@ def test_create_invalid_role(app, client):
 
     app.config['POST'] = 'user_does_not_have_this_role'
 
-    data = {'apikey': TEST_ANALYST_APIKEY, 'reference': 'asdf', 'source': 'asdf'}
+    data = {'apikey': TEST_ANALYST_APIKEY, 'username': 'analyst', 'reference': 'asdf', 'source': 'asdf'}
     request = client.post('/api/intel/reference', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
@@ -113,7 +114,7 @@ def test_create(client):
     request = client.post('/api/intel/source', data=data)
     assert request.status_code == 201
 
-    data = {'apikey': TEST_ANALYST_APIKEY, 'reference': 'asdf', 'source': 'asdf'}
+    data = {'username': 'analyst', 'reference': 'asdf', 'source': 'asdf'}
     request = client.post('/api/intel/reference', data=data)
     assert request.status_code == 201
 
@@ -183,15 +184,15 @@ def test_read_all_values(client):
     request = client.post('/api/intel/source', data=data)
     assert request.status_code == 201
 
-    data = {'apikey': TEST_ANALYST_APIKEY, 'reference': 'asdf', 'source': 'asdf'}
+    data = {'username': 'analyst', 'reference': 'asdf', 'source': 'asdf'}
     request = client.post('/api/intel/reference', data=data)
     assert request.status_code == 201
 
-    data = {'apikey': TEST_ANALYST_APIKEY, 'reference': 'asdf2', 'source': 'asdf'}
+    data = {'username': 'analyst', 'reference': 'asdf2', 'source': 'asdf'}
     request = client.post('/api/intel/reference', data=data)
     assert request.status_code == 201
 
-    data = {'apikey': TEST_ANALYST_APIKEY, 'reference': 'asdf3', 'source': 'asdf'}
+    data = {'username': 'analyst', 'reference': 'asdf3', 'source': 'asdf'}
     request = client.post('/api/intel/reference', data=data)
     assert request.status_code == 201
 
@@ -208,7 +209,7 @@ def test_read_by_id(client):
     request = client.post('/api/intel/source', data=data)
     assert request.status_code == 201
 
-    data = {'apikey': TEST_ANALYST_APIKEY, 'reference': 'asdf', 'source': 'asdf'}
+    data = {'username': 'analyst', 'reference': 'asdf', 'source': 'asdf'}
     request = client.post('/api/intel/reference', data=data)
     response = json.loads(request.data.decode())
     _id = response['id']
@@ -243,7 +244,7 @@ def test_update_missing_parameter(client):
     request = client.post('/api/intel/source', data=data)
     assert request.status_code == 201
 
-    data = {'apikey': TEST_ANALYST_APIKEY, 'reference': 'asdf', 'source': 'asdf'}
+    data = {'username': 'analyst', 'reference': 'asdf', 'source': 'asdf'}
     request = client.post('/api/intel/reference', data=data)
     response = json.loads(request.data.decode())
     _id = response['id']
@@ -262,13 +263,13 @@ def test_update_duplicate(client):
     request = client.post('/api/intel/source', data=data)
     assert request.status_code == 201
 
-    data = {'apikey': TEST_ANALYST_APIKEY, 'reference': 'asdf', 'source': 'asdf'}
+    data = {'username': 'analyst', 'reference': 'asdf', 'source': 'asdf'}
     request = client.post('/api/intel/reference', data=data)
     response = json.loads(request.data.decode())
     _id = response['id']
     assert request.status_code == 201
 
-    data = {'apikey': TEST_ANALYST_APIKEY, 'reference': 'asdf', 'source': 'asdf'}
+    data = {'username': 'analyst', 'reference': 'asdf', 'source': 'asdf'}
     request = client.put('/api/intel/reference/{}'.format(_id), data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
@@ -282,7 +283,7 @@ def test_update_nonexistent_source(client):
     request = client.post('/api/intel/source', data=data)
     assert request.status_code == 201
 
-    data = {'apikey': TEST_ANALYST_APIKEY, 'reference': 'asdf', 'source': 'asdf'}
+    data = {'username': 'analyst', 'reference': 'asdf', 'source': 'asdf'}
     request = client.post('/api/intel/reference', data=data)
     response = json.loads(request.data.decode())
     _id = response['id']
@@ -350,7 +351,7 @@ def test_update(client):
     request = client.post('/api/intel/source', data=data)
     assert request.status_code == 201
 
-    data = {'apikey': TEST_ANALYST_APIKEY, 'reference': 'asdf', 'source': 'asdf'}
+    data = {'username': 'analyst', 'reference': 'asdf', 'source': 'asdf'}
     request = client.post('/api/intel/reference', data=data)
     response = json.loads(request.data.decode())
     _id = response['id']
@@ -428,6 +429,34 @@ def test_delete_invalid_role(app, client):
     assert response['message'] == 'Insufficient privileges'
 
 
+def test_delete_foreign_key_event(client):
+    """ Ensure you cannot delete with foreign key constraints """
+
+    reference_request, reference_response = create_intel_reference(client, 'analyst', 'OSINT', 'http://blahblah.com')
+    event_request, event_response = create_event(client, 'test_event', 'analyst', TEST_ANALYST_APIKEY, intel_reference='http://blahblah.com', intel_source='OSINT')
+    assert reference_request.status_code == 201
+    assert event_request.status_code == 201
+
+    request = client.delete('/api/intel/reference/{}'.format(reference_response['id']))
+    response = json.loads(request.data.decode())
+    assert request.status_code == 409
+    assert response['message'] == 'Unable to delete intel reference due to foreign key constraints'
+
+
+def test_delete_foreign_key_indicator(client):
+    """ Ensure you cannot delete with foreign key constraints """
+
+    reference_request, reference_response = create_intel_reference(client, 'analyst', 'OSINT', 'http://blahblah.com')
+    indicator_request, indicator_response = create_indicator(client, 'IP', '127.0.0.1', 'analyst', TEST_ANALYST_APIKEY, intel_reference='http://blahblah.com', intel_source='OSINT')
+    assert reference_request.status_code == 201
+    assert indicator_request.status_code == 201
+
+    request = client.delete('/api/intel/reference/{}'.format(reference_response['id']))
+    response = json.loads(request.data.decode())
+    assert request.status_code == 409
+    assert response['message'] == 'Unable to delete intel reference due to foreign key constraints'
+
+
 def test_delete(client):
     """ Ensure a proper request actually works """
 
@@ -435,7 +464,7 @@ def test_delete(client):
     request = client.post('/api/intel/source', data=data)
     assert request.status_code == 201
 
-    data = {'apikey': TEST_ANALYST_APIKEY, 'reference': 'asdf', 'source': 'asdf'}
+    data = {'username': 'analyst', 'reference': 'asdf', 'source': 'asdf'}
     request = client.post('/api/intel/reference', data=data)
     response = json.loads(request.data.decode())
     _id = response['id']

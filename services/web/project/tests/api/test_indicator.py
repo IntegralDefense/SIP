@@ -3,99 +3,7 @@ import json
 import time
 
 from project.tests.conftest import TEST_ANALYST_APIKEY, TEST_INACTIVE_APIKEY, TEST_INVALID_APIKEY
-
-"""
-HELPER FUNCTIONS
-"""
-
-
-def create_intel_reference(client, source, reference):
-    data = {'value': source}
-    request = client.post('/api/intel/source', data=data)
-
-    data = {'apikey': TEST_ANALYST_APIKEY, 'reference': reference, 'source': source}
-    request = client.post('/api/intel/reference', data=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_campaign(client, campaign):
-    data = {'name': campaign}
-    request = client.post('/api/campaigns', data=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_indicator_confidence(client, confidence):
-    data = {'value': confidence}
-    request = client.post('/api/indicators/confidence', data=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_indicator_impact(client, impact):
-    data = {'value': impact}
-    request = client.post('/api/indicators/impact', data=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_indicator_status(client, status):
-    data = {'value': status}
-    request = client.post('/api/indicators/status', data=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_indicator_type(client, _type):
-    data = {'value': _type}
-    request = client.post('/api/indicators/type', data=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_tag(client, tag):
-    data = {'value': tag}
-    request = client.post('/api/tags', data=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_indicator(client, _type, value, username, campaigns='', case_sensitive=False, confidence='', impact='',
-                     intel_reference='', intel_source='', status='', substring=False, tags=''):
-    create_indicator_type(client, _type)
-
-    if not confidence:
-        confidence = 'LOW'
-    create_indicator_confidence(client, confidence)
-
-    if not impact:
-        impact = 'LOW'
-    create_indicator_impact(client, impact)
-
-    if not status:
-        status = 'New'
-    create_indicator_status(client, status)
-
-    data = {'case_sensitive': case_sensitive, 'confidence': confidence, 'impact': impact, 'status': status,
-            'substring': substring, 'type': _type, 'username': username, 'value': value}
-    if campaigns:
-        campaigns = campaigns.split(',')
-        for campaign in campaigns:
-            create_campaign(client, campaign)
-        data['campaigns'] = campaigns
-    if tags:
-        tags = tags.split(',')
-        for tag in tags:
-            create_tag(client, tag)
-        data['tags'] = tags
-    if intel_reference and intel_source:
-        create_intel_reference(client, intel_source, intel_reference)
-        data['references'] = intel_reference
-
-    request = client.post('/api/indicators', data=data)
-    response = json.loads(request.data.decode())
-    return request, response
+from project.tests.helpers import *
 
 
 """
@@ -620,7 +528,7 @@ def test_update(client):
     assert response['impact'] == 'HIGH'
 
     # references string
-    create_intel_reference(client, 'OSINT', 'http://blahblah.com')
+    create_intel_reference(client, 'analyst', 'OSINT', 'http://blahblah.com')
     data = {'references': 'http://blahblah.com'}
     request = client.put('/api/indicators/{}'.format(_id), data=data)
     response = json.loads(request.data.decode())
@@ -630,8 +538,8 @@ def test_update(client):
     assert response['references'][0]['reference'] == 'http://blahblah.com'
 
     # references list
-    create_intel_reference(client, 'OSINT', 'http://blahblah2.com')
-    create_intel_reference(client, 'OSINT', 'http://blahblah3.com')
+    create_intel_reference(client, 'analyst', 'OSINT', 'http://blahblah2.com')
+    create_intel_reference(client, 'analyst', 'OSINT', 'http://blahblah3.com')
     data = {'references': ['http://blahblah2.com', 'http://blahblah3.com']}
     request = client.put('/api/indicators/{}'.format(_id), data=data)
     response = json.loads(request.data.decode())

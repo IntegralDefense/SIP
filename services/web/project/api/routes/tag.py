@@ -1,4 +1,5 @@
 from flask import jsonify, request, url_for
+from sqlalchemy import exc
 
 from project import db
 from project.api import bp
@@ -112,7 +113,11 @@ def delete_tag(tag_id):
     if not tag:
         return error_response(404, 'Tag ID not found')
 
-    db.session.delete(tag)
-    db.session.commit()
+    try:
+        db.session.delete(tag)
+        db.session.commit()
+    except exc.IntegrityError:
+        db.session.rollback()
+        return error_response(409, 'Unable to delete tag due to foreign key constraints')
 
     return '', 204

@@ -1,4 +1,5 @@
 from flask import jsonify, request, url_for
+from sqlalchemy import exc
 
 from project import db
 from project.api import bp
@@ -29,6 +30,18 @@ def create_campaign():
 
     # Create and add the new name.
     campaign = Campaign(name=data['name'])
+
+    # Verify any types that were specified.
+    aliases = data.getlist('aliases')
+    for alias in aliases:
+
+        # Verify each alias is actually valid.
+        a = CampaignAlias.query.filter_by(alias=alias).first()
+        if not a:
+            return error_response(404, 'Campaign alias not found: {}'.format(alias))
+
+        campaign.aliases.append(a)
+
     db.session.add(campaign)
     db.session.commit()
 
@@ -116,7 +129,11 @@ def delete_campaign(campaign_id):
     if not campaign:
         return error_response(404, 'Campaign ID not found')
 
-    db.session.delete(campaign)
-    db.session.commit()
+    try:
+        db.session.delete(campaign)
+        db.session.commit()
+    except exc.IntegrityError:
+        db.session.rollback()
+        return error_response(409, 'Unable to delete campaign due to foreign key constraints')
 
     return '', 204

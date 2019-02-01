@@ -1,6 +1,7 @@
 import json
 
 from project.tests.conftest import TEST_ANALYST_APIKEY, TEST_INACTIVE_APIKEY, TEST_INVALID_APIKEY
+from project.tests.helpers import *
 
 
 """
@@ -355,6 +356,20 @@ def test_delete_invalid_role(app, client):
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['message'] == 'Insufficient privileges'
+    
+    
+def test_delete_foreign_key(client):
+    """ Ensure you cannot delete with foreign key constraints """
+
+    confidence_request, confidence_response = create_indicator_confidence(client, 'LOW')
+    indicator_request, indicator_response = create_indicator(client, 'IP', '127.0.0.1', 'analyst', confidence='LOW')
+    assert confidence_request.status_code == 201
+    assert indicator_request.status_code == 201
+
+    request = client.delete('/api/indicators/confidence/{}'.format(confidence_response['id']))
+    response = json.loads(request.data.decode())
+    assert request.status_code == 409
+    assert response['message'] == 'Unable to delete indicator confidence due to foreign key constraints'
 
 
 def test_delete(client):

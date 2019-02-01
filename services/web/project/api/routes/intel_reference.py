@@ -1,4 +1,5 @@
 from flask import jsonify, request, url_for
+from sqlalchemy import exc
 
 from project import db
 from project.api import bp
@@ -20,8 +21,8 @@ def create_intel_reference():
     data = request.values or {}
 
     # Verify the required fields (apikey, reference, and source) are present.
-    if 'apikey' not in data or 'reference' not in data or 'source' not in data:
-        return error_response(400, 'Request must include: apikey, reference, source')
+    if 'reference' not in data or 'source' not in data or 'username' not in data:
+        return error_response(400, 'Request must include: reference, source, username')
 
     # Verify the source already exists.
     source = IntelSource.query.filter_by(value=data['source']).first()
@@ -33,32 +34,22 @@ def create_intel_reference():
     if existing:
         return error_response(409, 'Intel reference already exists')
 
-    # Get the API key if there is one.
-    apikey = None
-    if 'apikey' in request.values:
-        try:
-            apikey = data['apikey']
-        except ValueError:
-            pass
+    # Verify the user exists.
+    user = db.session.query(User).filter_by(username=data['username']).first()
 
     # If there is an API key, look it up and get the user.
-    if apikey:
-        user = db.session.query(User).filter_by(apikey=apikey).first()
+    if user:
 
-        # If the user exists, create and add the new reference.
-        if user:
-            intel_reference = IntelReference(reference=data['reference'], source=source, user=user)
-            db.session.add(intel_reference)
-            db.session.commit()
+        intel_reference = IntelReference(reference=data['reference'], source=source, user=user)
+        db.session.add(intel_reference)
+        db.session.commit()
 
-            response = jsonify(intel_reference.to_dict())
-            response.status_code = 201
-            response.headers['Location'] = url_for('api.read_intel_reference', intel_reference_id=intel_reference.id)
-            return response
-        else:
-            return error_response(401, 'API user does not exist')
+        response = jsonify(intel_reference.to_dict())
+        response.status_code = 201
+        response.headers['Location'] = url_for('api.read_intel_reference', intel_reference_id=intel_reference.id)
+        return response
     else:
-        return error_response(401, 'Bad or missing API key')
+        return error_response(401, 'API username does not exist')
 
 
 """
@@ -150,7 +141,11 @@ def delete_intel_reference(intel_reference_id):
     if not intel_reference:
         return error_response(404, 'Intel reference ID not found')
 
-    db.session.delete(intel_reference)
-    db.session.commit()
+    try:
+        db.session.delete(intel_reference)
+        db.session.commit()
+    except exc.IntegrityError:
+        db.session.rollback()
+        return error_response(409, 'Unable to delete intel reference due to foreign key constraints')
 
     return '', 204

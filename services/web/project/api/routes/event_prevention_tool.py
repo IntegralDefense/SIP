@@ -1,4 +1,5 @@
 from flask import jsonify, request, url_for
+from sqlalchemy import exc
 
 from project import db
 from project.api import bp
@@ -113,7 +114,11 @@ def delete_event_prevention_tool(event_prevention_tool_id):
     if not event_prevention_tool:
         return error_response(404, 'Event prevention tool ID not found')
 
-    db.session.delete(event_prevention_tool)
-    db.session.commit()
+    try:
+        db.session.delete(event_prevention_tool)
+        db.session.commit()
+    except exc.IntegrityError:
+        db.session.rollback()
+        return error_response(409, 'Unable to delete event prevention tool due to foreign key constraints')
 
     return '', 204

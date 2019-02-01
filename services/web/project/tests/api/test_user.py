@@ -1,6 +1,8 @@
 import json
 
 from project.tests.conftest import TEST_ADMIN_APIKEY, TEST_ANALYST_APIKEY, TEST_INACTIVE_APIKEY, TEST_INVALID_APIKEY
+from project.tests.helpers import *
+
 
 """
 CREATE TESTS
@@ -471,6 +473,51 @@ def test_delete_invalid_role(client):
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['message'] == 'Insufficient privileges'
+
+
+def test_delete_foreign_key_event(client):
+    """ Ensure you cannot delete with foreign key constraints """
+
+    user_request, user_response = create_user(client, TEST_ADMIN_APIKEY, 'asdf@asdf.com', 'asdf', 'asdf', 'asdf', ['analyst'], 'some_guy')
+    event_request, event_response = create_event(client, 'test_event', 'some_guy', TEST_ANALYST_APIKEY)
+    assert user_request.status_code == 201
+    assert event_request.status_code == 201
+
+    data = {'apikey': TEST_ADMIN_APIKEY}
+    request = client.delete('/api/users/{}'.format(user_response['id']), data=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 409
+    assert response['message'] == 'Unable to delete user due to foreign key constraints'
+
+
+def test_delete_foreign_key_indicator(client):
+    """ Ensure you cannot delete with foreign key constraints """
+
+    user_request, user_response = create_user(client, TEST_ADMIN_APIKEY, 'asdf@asdf.com', 'asdf', 'asdf', 'asdf', ['analyst'], 'some_guy')
+    indicator_request, indicator_response = create_indicator(client, 'IP', '127.0.0.1', 'some_guy', TEST_ANALYST_APIKEY)
+    assert user_request.status_code == 201
+    assert indicator_request.status_code == 201
+
+    data = {'apikey': TEST_ADMIN_APIKEY}
+    request = client.delete('/api/users/{}'.format(user_response['id']), data=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 409
+    assert response['message'] == 'Unable to delete user due to foreign key constraints'
+
+
+def test_delete_foreign_key_reference(client):
+    """ Ensure you cannot delete with foreign key constraints """
+
+    user_request, user_response = create_user(client, TEST_ADMIN_APIKEY, 'asdf@asdf.com', 'asdf', 'asdf', 'asdf', ['analyst'], 'some_guy')
+    reference_request, reference_response = create_intel_reference(client, 'some_guy', 'OSINT', 'http://blahblah.com')
+    assert user_request.status_code == 201
+    assert reference_request.status_code == 201
+
+    data = {'apikey': TEST_ADMIN_APIKEY}
+    request = client.delete('/api/users/{}'.format(user_response['id']), data=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 409
+    assert response['message'] == 'Unable to delete user due to foreign key constraints'
 
 
 def test_delete(client):

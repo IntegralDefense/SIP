@@ -1,4 +1,5 @@
 from flask import jsonify, request, url_for
+from sqlalchemy import exc
 
 from project import db
 from project.api import bp
@@ -123,7 +124,11 @@ def delete_role(role_id):
     if not role:
         return error_response(404, 'Role ID not found')
 
-    db.session.delete(role)
-    db.session.commit()
+    try:
+        db.session.delete(role)
+        db.session.commit()
+    except exc.IntegrityError:
+        db.session.rollback()
+        return error_response(409, 'Unable to delete role due to foreign key constraints')
 
     return '', 204
