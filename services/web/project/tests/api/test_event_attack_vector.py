@@ -1,6 +1,7 @@
 import json
 
 from project.tests.conftest import TEST_ANALYST_APIKEY, TEST_INACTIVE_APIKEY, TEST_INVALID_APIKEY
+from project.tests.helpers import *
 
 
 """
@@ -355,6 +356,20 @@ def test_delete_invalid_role(app, client):
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['message'] == 'Insufficient privileges'
+
+
+def test_delete_foreign_key(client):
+    """ Ensure you cannot delete with foreign key constraints """
+
+    attack_vector_request, attack_vector_response = create_event_attack_vector(client, 'Webmail')
+    event_request, event_response = create_event(client, 'test_event', 'analyst', attack_vector='Webmail')
+    assert attack_vector_request.status_code == 201
+    assert event_request.status_code == 201
+
+    request = client.delete('/api/events/attackvector/{}'.format(attack_vector_response['id']))
+    response = json.loads(request.data.decode())
+    assert request.status_code == 409
+    assert response['message'] == 'Unable to delete event attack vector due to foreign key constraints'
 
 
 def test_delete(client):

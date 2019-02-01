@@ -1,4 +1,5 @@
 from flask import jsonify, request, url_for
+from sqlalchemy import exc
 
 from project import db
 from project.api import bp
@@ -113,7 +114,11 @@ def delete_event_attack_vector(event_attack_vector_id):
     if not event_attack_vector:
         return error_response(404, 'Event attack vector ID not found')
 
-    db.session.delete(event_attack_vector)
-    db.session.commit()
+    try:
+        db.session.delete(event_attack_vector)
+        db.session.commit()
+    except exc.IntegrityError:
+        db.session.rollback()
+        return error_response(409, 'Unable to delete event attack vector due to foreign key constraints')
 
     return '', 204

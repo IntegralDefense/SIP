@@ -1,6 +1,7 @@
 import json
 
 from project.tests.conftest import TEST_ANALYST_APIKEY, TEST_INACTIVE_APIKEY, TEST_INVALID_APIKEY
+from project.tests.helpers import *
 
 
 """
@@ -355,6 +356,20 @@ def test_delete_invalid_role(app, client):
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['message'] == 'Insufficient privileges'
+    
+    
+def test_delete_foreign_key(client):
+    """ Ensure you cannot delete with foreign key constraints """
+
+    prevention_tool_request, prevention_tool_response = create_event_prevention_tool(client, 'IPS')
+    event_request, event_response = create_event(client, 'test_event', 'analyst', prevention_tool='IPS')
+    assert prevention_tool_request.status_code == 201
+    assert event_request.status_code == 201
+
+    request = client.delete('/api/events/preventiontool/{}'.format(prevention_tool_response['id']))
+    response = json.loads(request.data.decode())
+    assert request.status_code == 409
+    assert response['message'] == 'Unable to delete event prevention tool due to foreign key constraints'
 
 
 def test_delete(client):

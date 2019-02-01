@@ -1,4 +1,5 @@
 from flask import jsonify, request, url_for
+from sqlalchemy import exc
 
 from project import db
 from project.api import bp
@@ -113,7 +114,11 @@ def delete_intel_source(intel_source_id):
     if not intel_source:
         return error_response(404, 'Intel source ID not found')
 
-    db.session.delete(intel_source)
-    db.session.commit()
+    try:
+        db.session.delete(intel_source)
+        db.session.commit()
+    except exc.IntegrityError:
+        db.session.rollback()
+        return error_response(409, 'Unable to delete intel source due to foreign key constraints')
 
     return '', 204

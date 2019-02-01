@@ -3,130 +3,7 @@ import json
 import time
 
 from project.tests.conftest import TEST_ANALYST_APIKEY, TEST_INACTIVE_APIKEY, TEST_INVALID_APIKEY
-
-"""
-HELPER FUNCTIONS
-"""
-
-
-def create_intel_reference(client, source, reference):
-    data = {'value': source}
-    request = client.post('/api/intel/source', data=data)
-
-    data = {'apikey': TEST_ANALYST_APIKEY, 'reference': reference, 'source': source}
-    request = client.post('/api/intel/reference', data=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_campaign(client, campaign):
-    data = {'name': campaign}
-    request = client.post('/api/campaigns', data=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_event_attack_vector(client, attack_vector):
-    data = {'value': attack_vector}
-    request = client.post('/api/events/attackvector', data=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_event_disposition(client, disposition):
-    data = {'value': disposition}
-    request = client.post('/api/events/disposition', data=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_malware(client, malware):
-    data = {'name': malware}
-    request = client.post('/api/malware', data=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_event_prevention_tool(client, prevention_tool):
-    data = {'value': prevention_tool}
-    request = client.post('/api/events/preventiontool', data=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_event_remediation(client, remediation):
-    data = {'value': remediation}
-    request = client.post('/api/events/remediation', data=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_event_status(client, status):
-    data = {'value': status}
-    request = client.post('/api/events/status', data=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_tag(client, tag):
-    data = {'value': tag}
-    request = client.post('/api/tags', data=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_event_type(client, _type):
-    data = {'value': _type}
-    request = client.post('/api/events/type', data=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_event(client, name, username, attack_vector='', campaign='', disposition='', malware='', prevention_tool='',
-                 remediation='', status='', tags='', types='', intel_reference='', intel_source=''):
-    if not disposition:
-        disposition = 'asdf'
-    create_event_disposition(client, disposition)
-
-    if not status:
-        status = 'asdf'
-    create_event_status(client, status)
-
-    data = {'name': name, 'username': username, 'disposition': disposition, 'status': status}
-    if attack_vector:
-        create_event_attack_vector(client, attack_vector)
-        data['attack_vectors'] = attack_vector
-    if campaign:
-        create_campaign(client, campaign)
-        data['campaign'] = campaign
-    if malware:
-        malware = malware.split(',')
-        for m in malware:
-            create_malware(client, m)
-        data['malware'] = malware
-    if prevention_tool:
-        create_event_prevention_tool(client, prevention_tool)
-        data['prevention_tools'] = prevention_tool
-    if remediation:
-        create_event_remediation(client, remediation)
-        data['remediations'] = remediation
-    if tags:
-        tags = tags.split(',')
-        for tag in tags:
-            create_tag(client, tag)
-        data['tags'] = tags
-    if types:
-        types = types.split(',')
-        for _type in types:
-            create_event_type(client, _type)
-        data['types'] = types
-    if intel_reference and intel_source:
-        create_intel_reference(client, intel_source, intel_reference)
-        data['references'] = intel_reference
-
-    request = client.post('/api/events', data=data)
-    response = json.loads(request.data.decode())
-    return request, response
+from project.tests.helpers import *
 
 
 """
@@ -697,7 +574,7 @@ def test_update(client):
     assert sorted(response['prevention_tools']) == ['IPS', 'PROXY']
 
     # references string
-    create_intel_reference(client, 'OSINT', 'http://blahblah.com')
+    create_intel_reference(client, 'analyst', 'OSINT', 'http://blahblah.com')
     data = {'references': 'http://blahblah.com'}
     request = client.put('/api/events/{}'.format(_id), data=data)
     response = json.loads(request.data.decode())
@@ -707,8 +584,8 @@ def test_update(client):
     assert response['references'][0]['reference'] == 'http://blahblah.com'
 
     # references list
-    create_intel_reference(client, 'OSINT', 'http://blahblah2.com')
-    create_intel_reference(client, 'OSINT', 'http://blahblah3.com')
+    create_intel_reference(client, 'analyst', 'OSINT', 'http://blahblah2.com')
+    create_intel_reference(client, 'analyst', 'OSINT', 'http://blahblah3.com')
     data = {'references': ['http://blahblah2.com', 'http://blahblah3.com']}
     request = client.put('/api/events/{}'.format(_id), data=data)
     response = json.loads(request.data.decode())

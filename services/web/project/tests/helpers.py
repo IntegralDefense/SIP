@@ -1,8 +1,8 @@
 import json
 
 
-def create_campaign(client, campaign):
-    data = {'name': campaign}
+def create_campaign(client, campaign, aliases=[]):
+    data = {'name': campaign, 'aliases': aliases}
     request = client.post('/api/campaigns', data=data)
     response = json.loads(request.data.decode())
     return request, response
@@ -15,7 +15,7 @@ def create_campaign_alias(client, alias, campaign):
     return request, response
 
 
-def create_event(client, name, username, apikey, attack_vector='', campaign='', disposition='', malware='', prevention_tool='',
+def create_event(client, name, username, attack_vector='', campaign='', disposition='', malware='', prevention_tool='',
                  remediation='', status='', tags='', types='', intel_reference='', intel_source=''):
     if not disposition:
         disposition = 'asdf'
@@ -54,7 +54,7 @@ def create_event(client, name, username, apikey, attack_vector='', campaign='', 
             create_event_type(client, _type)
         data['types'] = types
     if intel_reference and intel_source:
-        create_intel_reference(client, apikey, intel_source, intel_reference)
+        create_intel_reference(client, username, intel_source, intel_reference)
         data['references'] = intel_reference
 
     request = client.post('/api/events', data=data)
@@ -104,7 +104,7 @@ def create_event_type(client, _type):
     return request, response
 
 
-def create_indicator(client, _type, value, username, apikey, campaigns='', case_sensitive=False, confidence='', impact='',
+def create_indicator(client, _type, value, username, campaigns='', case_sensitive=False, confidence='', impact='',
                      intel_reference='', intel_source='', status='', substring=False, tags=''):
     create_indicator_type(client, _type)
 
@@ -133,7 +133,7 @@ def create_indicator(client, _type, value, username, apikey, campaigns='', case_
             create_tag(client, tag)
         data['tags'] = tags
     if intel_reference and intel_source:
-        create_intel_reference(client, apikey, intel_source, intel_reference)
+        create_intel_reference(client, username, intel_source, intel_reference)
         data['references'] = intel_reference
 
     request = client.post('/api/indicators', data=data)
@@ -169,10 +169,10 @@ def create_indicator_type(client, _type):
     return request, response
 
 
-def create_intel_reference(client, apikey, source, reference):
+def create_intel_reference(client, username, source, reference):
     create_intel_source(client, source)
 
-    data = {'apikey': apikey, 'reference': reference, 'source': source}
+    data = {'username': username, 'reference': reference, 'source': source}
     request = client.post('/api/intel/reference', data=data)
     response = json.loads(request.data.decode())
     return request, response
@@ -185,8 +185,8 @@ def create_intel_source(client, source):
     return request, response
 
 
-def create_malware(client, malware):
-    data = {'name': malware}
+def create_malware(client, malware, types=[]):
+    data = {'name': malware, 'types': types}
     request = client.post('/api/malware', data=data)
     response = json.loads(request.data.decode())
     return request, response

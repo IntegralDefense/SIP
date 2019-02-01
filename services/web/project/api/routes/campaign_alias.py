@@ -1,4 +1,5 @@
 from flask import jsonify, request, url_for
+from sqlalchemy import exc
 
 from project import db
 from project.api import bp
@@ -140,7 +141,11 @@ def delete_campaign_alias(campaign_alias_id):
     if not campaign_alias:
         return error_response(404, 'Campaign alias ID not found')
 
-    db.session.delete(campaign_alias)
-    db.session.commit()
+    try:
+        db.session.delete(campaign_alias)
+        db.session.commit()
+    except exc.IntegrityError:
+        db.session.rollback()
+        return error_response(409, 'Unable to delete campaign alias due to foreign key constraints')
 
     return '', 204
