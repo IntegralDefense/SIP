@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_apikey
+from project.api.decorators import check_if_token_required
 from project.api.errors import error_response
 from project.models import Campaign, CampaignAlias
 
@@ -13,7 +13,7 @@ CREATE
 
 
 @bp.route('/campaigns/alias', methods=['POST'])
-@check_apikey
+@check_if_token_required
 def create_campaign_alias():
     """ Creates a new campaign alias. """
 
@@ -54,7 +54,7 @@ READ
 
 
 @bp.route('/campaigns/alias/<int:campaign_alias_id>', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_campaign_alias(campaign_alias_id):
     """ Gets a single campaign alias given its ID. """
 
@@ -66,7 +66,7 @@ def read_campaign_alias(campaign_alias_id):
 
 
 @bp.route('/campaigns/alias', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_campaign_aliases():
     """ Gets a list of all the campaign aliases. """
 
@@ -80,7 +80,7 @@ UPDATE
 
 
 @bp.route('/campaigns/alias/<int:campaign_alias_id>', methods=['PUT'])
-@check_apikey
+@check_if_token_required
 def update_campaign_alias(campaign_alias_id):
     """ Updates an existing campaign alias. """
 
@@ -133,7 +133,7 @@ DELETE
 
 
 @bp.route('/campaigns/alias/<int:campaign_alias_id>', methods=['DELETE'])
-@check_apikey
+@check_if_token_required
 def delete_campaign_alias(campaign_alias_id):
     """ Deletes a campaign alias. """
 

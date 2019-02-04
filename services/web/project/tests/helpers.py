@@ -1,6 +1,16 @@
 import json
 
 
+def create_auth_header(token):
+    return {'Authorization': 'Bearer {}'.format(token)}
+
+
+def obtain_token(client, username, password):
+    request = client.post('/auth', data={'username': username, 'password': password})
+    response = json.loads(request.data.decode())
+    return response['access_token'], response['refresh_token']
+
+
 def create_campaign(client, campaign, aliases=[]):
     data = {'name': campaign, 'aliases': aliases}
     request = client.post('/api/campaigns', data=data)
@@ -199,9 +209,12 @@ def create_malware_type(client, _type):
     return request, response
 
 
-def create_role(client, apikey, role):
-    data = {'apikey': apikey, 'name': role}
-    request = client.post('/api/roles', data=data)
+def create_role(client, role):
+    access_token, refresh_token = obtain_token(client, 'admin', 'admin')
+    headers = create_auth_header(access_token)
+
+    data = {'name': role}
+    request = client.post('/api/roles', data=data, headers=headers)
     response = json.loads(request.data.decode())
     return request, response
 
@@ -213,9 +226,12 @@ def create_tag(client, tag):
     return request, response
 
 
-def create_user(client, apikey, email, first_name, last_name, password, roles, username):
-    data = {'apikey': apikey, 'email': email, 'first_name': first_name, 'last_name': last_name,
+def create_user(client, email, first_name, last_name, password, roles, username):
+    access_token, refresh_token = obtain_token(client, 'admin', 'admin')
+    headers = create_auth_header(access_token)
+
+    data = {'email': email, 'first_name': first_name, 'last_name': last_name,
             'password': password, 'roles': roles, 'username': username}
-    request = client.post('/api/users', data=data)
+    request = client.post('/api/users', data=data, headers=headers)
     response = json.loads(request.data.decode())
     return request, response

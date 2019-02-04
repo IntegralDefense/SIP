@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_apikey
+from project.api.decorators import check_if_token_required
 from project.api.errors import error_response
 from project.models import IntelSource
 
@@ -13,7 +13,7 @@ CREATE
 
 
 @bp.route('/intel/source', methods=['POST'])
-@check_apikey
+@check_if_token_required
 def create_intel_source():
     """ Creates a new intel source. """
 
@@ -46,7 +46,7 @@ READ
 
 
 @bp.route('/intel/source/<int:intel_source_id>', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_intel_source(intel_source_id):
     """ Gets a single intel source given its ID. """
 
@@ -58,7 +58,7 @@ def read_intel_source(intel_source_id):
 
 
 @bp.route('/intel/source', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_intel_sources():
     """ Gets a list of all the intel sources. """
 
@@ -72,7 +72,7 @@ UPDATE
 
 
 @bp.route('/intel/source/<int:intel_source_id>', methods=['PUT'])
-@check_apikey
+@check_if_token_required
 def update_intel_source(intel_source_id):
     """ Updates an existing intel source. """
 
@@ -106,7 +106,7 @@ DELETE
 
 
 @bp.route('/intel/source/<int:intel_source_id>', methods=['DELETE'])
-@check_apikey
+@check_if_token_required
 def delete_intel_source(intel_source_id):
     """ Deletes an intel source. """
 

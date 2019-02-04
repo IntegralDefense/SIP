@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_apikey
+from project.api.decorators import check_if_token_required
 from project.api.errors import error_response
 from project.models import Tag
 
@@ -13,7 +13,7 @@ CREATE
 
 
 @bp.route('/tags', methods=['POST'])
-@check_apikey
+@check_if_token_required
 def create_tag():
     """ Creates a new tag. """
 
@@ -45,7 +45,7 @@ READ
 
 
 @bp.route('/tags/<int:tag_id>', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_tag(tag_id):
     """ Gets a single tag given its ID. """
 
@@ -57,7 +57,7 @@ def read_tag(tag_id):
 
 
 @bp.route('/tags', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_tags():
     """ Gets a list of all the tags. """
 
@@ -71,7 +71,7 @@ UPDATE
 
 
 @bp.route('/tags/<int:tag_id>', methods=['PUT'])
-@check_apikey
+@check_if_token_required
 def update_tag(tag_id):
     """ Updates an existing tag. """
 
@@ -105,7 +105,7 @@ DELETE
 
 
 @bp.route('/tags/<int:tag_id>', methods=['DELETE'])
-@check_apikey
+@check_if_token_required
 def delete_tag(tag_id):
     """ Deletes a tag. """
 

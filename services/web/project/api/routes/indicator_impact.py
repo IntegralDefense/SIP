@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_apikey
+from project.api.decorators import check_if_token_required
 from project.api.errors import error_response
 from project.models import IndicatorImpact
 
@@ -13,7 +13,7 @@ CREATE
 
 
 @bp.route('/indicators/impact', methods=['POST'])
-@check_apikey
+@check_if_token_required
 def create_indicator_impact():
     """ Creates a new indicator impact. """
 
@@ -46,7 +46,7 @@ READ
 
 
 @bp.route('/indicators/impact/<int:indicator_impact_id>', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_indicator_impact(indicator_impact_id):
     """ Gets a single indicator impact given its ID. """
 
@@ -58,7 +58,7 @@ def read_indicator_impact(indicator_impact_id):
 
 
 @bp.route('/indicators/impact', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_indicator_impacts():
     """ Gets a list of all the indicator impacts. """
 
@@ -72,7 +72,7 @@ UPDATE
 
 
 @bp.route('/indicators/impact/<int:indicator_impact_id>', methods=['PUT'])
-@check_apikey
+@check_if_token_required
 def update_indicator_impact(indicator_impact_id):
     """ Updates an existing indicator impact. """
 
@@ -106,7 +106,7 @@ DELETE
 
 
 @bp.route('/indicators/impact/<int:indicator_impact_id>', methods=['DELETE'])
-@check_apikey
+@check_if_token_required
 def delete_indicator_impact(indicator_impact_id):
     """ Deletes an indicator impact. """
 

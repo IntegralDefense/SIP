@@ -1,3 +1,4 @@
+import datetime
 import os
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -12,6 +13,10 @@ class BaseConfig:
     # Database
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = False
+
+    # Flask-JWT-Extended
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
+    JWT_ACCESS_TOKEN_EXPIRES = datetime.timedelta(days=1)
 
     # Flask-Security
     SECURITY_PASSWORD_HASH = 'pbkdf2_sha512'

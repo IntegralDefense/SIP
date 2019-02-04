@@ -1,14 +1,13 @@
 from flask import current_app, request
+from flask_jwt_extended import verify_jwt_in_request, verify_fresh_jwt_in_request, get_jwt_claims
 from functools import wraps
 
-from project import db
 from project.api.errors import error_response
-from project.models import User
 
 
-def check_apikey(function):
-    """ Checks if the HTTP method exists in the app's config.
-    If it does, it uses the value as the user role required to perform the function. """
+def check_if_token_required(function):
+    """ If the called HTTP method exists in the config file, it uses the value as the
+    user role required of the JWT token to perform the function. """
 
     @wraps(function)
     def decorated_function(*args, **kwargs):
@@ -24,68 +23,29 @@ def check_apikey(function):
         if not required_role:
             return function(*args, **kwargs)
 
-        # Get the API key if there is one.
-        apikey = None
-        if 'apikey' in request.values:
-            try:
-                apikey = request.values.get('apikey')
-            except ValueError:
-                pass
-
-        # If there is an API key, look it up and get the user's roles.
-        if apikey:
-            user = db.session.query(User).filter_by(apikey=apikey).first()
-
-            # If the user exists and they have the required role, return the function.
-            if user:
-                if user.active:
-                    if any(role.name.lower() == required_role for role in user.roles):
-                        return function(*args, **kwargs)
-                    else:
-                        return error_response(401, 'Insufficient privileges')
-                else:
-                    return error_response(401, 'API user is not active')
-            else:
-                return error_response(401, 'API user does not exist')
+        # Verify the JWT exists and that it has the required role.
+        verify_jwt_in_request()
+        claims = get_jwt_claims()
+        if required_role in claims['roles']:
+            return function(*args, **kwargs)
         else:
-            return error_response(401, 'Bad or missing API key')
+            return error_response(401, '{} role required'.format(required_role))
 
     return decorated_function
 
 
-def verify_admin(function):
-    """ Verifies that the calling user has the admin role. """
+def admin_required(function):
+    """ Verifies the JWT is present and that the user has the admin role """
 
     @wraps(function)
     def decorated_function(*args, **kwargs):
 
-        # Get the role of the function name in the config.
-        required_role = 'admin'
-
-        # Get the API key if there is one.
-        apikey = None
-        if 'apikey' in request.values:
-            try:
-                apikey = request.values.get('apikey')
-            except ValueError:
-                pass
-
-        # If there is an API key, look it up and get the user's roles.
-        if apikey:
-            user = db.session.query(User).filter_by(apikey=apikey).first()
-
-            # If the user exists and they have the required role, return the function.
-            if user:
-                if user.active:
-                    if any(role.name.lower() == required_role for role in user.roles):
-                        return function(*args, **kwargs)
-                    else:
-                        return error_response(401, 'Insufficient privileges')
-                else:
-                    return error_response(401, 'API user is not active')
-            else:
-                return error_response(401, 'API user does not exist')
+        # Verify the (fresh) JWT token exists and that it has the admin role.
+        verify_fresh_jwt_in_request()
+        claims = get_jwt_claims()
+        if 'admin' in claims['roles']:
+            return function(*args, **kwargs)
         else:
-            return error_response(401, 'Bad or missing API key')
+            return error_response(401, 'admin role required')
 
     return decorated_function
