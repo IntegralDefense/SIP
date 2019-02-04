@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_apikey
+from project.api.decorators import check_if_token_required
 from project.api.errors import error_response
 from project.models import IndicatorType
 
@@ -13,7 +13,7 @@ CREATE
 
 
 @bp.route('/indicators/type', methods=['POST'])
-@check_apikey
+@check_if_token_required
 def create_indicator_type():
     """ Creates a new indicator type. """
 
@@ -46,7 +46,7 @@ READ
 
 
 @bp.route('/indicators/type/<int:indicator_type_id>', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_indicator_type(indicator_type_id):
     """ Gets a single indicator type given its ID. """
 
@@ -58,7 +58,7 @@ def read_indicator_type(indicator_type_id):
 
 
 @bp.route('/indicators/type', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_indicator_types():
     """ Gets a list of all the indicator types. """
 
@@ -72,7 +72,7 @@ UPDATE
 
 
 @bp.route('/indicators/type/<int:indicator_type_id>', methods=['PUT'])
-@check_apikey
+@check_if_token_required
 def update_indicator_type(indicator_type_id):
     """ Updates an existing indicator type. """
 
@@ -106,7 +106,7 @@ DELETE
 
 
 @bp.route('/indicators/type/<int:indicator_type_id>', methods=['DELETE'])
-@check_apikey
+@check_if_token_required
 def delete_indicator_type(indicator_type_id):
     """ Deletes an indicator type. """
 

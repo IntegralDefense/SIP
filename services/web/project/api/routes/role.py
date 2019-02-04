@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_apikey, verify_admin
+from project.api.decorators import check_if_token_required, admin_required
 from project.api.errors import error_response
 from project.models import Role
 
@@ -13,7 +13,7 @@ CREATE
 
 
 @bp.route('/roles', methods=['POST'])
-@verify_admin
+@admin_required
 def create_role():
     """ Creates a new role. Requires the admin role. """
 
@@ -50,7 +50,7 @@ READ
 
 
 @bp.route('/roles/<int:role_id>', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_role(role_id):
     """ Gets a single role given its ID. """
 
@@ -62,7 +62,7 @@ def read_role(role_id):
 
 
 @bp.route('/roles', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_roles():
     """ Gets a list of all the roles. """
 
@@ -76,7 +76,7 @@ UPDATE
 
 
 @bp.route('/roles/<int:role_id>', methods=['PUT'])
-@verify_admin
+@admin_required
 def update_role(role_id):
     """ Updates an existing role. Requires the admin role. """
 
@@ -116,7 +116,7 @@ DELETE
 
 
 @bp.route('/roles/<int:role_id>', methods=['DELETE'])
-@verify_admin
+@admin_required
 def delete_role(role_id):
     """ Deletes a role. Requires the admin role. """
 

@@ -1,6 +1,3 @@
-import json
-
-from project.tests.conftest import TEST_ANALYST_APIKEY, TEST_INACTIVE_APIKEY, TEST_INVALID_APIKEY
 from project.tests.helpers import *
 
 
@@ -15,7 +12,7 @@ def test_create_missing_parameter(client):
     request = client.post('/api/indicators/impact')
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['message'] == 'Request must include "value"'
+    assert response['msg'] == 'Request must include "value"'
 
 
 def test_create_duplicate(client):
@@ -29,55 +26,31 @@ def test_create_duplicate(client):
     request = client.post('/api/indicators/impact', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
-    assert response['message'] == 'Indicator impact already exists'
+    assert response['msg'] == 'Indicator impact already exists'
 
 
-def test_create_missing_api_key(app, client):
-    """ Ensure an API key is given if the config requires it """
-
-    app.config['POST'] = 'analyst'
-
-    data = {'value': 'asdf'}
-    request = client.post('/api/indicators/impact', data=data)
-    response = json.loads(request.data.decode())
-    assert request.status_code == 401
-    assert response['message'] == 'Bad or missing API key'
-
-
-def test_create_invalid_api_key(app, client):
-    """ Ensure an API key not found in the database does not work """
+def test_create_missing_token(app, client):
+    """ Ensure a token is given if the config requires it """
 
     app.config['POST'] = 'analyst'
 
-    data = {'apikey': TEST_INVALID_APIKEY, 'value': 'asdf'}
-    request = client.post('/api/indicators/impact', data=data)
+    request = client.post('/api/indicators/impact')
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'API user does not exist'
-
-
-def test_create_inactive_api_key(app, client):
-    """ Ensure an inactive API key does not work """
-
-    app.config['POST'] = 'analyst'
-
-    data = {'apikey': TEST_INACTIVE_APIKEY, 'name': 'asdf'}
-    request = client.post('/api/indicators/impact', data=data)
-    response = json.loads(request.data.decode())
-    assert request.status_code == 401
-    assert response['message'] == 'API user is not active'
+    assert response['msg'] == 'Missing Authorization Header'
 
 
 def test_create_invalid_role(app, client):
-    """ Ensure the given API key has the proper role access """
+    """ Ensure the given token has the proper role access """
 
     app.config['POST'] = 'user_does_not_have_this_role'
 
-    data = {'apikey': TEST_ANALYST_APIKEY, 'value': 'asdf'}
-    request = client.post('/api/indicators/impact', data=data)
+    access_token, refresh_token = obtain_token(client, 'analyst', 'analyst')
+    headers = create_auth_header(access_token)
+    request = client.post('/api/indicators/impact', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'Insufficient privileges'
+    assert response['msg'] == 'user_does_not_have_this_role role required'
 
 
 def test_create(client):
@@ -99,51 +72,31 @@ def test_read_nonexistent_id(client):
     request = client.get('/api/indicators/impact/100000')
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'Indicator impact ID not found'
+    assert response['msg'] == 'Indicator impact ID not found'
 
 
-def test_read_missing_api_key(app, client):
-    """ Ensure an API key is given if the config requires it """
+def test_read_missing_token(app, client):
+    """ Ensure a token is given if the config requires it """
 
     app.config['GET'] = 'analyst'
 
     request = client.get('/api/indicators/impact/1')
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'Bad or missing API key'
-
-
-def test_read_invalid_api_key(app, client):
-    """ Ensure an API key not found in the database does not work """
-
-    app.config['GET'] = 'analyst'
-
-    request = client.get('/api/indicators/impact/1?apikey={}'.format(TEST_INVALID_APIKEY))
-    response = json.loads(request.data.decode())
-    assert request.status_code == 401
-    assert response['message'] == 'API user does not exist'
-
-
-def test_read_inactive_api_key(app, client):
-    """ Ensure an inactive API key does not work """
-
-    app.config['GET'] = 'analyst'
-
-    request = client.get('/api/indicators/impact/1?apikey={}'.format(TEST_INACTIVE_APIKEY))
-    response = json.loads(request.data.decode())
-    assert request.status_code == 401
-    assert response['message'] == 'API user is not active'
+    assert response['msg'] == 'Missing Authorization Header'
 
 
 def test_read_invalid_role(app, client):
-    """ Ensure the given API key has the proper role access """
+    """ Ensure the given token has the proper role access """
 
     app.config['GET'] = 'user_does_not_have_this_role'
 
-    request = client.get('/api/indicators/impact/1?apikey={}'.format(TEST_ANALYST_APIKEY))
+    access_token, refresh_token = obtain_token(client, 'analyst', 'analyst')
+    headers = create_auth_header(access_token)
+    request = client.get('/api/indicators/impact/1', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'Insufficient privileges'
+    assert response['msg'] == 'user_does_not_have_this_role role required'
 
 
 def test_read_all_values(client):
@@ -195,7 +148,7 @@ def test_update_nonexistent_id(client):
     request = client.put('/api/indicators/impact/100000', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'Indicator impact ID not found'
+    assert response['msg'] == 'Indicator impact ID not found'
 
 
 def test_update_missing_parameter(client):
@@ -210,7 +163,7 @@ def test_update_missing_parameter(client):
     request = client.put('/api/indicators/impact/{}'.format(_id))
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['message'] == 'Request must include "value"'
+    assert response['msg'] == 'Request must include "value"'
 
 
 def test_update_duplicate(client):
@@ -226,55 +179,31 @@ def test_update_duplicate(client):
     request = client.put('/api/indicators/impact/{}'.format(_id), data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
-    assert response['message'] == 'Indicator impact already exists'
+    assert response['msg'] == 'Indicator impact already exists'
 
 
-def test_update_missing_api_key(app, client):
-    """ Ensure an API key is given if the config requires it """
-
-    app.config['PUT'] = 'analyst'
-
-    data = {'value': 'asdf'}
-    request = client.put('/api/indicators/impact/1', data=data)
-    response = json.loads(request.data.decode())
-    assert request.status_code == 401
-    assert response['message'] == 'Bad or missing API key'
-
-
-def test_update_invalid_api_key(app, client):
-    """ Ensure an API key not found in the database does not work """
+def test_update_missing_token(app, client):
+    """ Ensure a token is given if the config requires it """
 
     app.config['PUT'] = 'analyst'
 
-    data = {'apikey': TEST_INVALID_APIKEY, 'value': 'asdf'}
-    request = client.put('/api/indicators/impact/1', data=data)
+    request = client.put('/api/indicators/impact/1')
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'API user does not exist'
-
-
-def test_update_inactive_api_key(app, client):
-    """ Ensure an inactive API key does not work """
-
-    app.config['PUT'] = 'analyst'
-
-    data = {'apikey': TEST_INACTIVE_APIKEY, 'name': 'asdf'}
-    request = client.put('/api/indicators/impact/1', data=data)
-    response = json.loads(request.data.decode())
-    assert request.status_code == 401
-    assert response['message'] == 'API user is not active'
+    assert response['msg'] == 'Missing Authorization Header'
 
 
 def test_update_invalid_role(app, client):
-    """ Ensure the given API key has the proper role access """
+    """ Ensure the given token has the proper role access """
 
     app.config['PUT'] = 'user_does_not_have_this_role'
 
-    data = {'apikey': TEST_ANALYST_APIKEY, 'value': 'asdf'}
-    request = client.put('/api/indicators/impact/1', data=data)
+    access_token, refresh_token = obtain_token(client, 'analyst', 'analyst')
+    headers = create_auth_header(access_token)
+    request = client.put('/api/indicators/impact/1', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'Insufficient privileges'
+    assert response['msg'] == 'user_does_not_have_this_role role required'
 
 
 def test_update(client):
@@ -308,54 +237,31 @@ def test_delete_nonexistent_id(client):
     request = client.delete('/api/indicators/impact/100000')
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'Indicator impact ID not found'
+    assert response['msg'] == 'Indicator impact ID not found'
 
 
-def test_delete_missing_api_key(app, client):
-    """ Ensure an API key is given if the config requires it """
+def test_delete_missing_token(app, client):
+    """ Ensure a token is given if the config requires it """
 
     app.config['DELETE'] = 'admin'
 
     request = client.delete('/api/indicators/impact/1')
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'Bad or missing API key'
-
-
-def test_delete_invalid_api_key(app, client):
-    """ Ensure an API key not found in the database does not work """
-
-    app.config['DELETE'] = 'admin'
-
-    data = {'apikey': TEST_INVALID_APIKEY}
-    request = client.delete('/api/indicators/impact/1', data=data)
-    response = json.loads(request.data.decode())
-    assert request.status_code == 401
-    assert response['message'] == 'API user does not exist'
-    
-    
-def test_delete_inactive_api_key(app, client):
-    """ Ensure an inactive API key does not work """
-
-    app.config['DELETE'] = 'admin'
-
-    data = {'apikey': TEST_INACTIVE_APIKEY}
-    request = client.delete('/api/indicators/impact/1', data=data)
-    response = json.loads(request.data.decode())
-    assert request.status_code == 401
-    assert response['message'] == 'API user is not active'
+    assert response['msg'] == 'Missing Authorization Header'
 
 
 def test_delete_invalid_role(app, client):
-    """ Ensure the given API key has the proper role access """
+    """ Ensure the given token has the proper role access """
 
     app.config['DELETE'] = 'user_does_not_have_this_role'
 
-    data = {'apikey': TEST_ANALYST_APIKEY}
-    request = client.delete('/api/indicators/impact/1', data=data)
+    access_token, refresh_token = obtain_token(client, 'analyst', 'analyst')
+    headers = create_auth_header(access_token)
+    request = client.delete('/api/indicators/impact/1', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'Insufficient privileges'
+    assert response['msg'] == 'user_does_not_have_this_role role required'
     
     
 def test_delete_foreign_key(client):
@@ -369,7 +275,7 @@ def test_delete_foreign_key(client):
     request = client.delete('/api/indicators/impact/{}'.format(impact_response['id']))
     response = json.loads(request.data.decode())
     assert request.status_code == 409
-    assert response['message'] == 'Unable to delete indicator impact due to foreign key constraints'
+    assert response['msg'] == 'Unable to delete indicator impact due to foreign key constraints'
 
 
 def test_delete(client):
@@ -387,4 +293,4 @@ def test_delete(client):
     request = client.get('/api/indicators/impact/{}'.format(_id))
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'Indicator impact ID not found'
+    assert response['msg'] == 'Indicator impact ID not found'

@@ -7,10 +7,11 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_apikey, verify_admin
+from project.api.decorators import check_if_token_required, admin_required
 from project.api.errors import error_response
 from project.api.helpers import parse_boolean
 from project.models import Role, User
+
 
 """
 CREATE
@@ -18,7 +19,7 @@ CREATE
 
 
 @bp.route('/users', methods=['POST'])
-@verify_admin
+@admin_required
 def create_user():
     """ Creates a new user. Requires the admin role. """
 
@@ -72,10 +73,7 @@ def create_user():
     db.session.add(user)
     db.session.commit()
 
-    # Add the user's API key to the response.
-    user_dict = user.to_dict()
-    user_dict['apikey'] = user.apikey
-    response = jsonify(user_dict)
+    response = jsonify(user.to_dict())
     response.status_code = 201
     response.headers['Location'] = url_for('api.read_user', user_id=user.id)
     return response
@@ -87,7 +85,7 @@ READ
 
 
 @bp.route('/users/<int:user_id>', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_user(user_id):
     """ Gets a single user given its ID. """
 
@@ -99,7 +97,7 @@ def read_user(user_id):
 
 
 @bp.route('/users', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_users():
     """ Gets a list of all the users. """
 
@@ -113,7 +111,7 @@ UPDATE
 
 
 @bp.route('/users/<int:user_id>', methods=['PUT'])
-@verify_admin
+@admin_required
 def update_user(user_id):
     """ Updates an existing user. Requires the admin role. """
 
@@ -187,10 +185,7 @@ def update_user(user_id):
 
     db.session.commit()
 
-    # Add the user's API key to the response.
-    user_dict = user.to_dict()
-    user_dict['apikey'] = user.apikey
-    response = jsonify(user_dict)
+    response = jsonify(user.to_dict())
     return response
 
 
@@ -200,7 +195,7 @@ DELETE
 
 
 @bp.route('/users/<int:user_id>', methods=['DELETE'])
-@verify_admin
+@admin_required
 def delete_user(user_id):
     """ Deletes a user. Requires the admin role. """
 

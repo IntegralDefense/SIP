@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_apikey
+from project.api.decorators import check_if_token_required
 from project.api.errors import error_response
 from project.models import Campaign, CampaignAlias
 
@@ -13,7 +13,7 @@ CREATE
 
 
 @bp.route('/campaigns', methods=['POST'])
-@check_apikey
+@check_if_token_required
 def create_campaign():
     """ Creates a new campaign. """
 
@@ -57,7 +57,7 @@ READ
 
 
 @bp.route('/campaigns/<int:campaign_id>', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_campaign(campaign_id):
     """ Gets a single campaign given its ID. """
 
@@ -69,7 +69,7 @@ def read_campaign(campaign_id):
 
 
 @bp.route('/campaigns', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_campaigns():
     """ Gets a list of all the campaigns. """
 
@@ -83,7 +83,7 @@ UPDATE
 
 
 @bp.route('/campaigns/<int:campaign_id>', methods=['PUT'])
-@check_apikey
+@check_if_token_required
 def update_campaign(campaign_id):
     """ Updates an existing campaign. """
 
@@ -121,7 +121,7 @@ DELETE
 
 
 @bp.route('/campaigns/<int:campaign_id>', methods=['DELETE'])
-@check_apikey
+@check_if_token_required
 def delete_campaign(campaign_id):
     """ Deletes a campaign. """
 

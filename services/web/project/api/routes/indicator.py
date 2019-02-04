@@ -6,7 +6,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_apikey
+from project.api.decorators import check_if_token_required
 from project.api.errors import error_response
 from project.api.helpers import parse_boolean
 from project.models import Campaign, Indicator, IndicatorConfidence, IndicatorImpact, IndicatorStatus, IndicatorType, \
@@ -18,7 +18,7 @@ CREATE
 
 
 @bp.route('/indicators', methods=['POST'])
-@check_apikey
+@check_if_token_required
 def create_indicator():
     """ Creates a new indicator. """
 
@@ -129,7 +129,7 @@ READ
 
 
 @bp.route('/indicators/<int:indicator_id>', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_indicator(indicator_id):
     """ Gets a single indicator given its ID. """
 
@@ -141,7 +141,7 @@ def read_indicator(indicator_id):
 
 
 @bp.route('/indicators', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_indicators():
     """ Gets a paginated list of indicators based on various filter criteria. """
 
@@ -256,7 +256,7 @@ UPDATE
 
 
 @bp.route('/indicators/<indicator_id>', methods=['PUT'])
-@check_apikey
+@check_if_token_required
 def update_indicator(indicator_id):
     """ Updates an existing indicator. """
 
@@ -361,7 +361,7 @@ DELETE
 
 
 @bp.route('/indicators/<indicator_id>', methods=['DELETE'])
-@check_apikey
+@check_if_token_required
 def delete_indicator(indicator_id):
     """ Deletes an indicator """
 

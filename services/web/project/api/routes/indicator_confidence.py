@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_apikey
+from project.api.decorators import check_if_token_required
 from project.api.errors import error_response
 from project.models import IndicatorConfidence
 
@@ -13,7 +13,7 @@ CREATE
 
 
 @bp.route('/indicators/confidence', methods=['POST'])
-@check_apikey
+@check_if_token_required
 def create_indicator_confidence():
     """ Creates a new indicator confidence. """
 
@@ -46,7 +46,7 @@ READ
 
 
 @bp.route('/indicators/confidence/<int:indicator_confidence_id>', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_indicator_confidence(indicator_confidence_id):
     """ Gets a single indicator confidence given its ID. """
 
@@ -58,7 +58,7 @@ def read_indicator_confidence(indicator_confidence_id):
 
 
 @bp.route('/indicators/confidence', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_indicator_confidences():
     """ Gets a list of all the indicator confidences. """
 
@@ -72,7 +72,7 @@ UPDATE
 
 
 @bp.route('/indicators/confidence/<int:indicator_confidence_id>', methods=['PUT'])
-@check_apikey
+@check_if_token_required
 def update_indicator_confidence(indicator_confidence_id):
     """ Updates an existing indicator confidence. """
 
@@ -106,7 +106,7 @@ DELETE
 
 
 @bp.route('/indicators/confidence/<int:indicator_confidence_id>', methods=['DELETE'])
-@check_apikey
+@check_if_token_required
 def delete_indicator_confidence(indicator_confidence_id):
     """ Deletes an indicator confidence. """
 

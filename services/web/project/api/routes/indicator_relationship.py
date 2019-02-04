@@ -2,7 +2,7 @@ from flask import jsonify, request
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_apikey
+from project.api.decorators import check_if_token_required
 from project.api.errors import error_response
 from project.models import Indicator
 
@@ -12,7 +12,7 @@ CREATE
 
 
 @bp.route('/indicators/relationship', methods=['POST'])
-@check_apikey
+@check_if_token_required
 def create_indicator_relationship():
     """ Creates a parent/child relationship between two indicators """
 
@@ -54,7 +54,7 @@ DELETE
 
 
 @bp.route('/indicators/relationship', methods=['DELETE'])
-@check_apikey
+@check_if_token_required
 def delete_indicator_relationship():
     """ Deletes an indicator parent/child relationship. """
 

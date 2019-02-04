@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_apikey
+from project.api.decorators import check_if_token_required
 from project.api.errors import error_response
 from project.models import IndicatorStatus
 
@@ -13,7 +13,7 @@ CREATE
 
 
 @bp.route('/indicators/status', methods=['POST'])
-@check_apikey
+@check_if_token_required
 def create_indicator_status():
     """ Creates a new indicator status. """
 
@@ -46,7 +46,7 @@ READ
 
 
 @bp.route('/indicators/status/<int:indicator_status_id>', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_indicator_status(indicator_status_id):
     """ Gets a single indicator status given its ID. """
 
@@ -58,7 +58,7 @@ def read_indicator_status(indicator_status_id):
 
 
 @bp.route('/indicators/status', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_indicator_statuses():
     """ Gets a list of all the indicator statuses. """
 
@@ -72,7 +72,7 @@ UPDATE
 
 
 @bp.route('/indicators/status/<int:indicator_status_id>', methods=['PUT'])
-@check_apikey
+@check_if_token_required
 def update_indicator_status(indicator_status_id):
     """ Updates an existing indicator status. """
 
@@ -106,7 +106,7 @@ DELETE
 
 
 @bp.route('/indicators/status/<int:indicator_status_id>', methods=['DELETE'])
-@check_apikey
+@check_if_token_required
 def delete_indicator_status(indicator_status_id):
     """ Deletes an indicator status. """
 

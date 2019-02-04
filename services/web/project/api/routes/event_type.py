@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_apikey
+from project.api.decorators import check_if_token_required
 from project.api.errors import error_response
 from project.models import EventType
 
@@ -13,7 +13,7 @@ CREATE
 
 
 @bp.route('/events/type', methods=['POST'])
-@check_apikey
+@check_if_token_required
 def create_event_type():
     """ Creates a new event type. """
 
@@ -46,7 +46,7 @@ READ
 
 
 @bp.route('/events/type/<int:event_type_id>', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_event_type(event_type_id):
     """ Gets a single event type given its ID. """
 
@@ -58,7 +58,7 @@ def read_event_type(event_type_id):
 
 
 @bp.route('/events/type', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_event_types():
     """ Gets a list of all the event types. """
 
@@ -72,7 +72,7 @@ UPDATE
 
 
 @bp.route('/events/type/<int:event_type_id>', methods=['PUT'])
-@check_apikey
+@check_if_token_required
 def update_event_type(event_type_id):
     """ Updates an existing event type. """
 
@@ -106,7 +106,7 @@ DELETE
 
 
 @bp.route('/events/type/<int:event_type_id>', methods=['DELETE'])
-@check_apikey
+@check_if_token_required
 def delete_event_type(event_type_id):
     """ Deletes an event type. """
 

@@ -6,7 +6,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_apikey
+from project.api.decorators import check_if_token_required
 from project.api.errors import error_response
 from project.models import Campaign, Event, EventAttackVector, EventDisposition, EventPreventionTool, \
     EventRemediation, EventStatus, EventType, IntelReference, IntelSource, Malware, Tag, User
@@ -18,7 +18,7 @@ CREATE
 
 
 @bp.route('/events', methods=['POST'])
-@check_apikey
+@check_if_token_required
 def create_event():
     """ Creates a new event. """
 
@@ -133,7 +133,7 @@ READ
 
 
 @bp.route('/events/<int:event_id>', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_event(event_id):
     """ Gets a single event given its ID. """
 
@@ -145,7 +145,7 @@ def read_event(event_id):
 
 
 @bp.route('/events', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_events():
     """ Gets a paginated list of events based on various filter criteria. """
 
@@ -280,7 +280,7 @@ UPDATE
 
 
 @bp.route('/events/<int:event_id>', methods=['PUT'])
-@check_apikey
+@check_if_token_required
 def update_event(event_id):
     """ Updates an existing event. """
 
@@ -418,7 +418,7 @@ DELETE
 
 
 @bp.route('/events/<int:event_id>', methods=['DELETE'])
-@check_apikey
+@check_if_token_required
 def delete_event(event_id):
     """ Deletes an event. """
 

@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_apikey
+from project.api.decorators import check_if_token_required
 from project.api.errors import error_response
 from project.models import EventPreventionTool
 
@@ -13,7 +13,7 @@ CREATE
 
 
 @bp.route('/events/preventiontool', methods=['POST'])
-@check_apikey
+@check_if_token_required
 def create_event_prevention_tool():
     """ Creates a new event prevention tool. """
 
@@ -46,7 +46,7 @@ READ
 
 
 @bp.route('/events/preventiontool/<int:event_prevention_tool_id>', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_event_prevention_tool(event_prevention_tool_id):
     """ Gets a single event prevention tool given its ID. """
 
@@ -58,7 +58,7 @@ def read_event_prevention_tool(event_prevention_tool_id):
 
 
 @bp.route('/events/preventiontool', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_event_prevention_tools():
     """ Gets a list of all the event prevention tools. """
 
@@ -72,7 +72,7 @@ UPDATE
 
 
 @bp.route('/events/preventiontool/<int:event_prevention_tool_id>', methods=['PUT'])
-@check_apikey
+@check_if_token_required
 def update_event_prevention_tool(event_prevention_tool_id):
     """ Updates an existing event prevention tool. """
 
@@ -106,7 +106,7 @@ DELETE
 
 
 @bp.route('/events/preventiontool/<int:event_prevention_tool_id>', methods=['DELETE'])
-@check_apikey
+@check_if_token_required
 def delete_event_prevention_tool(event_prevention_tool_id):
     """ Deletes an event prevention tool. """
 

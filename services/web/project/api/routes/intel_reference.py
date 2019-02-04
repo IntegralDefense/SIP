@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_apikey
+from project.api.decorators import check_if_token_required
 from project.api.errors import error_response
 from project.models import IntelReference, IntelSource, User
 
@@ -14,7 +14,7 @@ CREATE
 
 
 @bp.route('/intel/reference', methods=['POST'])
-@check_apikey
+@check_if_token_required
 def create_intel_reference():
     """ Creates a new intel reference. """
 
@@ -58,7 +58,7 @@ READ
 
 
 @bp.route('/intel/reference/<int:intel_reference_id>', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_intel_reference(intel_reference_id):
     """ Gets a single intel reference given its ID. """
 
@@ -70,7 +70,7 @@ def read_intel_reference(intel_reference_id):
 
 
 @bp.route('/intel/reference', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_intel_references():
     """ Gets a list of all the intel references. """
 
@@ -84,7 +84,7 @@ UPDATE
 
 
 @bp.route('/intel/reference/<int:intel_reference_id>', methods=['PUT'])
-@check_apikey
+@check_if_token_required
 def update_intel_reference(intel_reference_id):
     """ Updates an existing intel reference. """
 
@@ -133,7 +133,7 @@ DELETE
 
 
 @bp.route('/intel/reference/<int:intel_reference_id>', methods=['DELETE'])
-@check_apikey
+@check_if_token_required
 def delete_intel_reference(intel_reference_id):
     """ Deletes an intel reference. """
 

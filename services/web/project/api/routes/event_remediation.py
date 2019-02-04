@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_apikey
+from project.api.decorators import check_if_token_required
 from project.api.errors import error_response
 from project.models import EventRemediation
 
@@ -13,7 +13,7 @@ CREATE
 
 
 @bp.route('/events/remediation', methods=['POST'])
-@check_apikey
+@check_if_token_required
 def create_event_remediation():
     """ Creates a new event remediation. """
 
@@ -46,7 +46,7 @@ READ
 
 
 @bp.route('/events/remediation/<int:event_remediation_id>', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_event_remediation(event_remediation_id):
     """ Gets a single event remediation given its ID. """
 
@@ -58,7 +58,7 @@ def read_event_remediation(event_remediation_id):
 
 
 @bp.route('/events/remediation', methods=['GET'])
-@check_apikey
+@check_if_token_required
 def read_event_remediations():
     """ Gets a list of all the event remediations. """
 
@@ -72,7 +72,7 @@ UPDATE
 
 
 @bp.route('/events/remediation/<int:event_remediation_id>', methods=['PUT'])
-@check_apikey
+@check_if_token_required
 def update_event_remediation(event_remediation_id):
     """ Updates an existing event remediation. """
 
@@ -106,7 +106,7 @@ DELETE
 
 
 @bp.route('/events/remediation/<int:event_remediation_id>', methods=['DELETE'])
-@check_apikey
+@check_if_token_required
 def delete_event_remediation(event_remediation_id):
     """ Deletes an event remediation. """
 
