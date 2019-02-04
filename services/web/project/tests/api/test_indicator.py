@@ -17,21 +17,21 @@ def test_create_missing_parameter(client):
     request = client.post('/api/indicators', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['message'] == 'Request must include: type, username, value'
+    assert response['msg'] == 'Request must include: type, username, value'
 
     # Missing username
     data = {'type': 'asdf', 'value': 'asdf'}
     request = client.post('/api/indicators', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['message'] == 'Request must include: type, username, value'
+    assert response['msg'] == 'Request must include: type, username, value'
 
     # Missing value
     data = {'type': 'asdf', 'username': 'analyst'}
     request = client.post('/api/indicators', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['message'] == 'Request must include: type, username, value'
+    assert response['msg'] == 'Request must include: type, username, value'
 
 
 def test_create_duplicate(client):
@@ -42,7 +42,7 @@ def test_create_duplicate(client):
 
     request, response = create_indicator(client, 'asdf', 'asdf', 'analyst')
     assert request.status_code == 409
-    assert response['message'] == 'Indicator already exists'
+    assert response['msg'] == 'Indicator already exists'
 
 
 def test_create_nonexistent_username(client):
@@ -50,7 +50,7 @@ def test_create_nonexistent_username(client):
 
     request, response = create_indicator(client, 'asdf', 'asdf', 'this_user_does_not_exist')
     assert request.status_code == 404
-    assert 'User username not found:' in response['message']
+    assert 'User username not found:' in response['msg']
 
 
 def test_create_inactive_username(client):
@@ -58,7 +58,7 @@ def test_create_inactive_username(client):
 
     request, response = create_indicator(client, 'asdf', 'asdf', 'inactive')
     assert request.status_code == 401
-    assert response['message'] == 'Cannot create an indicator with an inactive user'
+    assert response['msg'] == 'Cannot create an indicator with an inactive user'
 
 
 def test_create_missing_token(app, client):
@@ -82,7 +82,7 @@ def test_create_invalid_role(app, client):
     request = client.post('/api/indicators', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'user_does_not_have_this_role role required'
+    assert response['msg'] == 'user_does_not_have_this_role role required'
 
 
 def test_create(client):
@@ -117,7 +117,7 @@ def test_read_nonexistent_id(client):
     request = client.get('/api/indicators/100000')
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'Indicator ID not found'
+    assert response['msg'] == 'Indicator ID not found'
 
 
 def test_read_missing_token(app, client):
@@ -141,7 +141,7 @@ def test_read_invalid_role(app, client):
     request = client.get('/api/indicators/1', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'user_does_not_have_this_role role required'
+    assert response['msg'] == 'user_does_not_have_this_role role required'
 
 
 def test_read_all_values(client):
@@ -339,7 +339,7 @@ def test_update_nonexistent_username(client):
     request = client.put('/api/indicators/{}'.format(_id), data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert 'User username not found:' in response['message']
+    assert 'User username not found:' in response['msg']
 
 
 def test_update_inactive_username(client):
@@ -353,7 +353,7 @@ def test_update_inactive_username(client):
     request = client.put('/api/indicators/{}'.format(_id), data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'Cannot update an indicator with an inactive user'
+    assert response['msg'] == 'Cannot update an indicator with an inactive user'
 
 
 def test_update_nonexistent_id(client):
@@ -363,7 +363,7 @@ def test_update_nonexistent_id(client):
     request = client.put('/api/indicators/100000', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'Indicator ID not found'
+    assert response['msg'] == 'Indicator ID not found'
 
 
 def test_update_missing_parameter(client):
@@ -376,7 +376,7 @@ def test_update_missing_parameter(client):
     request = client.put('/api/indicators/{}'.format(_id))
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'Request must include at least one of:' in response['message']
+    assert 'Request must include at least one of:' in response['msg']
 
 
 def test_update_missing_token(app, client):
@@ -400,7 +400,7 @@ def test_update_invalid_role(app, client):
     request = client.put('/api/indicators/1', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'user_does_not_have_this_role role required'
+    assert response['msg'] == 'user_does_not_have_this_role role required'
 
 
 def test_update(client):
@@ -537,7 +537,7 @@ def test_delete_nonexistent_id(client):
     request = client.delete('/api/indicators/100000')
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'Indicator ID not found'
+    assert response['msg'] == 'Indicator ID not found'
 
 
 def test_delete_missing_token(app, client):
@@ -561,7 +561,7 @@ def test_delete_invalid_role(app, client):
     request = client.delete('/api/indicators/1', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'user_does_not_have_this_role role required'
+    assert response['msg'] == 'user_does_not_have_this_role role required'
 
 
 def test_delete(client):
@@ -577,4 +577,4 @@ def test_delete(client):
     request = client.get('/api/indicators/{}'.format(_id))
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'Indicator ID not found'
+    assert response['msg'] == 'Indicator ID not found'

@@ -15,13 +15,13 @@ def test_auth_missing_parameter(client):
     request = client.post('/auth', data={'password': 'analyst'})
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['message'] == 'Request must include: username, password'
+    assert response['msg'] == 'Request must include: username, password'
 
     # Missing password
     request = client.post('/auth', data={'password': 'analyst'})
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['message'] == 'Request must include: username, password'
+    assert response['msg'] == 'Request must include: username, password'
 
 
 def test_auth_nonexistent_username(client):
@@ -30,7 +30,7 @@ def test_auth_nonexistent_username(client):
     request = client.post('/auth', data={'username': 'this_user_does_not_exist', 'password': 'analyst'})
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'User does not exist'
+    assert response['msg'] == 'User does not exist'
 
 
 def test_auth_inactive_user(client):
@@ -39,7 +39,7 @@ def test_auth_inactive_user(client):
     request = client.post('/auth', data={'username': 'inactive', 'password': 'inactive'})
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'User is inactive'
+    assert response['msg'] == 'User is inactive'
 
 
 def test_auth_invalid_password(client):
@@ -48,7 +48,7 @@ def test_auth_invalid_password(client):
     request = client.post('/auth', data={'username': 'analyst', 'password': 'wrong_password'})
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'Invalid password'
+    assert response['msg'] == 'Invalid password'
 
 
 def test_auth(client):
@@ -73,13 +73,13 @@ def test_auth_fresh_missing_parameter(client):
     request = client.post('/auth-fresh', data={'password': 'analyst'})
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['message'] == 'Request must include: username, password'
+    assert response['msg'] == 'Request must include: username, password'
 
     # Missing password
     request = client.post('/auth-fresh', data={'password': 'analyst'})
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['message'] == 'Request must include: username, password'
+    assert response['msg'] == 'Request must include: username, password'
 
 
 def test_auth_fresh_nonexistent_username(client):
@@ -88,7 +88,7 @@ def test_auth_fresh_nonexistent_username(client):
     request = client.post('/auth-fresh', data={'username': 'this_user_does_not_exist', 'password': 'analyst'})
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'User does not exist'
+    assert response['msg'] == 'User does not exist'
 
 
 def test_auth_fresh_inactive_user(client):
@@ -97,7 +97,7 @@ def test_auth_fresh_inactive_user(client):
     request = client.post('/auth-fresh', data={'username': 'inactive', 'password': 'inactive'})
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'User is inactive'
+    assert response['msg'] == 'User is inactive'
 
 
 def test_auth_fresh_invalid_password(client):
@@ -106,7 +106,7 @@ def test_auth_fresh_invalid_password(client):
     request = client.post('/auth-fresh', data={'username': 'analyst', 'password': 'wrong_password'})
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'Invalid password'
+    assert response['msg'] == 'Invalid password'
 
 
 def test_auth_fresh(client):

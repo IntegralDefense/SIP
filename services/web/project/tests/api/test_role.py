@@ -14,7 +14,7 @@ def test_create_missing_parameter(client):
     request = client.post('/api/roles', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['message'] == 'Request must include: name'
+    assert response['msg'] == 'Request must include: name'
 
 
 def test_create_duplicate(client):
@@ -30,7 +30,7 @@ def test_create_duplicate(client):
     request = client.post('/api/roles', data=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
-    assert response['message'] == 'Role already exists'
+    assert response['msg'] == 'Role already exists'
 
 
 def test_create_missing_token(app, client):
@@ -52,7 +52,7 @@ def test_create_invalid_role(client):
     request = client.post('/api/roles', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'admin role required'
+    assert response['msg'] == 'admin role required'
 
 
 def test_create(client):
@@ -76,7 +76,7 @@ def test_read_nonexistent_id(client):
     request = client.get('/api/roles/100000')
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'Role ID not found'
+    assert response['msg'] == 'Role ID not found'
 
 
 def test_read_missing_token(app, client):
@@ -100,7 +100,7 @@ def test_read_invalid_role(app, client):
     request = client.get('/api/roles/1', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'admin role required'
+    assert response['msg'] == 'admin role required'
 
 
 def test_read_all_values(client):
@@ -135,7 +135,7 @@ def test_update_nonexistent_id(client):
     request = client.put('/api/roles/100000', data=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'Role ID not found'
+    assert response['msg'] == 'Role ID not found'
 
 
 def test_update_missing_parameter(client):
@@ -146,7 +146,7 @@ def test_update_missing_parameter(client):
     request = client.put('/api/roles/1', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['message'] == 'Request must include at least name or description'
+    assert response['msg'] == 'Request must include at least name or description'
 
 
 def test_update_duplicate(client):
@@ -164,7 +164,7 @@ def test_update_duplicate(client):
     request = client.put('/api/roles/{}'.format(_id), data=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
-    assert response['message'] == 'Role already exists'
+    assert response['msg'] == 'Role already exists'
 
 
 def test_update_missing_token(app, client):
@@ -186,7 +186,7 @@ def test_update_invalid_role(client):
     request = client.put('/api/roles/1', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'admin role required'
+    assert response['msg'] == 'admin role required'
 
 
 def test_update(client):
@@ -224,7 +224,7 @@ def test_delete_nonexistent_id(client):
     request = client.delete('/api/roles/100000', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'Role ID not found'
+    assert response['msg'] == 'Role ID not found'
 
 
 def test_delete_missing_token(app, client):
@@ -246,7 +246,7 @@ def test_delete_invalid_role(client):
     request = client.delete('/api/roles/1', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'admin role required'
+    assert response['msg'] == 'admin role required'
 
 
 def test_delete(client):
@@ -266,4 +266,4 @@ def test_delete(client):
     request = client.get('/api/roles/{}'.format(_id))
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'Role ID not found'
+    assert response['msg'] == 'Role ID not found'

@@ -13,13 +13,13 @@ def test_create_missing_parameter(client):
     request = client.post('/api/campaigns/alias', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['message'] == 'Request must include: alias, campaign'
+    assert response['msg'] == 'Request must include: alias, campaign'
 
     data = {'campaign': 'asdf'}
     request = client.post('/api/campaigns/alias', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['message'] == 'Request must include: alias, campaign'
+    assert response['msg'] == 'Request must include: alias, campaign'
 
 
 def test_create_nonexistent_source(client):
@@ -29,7 +29,7 @@ def test_create_nonexistent_source(client):
     request = client.post('/api/campaigns/alias', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['message'] == 'Campaign does not exist'
+    assert response['msg'] == 'Campaign does not exist'
 
 
 def test_create_duplicate(client):
@@ -47,7 +47,7 @@ def test_create_duplicate(client):
     request = client.post('/api/campaigns/alias', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
-    assert response['message'] == 'Campaign alias already exists'
+    assert response['msg'] == 'Campaign alias already exists'
 
 
 def test_create_same_value(client):
@@ -61,7 +61,7 @@ def test_create_same_value(client):
     request = client.post('/api/campaigns/alias', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
-    assert response['message'] == 'Campaign alias cannot be the same as its name'
+    assert response['msg'] == 'Campaign alias cannot be the same as its name'
 
 
 def test_create_missing_token(app, client):
@@ -85,7 +85,7 @@ def test_create_invalid_role(app, client):
     request = client.post('/api/campaigns/alias', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'user_does_not_have_this_role role required'
+    assert response['msg'] == 'user_does_not_have_this_role role required'
 
 
 def test_create(client):
@@ -111,7 +111,7 @@ def test_read_nonexistent_id(client):
     request = client.get('/api/campaigns/alias/100000')
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'Campaign alias ID not found'
+    assert response['msg'] == 'Campaign alias ID not found'
 
 
 def test_read_missing_token(app, client):
@@ -135,7 +135,7 @@ def test_read_invalid_role(app, client):
     request = client.get('/api/campaigns/alias/1', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'user_does_not_have_this_role role required'
+    assert response['msg'] == 'user_does_not_have_this_role role required'
 
 
 def test_read_all_values(client):
@@ -195,7 +195,7 @@ def test_update_nonexistent_id(client):
     request = client.put('/api/campaigns/alias/100000', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'Campaign alias ID not found'
+    assert response['msg'] == 'Campaign alias ID not found'
 
 
 def test_update_missing_parameter(client):
@@ -214,7 +214,7 @@ def test_update_missing_parameter(client):
     request = client.put('/api/campaigns/alias/{}'.format(_id))
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['message'] == 'Request must include at least alias or campaign'
+    assert response['msg'] == 'Request must include at least alias or campaign'
 
 
 def test_update_duplicate(client):
@@ -234,7 +234,7 @@ def test_update_duplicate(client):
     request = client.put('/api/campaigns/alias/{}'.format(_id), data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
-    assert response['message'] == 'Campaign alias already exists'
+    assert response['msg'] == 'Campaign alias already exists'
 
 
 def test_update_same_value(client):
@@ -252,7 +252,7 @@ def test_update_same_value(client):
     request = client.post('/api/campaigns/alias', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
-    assert response['message'] == 'Campaign alias cannot be the same as its name'
+    assert response['msg'] == 'Campaign alias cannot be the same as its name'
 
 
 def test_update_nonexistent_campaign(client):
@@ -272,7 +272,7 @@ def test_update_nonexistent_campaign(client):
     request = client.put('/api/campaigns/alias/{}'.format(_id), data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'Campaign not found'
+    assert response['msg'] == 'Campaign not found'
 
 
 def test_update_missing_token(app, client):
@@ -296,7 +296,7 @@ def test_update_invalid_role(app, client):
     request = client.put('/api/campaigns/alias/1', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'user_does_not_have_this_role role required'
+    assert response['msg'] == 'user_does_not_have_this_role role required'
 
 
 def test_update(client):
@@ -334,7 +334,7 @@ def test_delete_nonexistent_id(client):
     request = client.delete('/api/campaigns/alias/100000')
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'Campaign alias ID not found'
+    assert response['msg'] == 'Campaign alias ID not found'
 
 
 def test_delete_missing_token(app, client):
@@ -358,7 +358,7 @@ def test_delete_invalid_role(app, client):
     request = client.delete('/api/campaigns/alias/1', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'user_does_not_have_this_role role required'
+    assert response['msg'] == 'user_does_not_have_this_role role required'
 
 
 def test_delete(client):
@@ -380,4 +380,4 @@ def test_delete(client):
     request = client.get('/api/campaigns/alias/{}'.format(_id))
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'Campaign alias ID not found'
+    assert response['msg'] == 'Campaign alias ID not found'

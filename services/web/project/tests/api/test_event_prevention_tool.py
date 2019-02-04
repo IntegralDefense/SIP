@@ -12,7 +12,7 @@ def test_create_missing_parameter(client):
     request = client.post('/api/events/preventiontool')
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['message'] == 'Request must include "value"'
+    assert response['msg'] == 'Request must include "value"'
 
 
 def test_create_duplicate(client):
@@ -26,7 +26,7 @@ def test_create_duplicate(client):
     request = client.post('/api/events/preventiontool', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
-    assert response['message'] == 'Event prevention tool already exists'
+    assert response['msg'] == 'Event prevention tool already exists'
 
 
 def test_create_missing_token(app, client):
@@ -50,7 +50,7 @@ def test_create_invalid_role(app, client):
     request = client.post('/api/events/preventiontool', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'user_does_not_have_this_role role required'
+    assert response['msg'] == 'user_does_not_have_this_role role required'
 
 
 def test_create(client):
@@ -72,7 +72,7 @@ def test_read_nonexistent_id(client):
     request = client.get('/api/events/preventiontool/100000')
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'Event prevention tool ID not found'
+    assert response['msg'] == 'Event prevention tool ID not found'
 
 
 def test_read_missing_token(app, client):
@@ -96,7 +96,7 @@ def test_read_invalid_role(app, client):
     request = client.get('/api/events/preventiontool/1', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'user_does_not_have_this_role role required'
+    assert response['msg'] == 'user_does_not_have_this_role role required'
 
 
 def test_read_all_values(client):
@@ -148,7 +148,7 @@ def test_update_nonexistent_id(client):
     request = client.put('/api/events/preventiontool/100000', data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'Event prevention tool ID not found'
+    assert response['msg'] == 'Event prevention tool ID not found'
 
 
 def test_update_missing_parameter(client):
@@ -163,7 +163,7 @@ def test_update_missing_parameter(client):
     request = client.put('/api/events/preventiontool/{}'.format(_id))
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['message'] == 'Request must include "value"'
+    assert response['msg'] == 'Request must include "value"'
 
 
 def test_update_duplicate(client):
@@ -179,7 +179,7 @@ def test_update_duplicate(client):
     request = client.put('/api/events/preventiontool/{}'.format(_id), data=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
-    assert response['message'] == 'Event prevention tool already exists'
+    assert response['msg'] == 'Event prevention tool already exists'
 
 
 def test_update_missing_token(app, client):
@@ -203,7 +203,7 @@ def test_update_invalid_role(app, client):
     request = client.put('/api/events/preventiontool/1', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'user_does_not_have_this_role role required'
+    assert response['msg'] == 'user_does_not_have_this_role role required'
 
 
 def test_update(client):
@@ -237,7 +237,7 @@ def test_delete_nonexistent_id(client):
     request = client.delete('/api/events/preventiontool/100000')
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'Event prevention tool ID not found'
+    assert response['msg'] == 'Event prevention tool ID not found'
 
 
 def test_delete_missing_token(app, client):
@@ -261,7 +261,7 @@ def test_delete_invalid_role(app, client):
     request = client.delete('/api/events/preventiontool/1', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'user_does_not_have_this_role role required'
+    assert response['msg'] == 'user_does_not_have_this_role role required'
     
     
 def test_delete_foreign_key(client):
@@ -275,7 +275,7 @@ def test_delete_foreign_key(client):
     request = client.delete('/api/events/preventiontool/{}'.format(prevention_tool_response['id']))
     response = json.loads(request.data.decode())
     assert request.status_code == 409
-    assert response['message'] == 'Unable to delete event prevention tool due to foreign key constraints'
+    assert response['msg'] == 'Unable to delete event prevention tool due to foreign key constraints'
 
 
 def test_delete(client):
@@ -293,4 +293,4 @@ def test_delete(client):
     request = client.get('/api/events/preventiontool/{}'.format(_id))
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'Event prevention tool ID not found'
+    assert response['msg'] == 'Event prevention tool ID not found'

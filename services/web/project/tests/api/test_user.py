@@ -18,7 +18,7 @@ def test_create_missing_parameter(client):
     request = client.post('/api/users', data=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'Request must include:' in response['message']
+    assert 'Request must include:' in response['msg']
 
     # Missing first_name
     data = {'email': 'asdf', 'last_name': 'asdf', 'password': 'asdf',
@@ -26,7 +26,7 @@ def test_create_missing_parameter(client):
     request = client.post('/api/users', data=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'Request must include:' in response['message']
+    assert 'Request must include:' in response['msg']
 
     # Missing last_name
     data = {'email': 'asdf', 'first_name': 'asdf', 'password': 'asdf',
@@ -34,7 +34,7 @@ def test_create_missing_parameter(client):
     request = client.post('/api/users', data=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'Request must include:' in response['message']
+    assert 'Request must include:' in response['msg']
 
     # Missing password
     data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf',
@@ -42,7 +42,7 @@ def test_create_missing_parameter(client):
     request = client.post('/api/users', data=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'Request must include:' in response['message']
+    assert 'Request must include:' in response['msg']
 
     # Missing roles
     data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf',
@@ -50,7 +50,7 @@ def test_create_missing_parameter(client):
     request = client.post('/api/users', data=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'Request must include:' in response['message']
+    assert 'Request must include:' in response['msg']
 
     # Missing username
     data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf',
@@ -58,7 +58,7 @@ def test_create_missing_parameter(client):
     request = client.post('/api/users', data=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'Request must include:' in response['message']
+    assert 'Request must include:' in response['msg']
 
 
 def test_create_duplicate(client):
@@ -78,7 +78,7 @@ def test_create_duplicate(client):
     request = client.post('/api/users', data=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
-    assert response['message'] == 'User email already exists'
+    assert response['msg'] == 'User email already exists'
 
     # Try making a duplicate username
     data = {'email': 'asdf2', 'first_name': 'asdf', 'last_name': 'asdf',
@@ -86,7 +86,7 @@ def test_create_duplicate(client):
     request = client.post('/api/users', data=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
-    assert response['message'] == 'User username already exists'
+    assert response['msg'] == 'User username already exists'
 
 
 def test_create_missing_token(app, client):
@@ -110,7 +110,7 @@ def test_create_invalid_role(app, client):
     request = client.post('/api/users', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'admin role required'
+    assert response['msg'] == 'admin role required'
 
 
 def test_create(client):
@@ -149,7 +149,7 @@ def test_read_nonexistent_id(client):
     request = client.get('/api/users/100000')
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'User ID not found'
+    assert response['msg'] == 'User ID not found'
 
 
 def test_read_missing_token(app, client):
@@ -173,7 +173,7 @@ def test_read_invalid_role(app, client):
     request = client.get('/api/users/1', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'admin role required'
+    assert response['msg'] == 'admin role required'
 
 
 def test_read_all_values(client):
@@ -211,7 +211,7 @@ def test_update_nonexistent_id(client):
     request = client.put('/api/users/100000', data=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'User ID not found'
+    assert response['msg'] == 'User ID not found'
 
 
 def test_update_missing_parameter(client):
@@ -222,7 +222,7 @@ def test_update_missing_parameter(client):
     request = client.put('/api/users/1', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'Request must include at least one of' in response['message']
+    assert 'Request must include at least one of' in response['msg']
 
 
 def test_update_duplicate(client):
@@ -245,14 +245,14 @@ def test_update_duplicate(client):
     request = client.put('/api/users/{}'.format(_id), data=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
-    assert response['message'] == 'User email already exists'
+    assert response['msg'] == 'User email already exists'
 
     # Try to update an existing username
     data = {'username': 'asdf'}
     request = client.put('/api/users/{}'.format(_id), data=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
-    assert response['message'] == 'User username already exists'
+    assert response['msg'] == 'User username already exists'
 
 
 def test_update_missing_token(app, client):
@@ -276,7 +276,7 @@ def test_update_invalid_role(app, client):
     request = client.put('/api/users/1', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'admin role required'
+    assert response['msg'] == 'admin role required'
 
 
 def test_update(client):
@@ -376,7 +376,7 @@ def test_delete_nonexistent_id(client):
     request = client.delete('/api/users/100000', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'User ID not found'
+    assert response['msg'] == 'User ID not found'
 
 
 def test_delete_missing_token(app, client):
@@ -400,7 +400,7 @@ def test_delete_invalid_role(app, client):
     request = client.delete('/api/users/1', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['message'] == 'admin role required'
+    assert response['msg'] == 'admin role required'
 
 
 def test_delete_foreign_key_event(client):
@@ -417,7 +417,7 @@ def test_delete_foreign_key_event(client):
     request = client.delete('/api/users/{}'.format(user_response['id']), headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
-    assert response['message'] == 'Unable to delete user due to foreign key constraints'
+    assert response['msg'] == 'Unable to delete user due to foreign key constraints'
 
 
 def test_delete_foreign_key_indicator(client):
@@ -434,7 +434,7 @@ def test_delete_foreign_key_indicator(client):
     request = client.delete('/api/users/{}'.format(user_response['id']), headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
-    assert response['message'] == 'Unable to delete user due to foreign key constraints'
+    assert response['msg'] == 'Unable to delete user due to foreign key constraints'
 
 
 def test_delete_foreign_key_reference(client):
@@ -451,7 +451,7 @@ def test_delete_foreign_key_reference(client):
     request = client.delete('/api/users/{}'.format(user_response['id']), headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
-    assert response['message'] == 'Unable to delete user due to foreign key constraints'
+    assert response['msg'] == 'Unable to delete user due to foreign key constraints'
 
 
 def test_delete(client):
@@ -473,4 +473,4 @@ def test_delete(client):
     request = client.get('/api/users/{}'.format(_id))
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['message'] == 'User ID not found'
+    assert response['msg'] == 'User ID not found'
