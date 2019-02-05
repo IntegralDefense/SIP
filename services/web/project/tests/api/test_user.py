@@ -1,64 +1,224 @@
 from project.tests.helpers import *
 
-
 """
 CREATE TESTS
 """
 
 
-def test_create_missing_parameter(client):
-    """ Ensure the required parameters are given """
+def test_create_schema(client):
+    """ Ensure POST requests conform to the required JSON schema """
 
     access_token, refresh_token = obtain_token(client, 'admin', 'admin')
     headers = create_auth_header(access_token)
 
-    # Missing email
-    data = {'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf',
-            'roles': 'asdf', 'username': 'asdf'}
-    request = client.post('/api/users', data=data, headers=headers)
+    # Invalid JSON
+    data = {}
+    request = client.post('/api/users', json=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'Request must include:' in response['msg']
+    assert response['msg'] == 'Request must include valid JSON'
 
-    # Missing first_name
-    data = {'email': 'asdf', 'last_name': 'asdf', 'password': 'asdf',
-            'roles': 'asdf', 'username': 'asdf'}
-    request = client.post('/api/users', data=data, headers=headers)
+    # Missing required email parameter
+    data = {'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': ['asdf'], 'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'Request must include:' in response['msg']
+    assert response['msg'] == "Request JSON does not match schema: 'email' is a required property"
 
-    # Missing last_name
-    data = {'email': 'asdf', 'first_name': 'asdf', 'password': 'asdf',
-            'roles': 'asdf', 'username': 'asdf'}
-    request = client.post('/api/users', data=data, headers=headers)
+    # Missing required first_name parameter
+    data = {'email': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': ['asdf'], 'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'Request must include:' in response['msg']
+    assert response['msg'] == "Request JSON does not match schema: 'first_name' is a required property"
 
-    # Missing password
-    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf',
-            'roles': 'asdf', 'username': 'asdf'}
-    request = client.post('/api/users', data=data, headers=headers)
+    # Missing required last_name parameter
+    data = {'first_name': 'asdf', 'email': 'asdf', 'password': 'asdf', 'roles': ['asdf'], 'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'Request must include:' in response['msg']
+    assert response['msg'] == "Request JSON does not match schema: 'last_name' is a required property"
 
-    # Missing roles
-    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf',
-            'password': 'asdf', 'username': 'asdf'}
-    request = client.post('/api/users', data=data, headers=headers)
+    # Missing required password parameter
+    data = {'first_name': 'asdf', 'last_name': 'asdf', 'email': 'asdf', 'roles': ['asdf'], 'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'Request must include:' in response['msg']
+    assert response['msg'] == "Request JSON does not match schema: 'password' is a required property"
 
-    # Missing username
-    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf',
-            'password': 'asdf', 'roles': 'asdf'}
-    request = client.post('/api/users', data=data, headers=headers)
+    # Missing required roles parameter
+    data = {'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'email': 'asdf', 'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'Request must include:' in response['msg']
+    assert response['msg'] == "Request JSON does not match schema: 'roles' is a required property"
+
+    # Missing required username parameter
+    data = {'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': ['asdf'], 'email': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert response['msg'] == "Request JSON does not match schema: 'username' is a required property"
+
+    # Additional parameter
+    data = {'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': ['asdf'], 'email': 'asdf',
+            'username': 'asdf', 'asdf': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'Additional properties are not allowed' in response['msg']
+
+    # Invalid email parameter type
+    data = {'email': 1, 'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': ['asdf'],
+            'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # email parameter too short
+    data = {'email': '', 'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': ['asdf'],
+            'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # email parameter too long
+    data = {'email': 'a' * 256, 'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': ['asdf'],
+            'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid first_name parameter type
+    data = {'email': 'asdf', 'first_name': 1, 'last_name': 'asdf', 'password': 'asdf', 'roles': ['asdf'],
+            'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # first_name parameter too short
+    data = {'email': 'asdf', 'first_name': '', 'last_name': 'asdf', 'password': 'asdf', 'roles': ['asdf'],
+            'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # first_name parameter too long
+    data = {'email': 'asdf', 'first_name': 'a' * 51, 'last_name': 'asdf', 'password': 'asdf', 'roles': ['asdf'],
+            'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid last_name parameter type
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 1, 'password': 'asdf', 'roles': ['asdf'],
+            'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # last_name parameter too short
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': '', 'password': 'asdf', 'roles': ['asdf'],
+            'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # last_name parameter too long
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'a' * 51, 'password': 'asdf', 'roles': ['asdf'],
+            'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid password parameter type
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf', 'password': 1, 'roles': ['asdf'],
+            'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # password parameter too short
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf', 'password': '', 'roles': ['asdf'],
+            'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # Invalid roles parameter type
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': 'asdf',
+            'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "'asdf' is not of type 'array'" in response['msg']
+
+    # Invalid roles parameter type
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': 1,
+            'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'array'" in response['msg']
+
+    # Empty roles parameter type
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': [],
+            'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # roles parameter too short
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': [''],
+            'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # roles parameter too long
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': ['a' * 81],
+            'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid username parameter type
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': ['asdf'],
+            'username': 1}
+    request = client.post('/api/users', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # username parameter too short
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': ['asdf'],
+            'username': ''}
+    request = client.post('/api/users', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # username parameter too long
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': ['asdf'],
+            'username': 'a' * 256}
+    request = client.post('/api/users', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
 
 
 def test_create_duplicate(client):
@@ -66,24 +226,24 @@ def test_create_duplicate(client):
 
     access_token, refresh_token = obtain_token(client, 'admin', 'admin')
     headers = create_auth_header(access_token)
-    
+
     data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf',
-            'password': 'asdf', 'roles': 'analyst', 'username': 'asdf'}
-    request = client.post('/api/users', data=data, headers=headers)
+            'password': 'asdf', 'roles': ['analyst'], 'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
     assert request.status_code == 201
 
     # Try making a duplicate email
     data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf',
-            'password': 'asdf', 'roles': 'analyst', 'username': 'asdf2'}
-    request = client.post('/api/users', data=data, headers=headers)
+            'password': 'asdf', 'roles': ['analyst'], 'username': 'asdf2'}
+    request = client.post('/api/users', json=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
     assert response['msg'] == 'User email already exists'
 
     # Try making a duplicate username
     data = {'email': 'asdf2', 'first_name': 'asdf', 'last_name': 'asdf',
-            'password': 'asdf', 'roles': 'analyst', 'username': 'asdf'}
-    request = client.post('/api/users', data=data, headers=headers)
+            'password': 'asdf', 'roles': ['analyst'], 'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
     assert response['msg'] == 'User username already exists'
@@ -118,20 +278,11 @@ def test_create(client):
 
     access_token, refresh_token = obtain_token(client, 'admin', 'admin')
     headers = create_auth_header(access_token)
-    
-    # Try with a single roles string
-    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf',
-            'password': 'asdf', 'roles': 'analyst', 'username': 'asdf'}
-    request = client.post('/api/users', data=data, headers=headers)
-    response = json.loads(request.data.decode())
-    assert request.status_code == 201
-    assert response['roles'] == ['analyst']
-    assert response['username'] == 'asdf'
 
     # Try with a roles list
     data = {'email': 'asdf2', 'first_name': 'asdf', 'last_name': 'asdf',
             'password': 'asdf', 'roles': ['analyst', 'admin'], 'username': 'asdf2'}
-    request = client.post('/api/users', data=data, headers=headers)
+    request = client.post('/api/users', json=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 201
     assert response['roles'] == ['admin', 'analyst']
@@ -200,29 +351,192 @@ UPDATE TESTS
 """
 
 
+def test_update_schema(client):
+    """ Ensure PUT requests conform to the required JSON schema """
+
+    access_token, refresh_token = obtain_token(client, 'admin', 'admin')
+    headers = create_auth_header(access_token)
+
+    # Invalid JSON
+    data = {}
+    request = client.put('/api/users/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert response['msg'] == 'Request must include valid JSON'
+
+    # Additional parameter
+    data = {'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': ['asdf'], 'email': 'asdf',
+            'username': 'asdf', 'asdf': 'asdf'}
+    request = client.put('/api/users/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'Additional properties are not allowed' in response['msg']
+
+    # Invalid email parameter type
+    data = {'email': 1, 'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': ['asdf'],
+            'username': 'asdf'}
+    request = client.put('/api/users/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # email parameter too short
+    data = {'email': '', 'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': ['asdf'],
+            'username': 'asdf'}
+    request = client.put('/api/users/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # email parameter too long
+    data = {'email': 'a' * 256, 'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': ['asdf'],
+            'username': 'asdf'}
+    request = client.put('/api/users/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid first_name parameter type
+    data = {'email': 'asdf', 'first_name': 1, 'last_name': 'asdf', 'password': 'asdf', 'roles': ['asdf'],
+            'username': 'asdf'}
+    request = client.put('/api/users/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # first_name parameter too short
+    data = {'email': 'asdf', 'first_name': '', 'last_name': 'asdf', 'password': 'asdf', 'roles': ['asdf'],
+            'username': 'asdf'}
+    request = client.put('/api/users/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # first_name parameter too long
+    data = {'email': 'asdf', 'first_name': 'a' * 51, 'last_name': 'asdf', 'password': 'asdf', 'roles': ['asdf'],
+            'username': 'asdf'}
+    request = client.put('/api/users/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid last_name parameter type
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 1, 'password': 'asdf', 'roles': ['asdf'],
+            'username': 'asdf'}
+    request = client.put('/api/users/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # last_name parameter too short
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': '', 'password': 'asdf', 'roles': ['asdf'],
+            'username': 'asdf'}
+    request = client.put('/api/users/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # last_name parameter too long
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'a' * 51, 'password': 'asdf', 'roles': ['asdf'],
+            'username': 'asdf'}
+    request = client.put('/api/users/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid password parameter type
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf', 'password': 1, 'roles': ['asdf'],
+            'username': 'asdf'}
+    request = client.put('/api/users/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # password parameter too short
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf', 'password': '', 'roles': ['asdf'],
+            'username': 'asdf'}
+    request = client.put('/api/users/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # Invalid roles parameter type
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': 'asdf',
+            'username': 'asdf'}
+    request = client.put('/api/users/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "'asdf' is not of type 'array'" in response['msg']
+
+    # Invalid roles parameter type
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': 1,
+            'username': 'asdf'}
+    request = client.put('/api/users/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'array'" in response['msg']
+
+    # Empty roles parameter type
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': [],
+            'username': 'asdf'}
+    request = client.put('/api/users/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # roles parameter too short
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': [''],
+            'username': 'asdf'}
+    request = client.put('/api/users/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # roles parameter too long
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': ['a' * 81],
+            'username': 'asdf'}
+    request = client.put('/api/users/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid username parameter type
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': ['asdf'],
+            'username': 1}
+    request = client.put('/api/users/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # username parameter too short
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': ['asdf'],
+            'username': ''}
+    request = client.put('/api/users/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # username parameter too long
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf', 'password': 'asdf', 'roles': ['asdf'],
+            'username': 'a' * 256}
+    request = client.put('/api/users/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+
 def test_update_nonexistent_id(client):
     """ Ensure a nonexistent ID does not work """
 
     access_token, refresh_token = obtain_token(client, 'admin', 'admin')
     headers = create_auth_header(access_token)
-    
+
     data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf',
             'password': 'asdf', 'roles': ['analyst', 'admin'], 'username': 'asdf'}
-    request = client.put('/api/users/100000', data=data, headers=headers)
+    request = client.put('/api/users/100000', json=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 404
     assert response['msg'] == 'User ID not found'
-
-
-def test_update_missing_parameter(client):
-    """ Ensure the required parameters are given """
-
-    access_token, refresh_token = obtain_token(client, 'admin', 'admin')
-    headers = create_auth_header(access_token)
-    request = client.put('/api/users/1', headers=headers)
-    response = json.loads(request.data.decode())
-    assert request.status_code == 400
-    assert 'Request must include at least one of' in response['msg']
 
 
 def test_update_duplicate(client):
@@ -230,10 +544,10 @@ def test_update_duplicate(client):
 
     access_token, refresh_token = obtain_token(client, 'admin', 'admin')
     headers = create_auth_header(access_token)
-    
+
     data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf',
-            'password': 'asdf', 'roles': 'analyst', 'username': 'asdf'}
-    request = client.post('/api/users', data=data, headers=headers)
+            'password': 'asdf', 'roles': ['analyst'], 'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
     response = json.loads(request.data.decode())
     _id = response['id']
     assert request.status_code == 201
@@ -242,14 +556,14 @@ def test_update_duplicate(client):
 
     # Try to update an existing email
     data = {'email': 'asdf'}
-    request = client.put('/api/users/{}'.format(_id), data=data, headers=headers)
+    request = client.put('/api/users/{}'.format(_id), json=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
     assert response['msg'] == 'User email already exists'
 
     # Try to update an existing username
     data = {'username': 'asdf'}
-    request = client.put('/api/users/{}'.format(_id), data=data, headers=headers)
+    request = client.put('/api/users/{}'.format(_id), json=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
     assert response['msg'] == 'User username already exists'
@@ -286,7 +600,7 @@ def test_update(client):
     headers = create_auth_header(access_token)
     data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf',
             'password': 'asdf', 'roles': ['analyst', 'admin'], 'username': 'asdf'}
-    request = client.post('/api/users', data=data, headers=headers)
+    request = client.post('/api/users', json=data, headers=headers)
     response = json.loads(request.data.decode())
     _id = response['id']
     assert request.status_code == 201
@@ -295,7 +609,7 @@ def test_update(client):
 
     # Update active
     data = {'active': False}
-    request = client.put('/api/users/{}'.format(_id), data=data, headers=headers)
+    request = client.put('/api/users/{}'.format(_id), json=data, headers=headers)
     assert request.status_code == 200
 
     request = client.get('/api/users/{}'.format(_id))
@@ -306,7 +620,7 @@ def test_update(client):
 
     # Update email
     data = {'email': 'asdf2'}
-    request = client.put('/api/users/{}'.format(_id), data=data, headers=headers)
+    request = client.put('/api/users/{}'.format(_id), json=data, headers=headers)
     assert request.status_code == 200
 
     request = client.get('/api/users/{}'.format(_id))
@@ -317,7 +631,7 @@ def test_update(client):
 
     # Update first_name
     data = {'first_name': 'asdf2'}
-    request = client.put('/api/users/{}'.format(_id), data=data, headers=headers)
+    request = client.put('/api/users/{}'.format(_id), json=data, headers=headers)
     assert request.status_code == 200
 
     request = client.get('/api/users/{}'.format(_id))
@@ -328,7 +642,7 @@ def test_update(client):
 
     # Update last_name
     data = {'last_name': 'asdf2'}
-    request = client.put('/api/users/{}'.format(_id), data=data, headers=headers)
+    request = client.put('/api/users/{}'.format(_id), json=data, headers=headers)
     assert request.status_code == 200
 
     request = client.get('/api/users/{}'.format(_id))
@@ -340,20 +654,9 @@ def test_update(client):
     # Password
     # TODO: Not sure how to effectively test changing password.
 
-    # Update roles with a string
-    data = {'roles': 'analyst'}
-    request = client.put('/api/users/{}'.format(_id), data=data, headers=headers)
-    assert request.status_code == 200
-
-    request = client.get('/api/users/{}'.format(_id))
-    response = json.loads(request.data.decode())
-    assert request.status_code == 200
-    assert response['id'] == _id
-    assert response['roles'] == ['analyst']
-
     # Update roles with a list
     data = {'roles': ['analyst', 'admin']}
-    request = client.put('/api/users/{}'.format(_id), data=data, headers=headers)
+    request = client.put('/api/users/{}'.format(_id), json=data, headers=headers)
     assert request.status_code == 200
 
     request = client.get('/api/users/{}'.format(_id))
@@ -408,7 +711,7 @@ def test_delete_foreign_key_event(client):
 
     access_token, refresh_token = obtain_token(client, 'admin', 'admin')
     headers = create_auth_header(access_token)
-    
+
     user_request, user_response = create_user(client, 'asdf@asdf.com', 'asdf', 'asdf', 'asdf', ['analyst'], 'some_guy')
     event_request, event_response = create_event(client, 'test_event', 'some_guy')
     assert user_request.status_code == 201
@@ -425,7 +728,7 @@ def test_delete_foreign_key_indicator(client):
 
     access_token, refresh_token = obtain_token(client, 'admin', 'admin')
     headers = create_auth_header(access_token)
-    
+
     user_request, user_response = create_user(client, 'asdf@asdf.com', 'asdf', 'asdf', 'asdf', ['analyst'], 'some_guy')
     indicator_request, indicator_response = create_indicator(client, 'IP', '127.0.0.1', 'some_guy')
     assert user_request.status_code == 201
@@ -442,7 +745,7 @@ def test_delete_foreign_key_reference(client):
 
     access_token, refresh_token = obtain_token(client, 'admin', 'admin')
     headers = create_auth_header(access_token)
-    
+
     user_request, user_response = create_user(client, 'asdf@asdf.com', 'asdf', 'asdf', 'asdf', ['analyst'], 'some_guy')
     reference_request, reference_response = create_intel_reference(client, 'some_guy', 'OSINT', 'http://blahblah.com')
     assert user_request.status_code == 201
@@ -459,10 +762,10 @@ def test_delete(client):
 
     access_token, refresh_token = obtain_token(client, 'admin', 'admin')
     headers = create_auth_header(access_token)
-    
+
     data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf',
             'password': 'asdf', 'roles': ['analyst', 'admin'], 'username': 'asdf'}
-    request = client.post('/api/users', data=data, headers=headers)
+    request = client.post('/api/users', json=data, headers=headers)
     response = json.loads(request.data.decode())
     _id = response['id']
     assert request.status_code == 201

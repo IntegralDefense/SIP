@@ -6,15 +6,74 @@ CREATE TESTS
 """
 
 
-def test_create_missing_parameter(client):
-    """ Ensure the required parameters are given """
+def test_create_schema(client):
+    """ Ensure POST requests conform to the required JSON schema """
 
     access_token, refresh_token = obtain_token(client, 'admin', 'admin')
     headers = create_auth_header(access_token)
-    request = client.post('/api/roles', headers=headers)
+
+    # Invalid JSON
+    data = {}
+    request = client.post('/api/roles', json=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['msg'] == 'Request must include: name'
+    assert response['msg'] == 'Request must include valid JSON'
+
+    # Missing required name parameter
+    data = {'asdf': 'asdf'}
+    request = client.post('/api/roles', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert response['msg'] == "Request JSON does not match schema: 'name' is a required property"
+
+    # Additional parameter
+    data = {'name': 'asdf', 'asdf': 'asdf'}
+    request = client.post('/api/roles', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'Additional properties are not allowed' in response['msg']
+
+    # Invalid name parameter type
+    data = {'name': 1}
+    request = client.post('/api/roles', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # name parameter too short
+    data = {'name': ''}
+    request = client.post('/api/roles', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # name parameter too long
+    data = {'name': 'a' * 81}
+    request = client.post('/api/roles', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid description parameter type
+    data = {'name': 'asdf', 'description': 1}
+    request = client.post('/api/roles', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # description parameter too short
+    data = {'name': 'asdf', 'description': ''}
+    request = client.post('/api/roles', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # description parameter too long
+    data = {'name': 'asdf', 'description': 'a' * 256}
+    request = client.post('/api/roles', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
 
 
 def test_create_duplicate(client):
@@ -23,11 +82,11 @@ def test_create_duplicate(client):
     access_token, refresh_token = obtain_token(client, 'admin', 'admin')
     headers = create_auth_header(access_token)
     data = {'name': 'asdf'}
-    request = client.post('/api/roles', data=data, headers=headers)
+    request = client.post('/api/roles', json=data, headers=headers)
     assert request.status_code == 201
 
     data = {'name': 'asdf'}
-    request = client.post('/api/roles', data=data, headers=headers)
+    request = client.post('/api/roles', json=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
     assert response['msg'] == 'Role already exists'
@@ -61,7 +120,7 @@ def test_create(client):
     access_token, refresh_token = obtain_token(client, 'admin', 'admin')
     headers = create_auth_header(access_token)
     data = {'name': 'asdf'}
-    request = client.post('/api/roles', data=data, headers=headers)
+    request = client.post('/api/roles', json=data, headers=headers)
     assert request.status_code == 201
 
 
@@ -126,27 +185,79 @@ UPDATE TESTS
 """
 
 
+def test_update_schema(client):
+    """ Ensure PUT requests conform to the required JSON schema """
+
+    access_token, refresh_token = obtain_token(client, 'admin', 'admin')
+    headers = create_auth_header(access_token)
+
+    # Invalid JSON
+    data = {}
+    request = client.put('/api/roles/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert response['msg'] == 'Request must include valid JSON'
+
+    # Additional parameter
+    data = {'name': 'asdf', 'asdf': 'asdf'}
+    request = client.put('/api/roles/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'Additional properties are not allowed' in response['msg']
+
+    # Invalid name parameter type
+    data = {'name': 1}
+    request = client.put('/api/roles/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # name parameter too short
+    data = {'name': ''}
+    request = client.put('/api/roles/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # name parameter too long
+    data = {'name': 'a' * 81}
+    request = client.put('/api/roles/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid description parameter type
+    data = {'name': 'asdf', 'description': 1}
+    request = client.put('/api/roles/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # description parameter too short
+    data = {'name': 'asdf', 'description': ''}
+    request = client.put('/api/roles/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # description parameter too long
+    data = {'name': 'asdf', 'description': 'a' * 256}
+    request = client.put('/api/roles/1', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+
 def test_update_nonexistent_id(client):
     """ Ensure a nonexistent ID does not work """
 
     access_token, refresh_token = obtain_token(client, 'admin', 'admin')
     headers = create_auth_header(access_token)
     data = {'name': 'asdf'}
-    request = client.put('/api/roles/100000', data=data, headers=headers)
+    request = client.put('/api/roles/100000', json=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 404
     assert response['msg'] == 'Role ID not found'
-
-
-def test_update_missing_parameter(client):
-    """ Ensure the required parameters are given """
-
-    access_token, refresh_token = obtain_token(client, 'admin', 'admin')
-    headers = create_auth_header(access_token)
-    request = client.put('/api/roles/1', headers=headers)
-    response = json.loads(request.data.decode())
-    assert request.status_code == 400
-    assert response['msg'] == 'Request must include at least name or description'
 
 
 def test_update_duplicate(client):
@@ -155,13 +266,13 @@ def test_update_duplicate(client):
     access_token, refresh_token = obtain_token(client, 'admin', 'admin')
     headers = create_auth_header(access_token)
     data = {'name': 'asdf'}
-    request = client.post('/api/roles', data=data, headers=headers)
+    request = client.post('/api/roles', json=data, headers=headers)
     response = json.loads(request.data.decode())
     _id = response['id']
     assert request.status_code == 201
 
     data = {'name': 'asdf'}
-    request = client.put('/api/roles/{}'.format(_id), data=data, headers=headers)
+    request = client.put('/api/roles/{}'.format(_id), json=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
     assert response['msg'] == 'Role already exists'
@@ -195,13 +306,13 @@ def test_update(client):
     access_token, refresh_token = obtain_token(client, 'admin', 'admin')
     headers = create_auth_header(access_token)
     data = {'name': 'asdf'}
-    request = client.post('/api/roles', data=data, headers=headers)
+    request = client.post('/api/roles', json=data, headers=headers)
     response = json.loads(request.data.decode())
     _id = response['id']
     assert request.status_code == 201
 
     data = {'name': 'asdf2'}
-    request = client.put('/api/roles/{}'.format(_id), data=data, headers=headers)
+    request = client.put('/api/roles/{}'.format(_id), json=data, headers=headers)
     assert request.status_code == 200
 
     request = client.get('/api/roles/{}'.format(_id))
@@ -255,7 +366,7 @@ def test_delete(client):
     access_token, refresh_token = obtain_token(client, 'admin', 'admin')
     headers = create_auth_header(access_token)
     data = {'name': 'asdf'}
-    request = client.post('/api/roles', data=data, headers=headers)
+    request = client.post('/api/roles', json=data, headers=headers)
     response = json.loads(request.data.decode())
     _id = response['id']
     assert request.status_code == 201

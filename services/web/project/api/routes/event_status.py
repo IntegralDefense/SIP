@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_if_token_required
+from project.api.decorators import check_if_token_required, validate_json, validate_schema
 from project.api.errors import error_response
 from project.models import EventStatus
 
@@ -11,17 +11,24 @@ from project.models import EventStatus
 CREATE
 """
 
+create_schema = {
+    'type': 'object',
+    'properties': {
+        'value': {'type': 'string', 'minLength': 1, 'maxLength': 255}
+    },
+    'required': ['value'],
+    'additionalProperties': False
+}
+
 
 @bp.route('/events/status', methods=['POST'])
 @check_if_token_required
+@validate_json
+@validate_schema(create_schema)
 def create_event_status():
     """ Creates a new event status. """
 
-    data = request.values or {}
-
-    # Verify the required fields (value) are present.
-    if 'value' not in data:
-        return error_response(400, 'Request must include "value"')
+    data = request.get_json()
 
     # Verify this value does not already exist.
     existing = EventStatus.query.filter_by(value=data['value']).first()
@@ -70,22 +77,29 @@ def read_event_statuss():
 UPDATE
 """
 
+update_schema = {
+    'type': 'object',
+    'properties': {
+        'value': {'type': 'string', 'minLength': 1, 'maxLength': 255}
+    },
+    'required': ['value'],
+    'additionalProperties': False
+}
+
 
 @bp.route('/events/status/<int:event_status_id>', methods=['PUT'])
 @check_if_token_required
+@validate_json
+@validate_schema(update_schema)
 def update_event_status(event_status_id):
     """ Updates an existing event status. """
 
-    data = request.values or {}
+    data = request.get_json()
 
     # Verify the ID exists.
     event_status = EventStatus.query.get(event_status_id)
     if not event_status:
         return error_response(404, 'Event status ID not found')
-
-    # Verify the required fields (value) are present.
-    if 'value' not in data:
-        return error_response(400, 'Request must include "value"')
 
     # Verify this value does not already exist.
     existing = EventStatus.query.filter_by(value=data['value']).first()

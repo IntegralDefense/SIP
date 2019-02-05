@@ -6,7 +6,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_if_token_required
+from project.api.decorators import check_if_token_required, validate_json, validate_schema
 from project.api.errors import error_response
 from project.models import Campaign, Event, EventAttackVector, EventDisposition, EventPreventionTool, \
     EventRemediation, EventStatus, EventType, IntelReference, IntelSource, Malware, Tag, User
@@ -16,17 +16,63 @@ from project.models import Campaign, Event, EventAttackVector, EventDisposition,
 CREATE
 """
 
+create_schema = {
+    'type': 'object',
+    'properties': {
+        'attack_vectors': {
+            'type': 'array',
+            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+            'minItems': 1
+        },
+        'campaign': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+        'disposition': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+        'malware': {
+            'type': 'array',
+            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+            'minItems': 1
+        },
+        'name': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+        'prevention_tools': {
+            'type': 'array',
+            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+            'minItems': 1
+        },
+        'references': {
+            'type': 'array',
+            'items': {'type': 'string', 'minLength': 1, 'maxLength': 512},
+            'minItems': 1
+        },
+        'remediations': {
+            'type': 'array',
+            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+            'minItems': 1
+        },
+        'status': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+        'tags': {
+            'type': 'array',
+            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+            'minItems': 1
+        },
+        'types': {
+            'type': 'array',
+            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+            'minItems': 1
+        },
+        'username': {'type': 'string', 'minLength': 1, 'maxLength': 255}
+    },
+    'required': ['name', 'username'],
+    'additionalProperties': False
+}
+
 
 @bp.route('/events', methods=['POST'])
 @check_if_token_required
+@validate_json
+@validate_schema(create_schema)
 def create_event():
     """ Creates a new event. """
 
-    data = request.values or {}
-
-    # Verify the required fields (name, username) are present.
-    if 'name' not in data or 'username' not in data:
-        return error_response(400, 'Request must include: name, username')
+    data = request.get_json()
 
     # Verify this name does not already exist.
     existing = Event.query.filter_by(name=data['name']).first()
@@ -62,11 +108,12 @@ def create_event():
     event = Event(name=data['name'], disposition=disposition, status=status, user=user)
 
     # Verify any attack vectors that were specified.
-    for value in data.getlist('attack_vectors'):
-        attack_vector = EventAttackVector.query.filter_by(value=value).first()
-        if not attack_vector:
-            error_response(404, 'Attack vector not found: {}'.format(value))
-        event.attack_vectors.append(attack_vector)
+    if 'attack_vectors' in data:
+        for value in data['attack_vectors']:
+            attack_vector = EventAttackVector.query.filter_by(value=value).first()
+            if not attack_vector:
+                error_response(404, 'Attack vector not found: {}'.format(value))
+            event.attack_vectors.append(attack_vector)
 
     # Verify campaign if one was specified.
     if 'campaign' in data:
@@ -76,46 +123,52 @@ def create_event():
         event.campaign = campaign
 
     # Verify any malware that was specified.
-    for value in data.getlist('malware'):
-        malware = Malware.query.filter_by(name=value).first()
-        if not malware:
-            return error_response(404, 'Malware not found: {}'.format(value))
-        event.malware.append(malware)
+    if 'malware' in data:
+        for value in data['malware']:
+            malware = Malware.query.filter_by(name=value).first()
+            if not malware:
+                return error_response(404, 'Malware not found: {}'.format(value))
+            event.malware.append(malware)
 
     # Verify any prevention tools that were specified.
-    for value in data.getlist('prevention_tools'):
-        prevention_tool = EventPreventionTool.query.filter_by(value=value).first()
-        if not prevention_tool:
-            return error_response(404, 'Prevention tool not found: {}'.format(value))
-        event.prevention_tools.append(prevention_tool)
+    if 'prevention_tools' in data:
+        for value in data['prevention_tools']:
+            prevention_tool = EventPreventionTool.query.filter_by(value=value).first()
+            if not prevention_tool:
+                return error_response(404, 'Prevention tool not found: {}'.format(value))
+            event.prevention_tools.append(prevention_tool)
 
     # Verify any references that were specified.
-    for value in data.getlist('references'):
-        reference = IntelReference.query.filter_by(reference=value).first()
-        if not reference:
-            return error_response(404, 'Reference not found: {}'.format(value))
-        event.references.append(reference)
+    if 'references' in data:
+        for value in data['references']:
+            reference = IntelReference.query.filter_by(reference=value).first()
+            if not reference:
+                return error_response(404, 'Reference not found: {}'.format(value))
+            event.references.append(reference)
 
     # Verify any remediations that were specified.
-    for value in data.getlist('remediations'):
-        remediation = EventRemediation.query.filter_by(value=value).first()
-        if not remediation:
-            return error_response(404, 'Remediation not found: {}'.format(value))
-        event.remediations.append(remediation)
+    if 'remediations' in data:
+        for value in data['remediations']:
+            remediation = EventRemediation.query.filter_by(value=value).first()
+            if not remediation:
+                return error_response(404, 'Remediation not found: {}'.format(value))
+            event.remediations.append(remediation)
 
     # Verify any tags that were specified.
-    for value in data.getlist('tags'):
-        tag = Tag.query.filter_by(value=value).first()
-        if not tag:
-            return error_response(404, 'Tag not found: {}'.format(value))
-        event.tags.append(tag)
+    if 'tags' in data:
+        for value in data['tags']:
+            tag = Tag.query.filter_by(value=value).first()
+            if not tag:
+                return error_response(404, 'Tag not found: {}'.format(value))
+            event.tags.append(tag)
 
     # Verify any types that were specified.
-    for value in data.getlist('types'):
-        _type = EventType.query.filter_by(value=value).first()
-        if not _type:
-            return error_response(404, 'Type not found: {}'.format(value))
-        event.types.append(_type)
+    if 'types' in data:
+        for value in data['types']:
+            _type = EventType.query.filter_by(value=value).first()
+            if not _type:
+                return error_response(404, 'Type not found: {}'.format(value))
+            event.types.append(_type)
 
     # Save the event.
     db.session.add(event)
@@ -278,36 +331,79 @@ def read_events():
 UPDATE
 """
 
+update_schema = {
+    'type': 'object',
+    'properties': {
+        'attack_vectors': {
+            'type': 'array',
+            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+            'minItems': 1
+        },
+        'campaign': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+        'disposition': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+        'malware': {
+            'type': 'array',
+            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+            'minItems': 1
+        },
+        'prevention_tools': {
+            'type': 'array',
+            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+            'minItems': 1
+        },
+        'references': {
+            'type': 'array',
+            'items': {'type': 'string', 'minLength': 1, 'maxLength': 512},
+            'minItems': 1
+        },
+        'remediations': {
+            'type': 'array',
+            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+            'minItems': 1
+        },
+        'status': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+        'tags': {
+            'type': 'array',
+            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+            'minItems': 1
+        },
+        'types': {
+            'type': 'array',
+            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+            'minItems': 1
+        },
+        'username': {'type': 'string', 'minLength': 1, 'maxLength': 255}
+    },
+    'additionalProperties': False
+}
+
 
 @bp.route('/events/<int:event_id>', methods=['PUT'])
 @check_if_token_required
+@validate_json
+@validate_schema(update_schema)
 def update_event(event_id):
     """ Updates an existing event. """
 
-    data = request.values or {}
+    data = request.get_json()
 
     # Verify the ID exists.
     event = Event.query.get(event_id)
     if not event:
         return error_response(404, 'Event ID not found')
 
-    # Verify at least one required field was specified.
-    required = ['attack_vectors', 'campaign', 'disposition', 'malware', 'prevention_tools', 'references',
-                'remediations', 'tags', 'types', 'username']
-    if not any(r in data for r in required):
-        return error_response(400, 'Request must include at least one of: {}'.format(', '.join(sorted(required))))
-
     # Verify attack_vectors if it was specified.
-    valid_attack_vectors = []
-    for value in data.getlist('attack_vectors'):
+    if 'attack_vectors' in data:
+        valid_attack_vectors = []
+        for value in data['attack_vectors']:
 
-        # Verify each attack_vector is actually valid.
-        attack_vector = EventAttackVector.query.filter_by(value=value).first()
-        if not attack_vector:
-            error_response(404, 'Attack vector not found: {}'.format(value))
-        valid_attack_vectors.append(attack_vector)
-    if valid_attack_vectors:
-        event.attack_vectors = valid_attack_vectors
+            # Verify each attack_vector is actually valid.
+            attack_vector = EventAttackVector.query.filter_by(value=value).first()
+            if not attack_vector:
+                error_response(404, 'Event attack vector not found: {}'.format(value))
+            valid_attack_vectors.append(attack_vector)
+        if valid_attack_vectors:
+            event.attack_vectors = valid_attack_vectors
 
     # Verify campaign if one was specified.
     if 'campaign' in data:
@@ -324,82 +420,95 @@ def update_event(event_id):
         event.disposition = disposition
 
     # Verify malware if it was specified.
-    valid_malware = []
-    for value in data.getlist('malware'):
+    if 'malware' in data:
+        valid_malware = []
+        for value in data['malware']:
 
-        # Verify each malware is actually valid.
-        malware = Malware.query.filter_by(name=value).first()
-        if not malware:
-            error_response(404, 'Malware not found: {}'.format(value))
-        valid_malware.append(malware)
-    if valid_malware:
-        event.malware = valid_malware
+            # Verify each malware is actually valid.
+            malware = Malware.query.filter_by(name=value).first()
+            if not malware:
+                error_response(404, 'Malware not found: {}'.format(value))
+            valid_malware.append(malware)
+        if valid_malware:
+            event.malware = valid_malware
 
     # Verify prevention_tools if it was specified.
-    valid_prevention_tools = []
-    for value in data.getlist('prevention_tools'):
+    if 'prevention_tools' in data:
+        valid_prevention_tools = []
+        for value in data['prevention_tools']:
 
-        # Verify each prevention_tool is actually valid.
-        prevention_tool = EventPreventionTool.query.filter_by(value=value).first()
-        if not prevention_tool:
-            error_response(404, 'Event prevention tool not found: {}'.format(value))
-        valid_prevention_tools.append(prevention_tool)
-    if valid_prevention_tools:
-        event.prevention_tools = valid_prevention_tools
+            # Verify each prevention_tool is actually valid.
+            prevention_tool = EventPreventionTool.query.filter_by(value=value).first()
+            if not prevention_tool:
+                error_response(404, 'Event prevention tool not found: {}'.format(value))
+            valid_prevention_tools.append(prevention_tool)
+        if valid_prevention_tools:
+            event.prevention_tools = valid_prevention_tools
 
     # Verify references if it was specified.
-    valid_references = []
-    for value in data.getlist('references'):
+    if 'references' in data:
+        valid_references = []
+        for value in data['references']:
 
-        # Verify each reference is actually valid.
-        reference = IntelReference.query.filter_by(reference=value).first()
-        if not reference:
-            error_response(404, 'Intel reference not found: {}'.format(value))
-        valid_references.append(reference)
-    if valid_references:
-        event.references = valid_references
+            # Verify each reference is actually valid.
+            reference = IntelReference.query.filter_by(reference=value).first()
+            if not reference:
+                error_response(404, 'Intel reference not found: {}'.format(value))
+            valid_references.append(reference)
+        if valid_references:
+            event.references = valid_references
 
     # Verify remediations if it was specified.
-    valid_remediations = []
-    for value in data.getlist('remediations'):
+    if 'remediations' in data:
+        valid_remediations = []
+        for value in data['remediations']:
 
-        # Verify each remediation is actually valid.
-        remediation = EventRemediation.query.filter_by(value=value).first()
-        if not remediation:
-            error_response(404, 'Event remediation not found: {}'.format(value))
-        valid_remediations.append(remediation)
-    if valid_remediations:
-        event.remediations = valid_remediations
+            # Verify each remediation is actually valid.
+            remediation = EventRemediation.query.filter_by(value=value).first()
+            if not remediation:
+                error_response(404, 'Event remediation not found: {}'.format(value))
+            valid_remediations.append(remediation)
+        if valid_remediations:
+            event.remediations = valid_remediations
+
+    # Verify status if one was specified.
+    if 'status' in data:
+        status = EventStatus.query.filter_by(value=data['status']).first()
+        if not status:
+            return error_response(404, 'Event status not found: {}'.format(data['status']))
+        event.status = status
 
     # Verify tags if it was specified.
-    valid_tags = []
-    for value in data.getlist('tags'):
+    if 'tags' in data:
+        valid_tags = []
+        for value in data['tags']:
 
-        # Verify each tag is actually valid.
-        tag = Tag.query.filter_by(value=value).first()
-        if not tag:
-            error_response(404, 'Tag not found: {}'.format(value))
-        valid_tags.append(tag)
-    if valid_tags:
-        event.tags = valid_tags
+            # Verify each tag is actually valid.
+            tag = Tag.query.filter_by(value=value).first()
+            if not tag:
+                error_response(404, 'Tag not found: {}'.format(value))
+            valid_tags.append(tag)
+        if valid_tags:
+            event.tags = valid_tags
 
     # Verify types if it was specified.
-    valid_types = []
-    for value in data.getlist('types'):
+    if 'types' in data:
+        valid_types = []
+        for value in data['types']:
 
-        # Verify each type is actually valid.
-        _type = EventType.query.filter_by(value=value).first()
-        if not _type:
-            error_response(404, 'Event type not found: {}'.format(value))
-        valid_types.append(_type)
-    if valid_types:
-        event.types = valid_types
+            # Verify each type is actually valid.
+            _type = EventType.query.filter_by(value=value).first()
+            if not _type:
+                error_response(404, 'Event type not found: {}'.format(value))
+            valid_types.append(_type)
+        if valid_types:
+            event.types = valid_types
 
     # Verify username if one was specified.
     if 'username' in data:
         user = User.query.filter_by(username=data['username']).first()
         if not user:
-            return error_response(404, 'User username not found: {}'.format(data['username']))
+            return error_response(404, 'Username not found: {}'.format(data['username']))
 
         if not user.active:
             return error_response(401, 'Cannot update an event with an inactive user')

@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_if_token_required
+from project.api.decorators import check_if_token_required, validate_json, validate_schema
 from project.api.errors import error_response
 from project.models import Campaign, CampaignAlias
 
@@ -11,17 +11,29 @@ from project.models import Campaign, CampaignAlias
 CREATE
 """
 
+create_schema = {
+    'type': 'object',
+    'properties': {
+        'name': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+        'aliases': {
+            'type': 'array',
+            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+            'minItems': 1
+        }
+    },
+    'required': ['name'],
+    'additionalProperties': False
+}
+
 
 @bp.route('/campaigns', methods=['POST'])
 @check_if_token_required
+@validate_json
+@validate_schema(create_schema)
 def create_campaign():
     """ Creates a new campaign. """
 
-    data = request.values or {}
-
-    # Verify the required fields (name) are present.
-    if 'name' not in data:
-        return error_response(400, 'Request must include "name"')
+    data = request.get_json()
 
     # Verify this name does not already exist.
     existing = Campaign.query.filter_by(name=data['name']).first()
@@ -32,15 +44,15 @@ def create_campaign():
     campaign = Campaign(name=data['name'])
 
     # Verify any types that were specified.
-    aliases = data.getlist('aliases')
-    for alias in aliases:
+    if 'aliases' in data:
+        for alias in data['aliases']:
 
-        # Verify each alias is actually valid.
-        a = CampaignAlias.query.filter_by(alias=alias).first()
-        if not a:
-            return error_response(404, 'Campaign alias not found: {}'.format(alias))
+            # Verify each alias is actually valid.
+            a = CampaignAlias.query.filter_by(alias=alias).first()
+            if not a:
+                return error_response(404, 'Campaign alias not found: {}'.format(alias))
 
-        campaign.aliases.append(a)
+            campaign.aliases.append(a)
 
     db.session.add(campaign)
     db.session.commit()
@@ -81,32 +93,36 @@ def read_campaigns():
 UPDATE
 """
 
+update_schema = {
+    'type': 'object',
+    'properties': {
+        'name': {'type': 'string', 'minLength': 1, 'maxLength': 255}
+    },
+    'required': ['name'],
+    'additionalProperties': False
+}
+
 
 @bp.route('/campaigns/<int:campaign_id>', methods=['PUT'])
 @check_if_token_required
+@validate_json
+@validate_schema(update_schema)
 def update_campaign(campaign_id):
     """ Updates an existing campaign. """
 
-    data = request.values or {}
+    data = request.get_json()
 
     # Verify the ID exists.
     campaign = Campaign.query.get(campaign_id)
     if not campaign:
         return error_response(404, 'Campaign ID not found')
 
-    # Verify the required fields were specified.
-    if 'name' not in data:
-        return error_response(400, 'Request must include: name')
-
-    # Verify name if one was specified.
-    if 'name' in data:
-
-        # Verify this name does not already exist.
-        existing = Campaign.query.filter_by(name=data['name']).first()
-        if existing:
-            return error_response(409, 'Campaign already exists')
-        else:
-            campaign.name = data['name']
+    # Verify this name does not already exist.
+    existing = Campaign.query.filter_by(name=data['name']).first()
+    if existing:
+        return error_response(409, 'Campaign already exists')
+    else:
+        campaign.name = data['name']
 
     # Save the changes.
     db.session.commit()

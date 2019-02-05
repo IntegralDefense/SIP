@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_if_token_required
+from project.api.decorators import check_if_token_required, validate_json, validate_schema
 from project.api.errors import error_response
 from project.models import IndicatorImpact
 
@@ -11,17 +11,24 @@ from project.models import IndicatorImpact
 CREATE
 """
 
+create_schema = {
+    'type': 'object',
+    'properties': {
+        'value': {'type': 'string', 'minLength': 1, 'maxLength': 255}
+    },
+    'required': ['value'],
+    'additionalProperties': False
+}
+
 
 @bp.route('/indicators/impact', methods=['POST'])
 @check_if_token_required
+@validate_json
+@validate_schema(create_schema)
 def create_indicator_impact():
     """ Creates a new indicator impact. """
 
-    data = request.values or {}
-
-    # Verify the required fields (value) are present.
-    if 'value' not in data:
-        return error_response(400, 'Request must include "value"')
+    data = request.get_json()
 
     # Verify this value does not already exist.
     existing = IndicatorImpact.query.filter_by(value=data['value']).first()
@@ -70,22 +77,29 @@ def read_indicator_impacts():
 UPDATE
 """
 
+update_schema = {
+    'type': 'object',
+    'properties': {
+        'value': {'type': 'string', 'minLength': 1, 'maxLength': 255}
+    },
+    'required': ['value'],
+    'additionalProperties': False
+}
+
 
 @bp.route('/indicators/impact/<int:indicator_impact_id>', methods=['PUT'])
 @check_if_token_required
+@validate_json
+@validate_schema(update_schema)
 def update_indicator_impact(indicator_impact_id):
     """ Updates an existing indicator impact. """
 
-    data = request.values or {}
+    data = request.get_json()
 
     # Verify the ID exists.
     indicator_impact = IndicatorImpact.query.get(indicator_impact_id)
     if not indicator_impact:
         return error_response(404, 'Indicator impact ID not found')
-
-    # Verify the required fields (value) are present.
-    if 'value' not in data:
-        return error_response(400, 'Request must include "value"')
 
     # Verify this value does not already exist.
     existing = IndicatorImpact.query.filter_by(value=data['value']).first()
