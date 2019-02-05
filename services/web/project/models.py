@@ -165,7 +165,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(255), nullable=False, unique=True)
     first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(50), nullable=False)
-    password = db.Column(db.String(255), nullable=False)
+    password = db.Column(db.String(130), nullable=False)
     roles = db.relationship('Role', secondary=roles_users_association, backref=db.backref('users', lazy='dynamic'))
     username = db.Column(db.String(255), nullable=False, unique=True)
 

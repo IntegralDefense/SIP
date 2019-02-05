@@ -6,41 +6,121 @@ CREATE TESTS
 """
 
 
-def test_create_missing_parameter(client):
-    """ Ensure the required parameters are given """
+def test_create_schema(client):
+    """ Ensure POST requests conform to the required JSON schema """
 
-    data = {'reference': 'asdf', 'source': 'asdf'}
-    request = client.post('/api/intel/reference', data=data)
+    # Invalid JSON
+    data = {}
+    request = client.post('/api/intel/reference', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['msg'] == 'Request must include: reference, source, username'
+    assert response['msg'] == 'Request must include valid JSON'
 
-    data = {'username': 'analyst', 'source': 'asdf'}
-    request = client.post('/api/intel/reference', data=data)
+    # Missing required reference parameter
+    data = {'source': 'asdf', 'username': 'asdf'}
+    request = client.post('/api/intel/reference', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['msg'] == 'Request must include: reference, source, username'
+    assert response['msg'] == "Request JSON does not match schema: 'reference' is a required property"
 
-    data = {'username': 'analyst', 'reference': 'asdf'}
-    request = client.post('/api/intel/reference', data=data)
+    # Missing required source parameter
+    data = {'reference': 'asdf', 'username': 'asdf'}
+    request = client.post('/api/intel/reference', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['msg'] == 'Request must include: reference, source, username'
+    assert response['msg'] == "Request JSON does not match schema: 'source' is a required property"
+
+    # Missing required username parameter
+    data = {'source': 'asdf', 'reference': 'asdf'}
+    request = client.post('/api/intel/reference', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert response['msg'] == "Request JSON does not match schema: 'username' is a required property"
+
+    # Additional parameter
+    data = {'reference': 'asdf', 'source': 'asdf', 'username': 'asdf', 'asdf': 'asdf'}
+    request = client.post('/api/intel/reference', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'Additional properties are not allowed' in response['msg']
+
+    # Invalid reference parameter type
+    data = {'reference': 1, 'source': 'asdf', 'username': 'asdf'}
+    request = client.post('/api/intel/reference', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # reference parameter too short
+    data = {'reference': '', 'source': 'asdf', 'username': 'asdf'}
+    request = client.post('/api/intel/reference', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # reference parameter too long
+    data = {'reference': 'a' * 513, 'source': 'asdf', 'username': 'asdf'}
+    request = client.post('/api/intel/reference', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid source parameter type
+    data = {'reference': 'asdf', 'source': 1, 'username': 'asdf'}
+    request = client.post('/api/intel/reference', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # source parameter too short
+    data = {'reference': 'asdf', 'source': '', 'username': 'asdf'}
+    request = client.post('/api/intel/reference', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # source parameter too long
+    data = {'reference': 'asdf', 'source': 'a' * 256, 'username': 'asdf'}
+    request = client.post('/api/intel/reference', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid username parameter type
+    data = {'reference': 'asdf', 'source': 'asdf', 'username': 1}
+    request = client.post('/api/intel/reference', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # username parameter too short
+    data = {'reference': 'asdf', 'source': 'asdf', 'username': ''}
+    request = client.post('/api/intel/reference', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # username parameter too long
+    data = {'reference': 'asdf', 'source': 'asdf', 'username': 'a' * 256}
+    request = client.post('/api/intel/reference', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
 
 
 def test_create_duplicate(client):
     """ Ensure a duplicate record cannot be created """
 
     data = {'value': 'asdf'}
-    request = client.post('/api/intel/source', data=data)
+    request = client.post('/api/intel/source', json=data)
     assert request.status_code == 201
 
     data = {'username': 'analyst', 'reference': 'asdf', 'source': 'asdf'}
-    request = client.post('/api/intel/reference', data=data)
+    request = client.post('/api/intel/reference', json=data)
     assert request.status_code == 201
 
     data = {'username': 'analyst', 'reference': 'asdf', 'source': 'asdf'}
-    request = client.post('/api/intel/reference', data=data)
+    request = client.post('/api/intel/reference', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
     assert response['msg'] == 'Intel reference already exists'
@@ -50,7 +130,7 @@ def test_create_nonexistent_source(client):
     """ Ensure a reference cannot be created with a nonexistent source """
 
     data = {'username': 'analyst', 'reference': 'asdf', 'source': 'asdf'}
-    request = client.post('/api/intel/reference', data=data)
+    request = client.post('/api/intel/reference', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
     assert response['msg'] == 'Intel source not found'
@@ -84,11 +164,11 @@ def test_create(client):
     """ Ensure a proper request actually works """
 
     data = {'value': 'asdf'}
-    request = client.post('/api/intel/source', data=data)
+    request = client.post('/api/intel/source', json=data)
     assert request.status_code == 201
 
     data = {'username': 'analyst', 'reference': 'asdf', 'source': 'asdf'}
-    request = client.post('/api/intel/reference', data=data)
+    request = client.post('/api/intel/reference', json=data)
     assert request.status_code == 201
 
 
@@ -134,19 +214,19 @@ def test_read_all_values(client):
     """ Ensure all values properly return """
 
     data = {'value': 'asdf'}
-    request = client.post('/api/intel/source', data=data)
+    request = client.post('/api/intel/source', json=data)
     assert request.status_code == 201
 
     data = {'username': 'analyst', 'reference': 'asdf', 'source': 'asdf'}
-    request = client.post('/api/intel/reference', data=data)
+    request = client.post('/api/intel/reference', json=data)
     assert request.status_code == 201
 
     data = {'username': 'analyst', 'reference': 'asdf2', 'source': 'asdf'}
-    request = client.post('/api/intel/reference', data=data)
+    request = client.post('/api/intel/reference', json=data)
     assert request.status_code == 201
 
     data = {'username': 'analyst', 'reference': 'asdf3', 'source': 'asdf'}
-    request = client.post('/api/intel/reference', data=data)
+    request = client.post('/api/intel/reference', json=data)
     assert request.status_code == 201
 
     request = client.get('/api/intel/reference')
@@ -159,11 +239,11 @@ def test_read_by_id(client):
     """ Ensure names can be read by their ID """
 
     data = {'value': 'asdf'}
-    request = client.post('/api/intel/source', data=data)
+    request = client.post('/api/intel/source', json=data)
     assert request.status_code == 201
 
     data = {'username': 'analyst', 'reference': 'asdf', 'source': 'asdf'}
-    request = client.post('/api/intel/reference', data=data)
+    request = client.post('/api/intel/reference', json=data)
     response = json.loads(request.data.decode())
     _id = response['id']
     assert request.status_code == 201
@@ -180,50 +260,112 @@ UPDATE TESTS
 """
 
 
+def test_update_schema(client):
+    """ Ensure PUT requests conform to the required JSON schema """
+
+    # Invalid JSON
+    data = {}
+    request = client.put('/api/intel/reference/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert response['msg'] == 'Request must include valid JSON'
+
+    # Additional parameter
+    data = {'reference': 'asdf', 'source': 'asdf', 'username': 'asdf', 'asdf': 'asdf'}
+    request = client.put('/api/intel/reference/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'Additional properties are not allowed' in response['msg']
+
+    # Invalid reference parameter type
+    data = {'reference': 1, 'source': 'asdf', 'username': 'asdf'}
+    request = client.put('/api/intel/reference/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # reference parameter too short
+    data = {'reference': '', 'source': 'asdf', 'username': 'asdf'}
+    request = client.put('/api/intel/reference/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # reference parameter too long
+    data = {'reference': 'a' * 513, 'source': 'asdf', 'username': 'asdf'}
+    request = client.put('/api/intel/reference/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid source parameter type
+    data = {'reference': 'asdf', 'source': 1, 'username': 'asdf'}
+    request = client.put('/api/intel/reference/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # source parameter too short
+    data = {'reference': 'asdf', 'source': '', 'username': 'asdf'}
+    request = client.put('/api/intel/reference/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # source parameter too long
+    data = {'reference': 'asdf', 'source': 'a' * 256, 'username': 'asdf'}
+    request = client.put('/api/intel/reference/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid username parameter type
+    data = {'reference': 'asdf', 'source': 'asdf', 'username': 1}
+    request = client.put('/api/intel/reference/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # username parameter too short
+    data = {'reference': 'asdf', 'source': 'asdf', 'username': ''}
+    request = client.put('/api/intel/reference/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # username parameter too long
+    data = {'reference': 'asdf', 'source': 'asdf', 'username': 'a' * 256}
+    request = client.put('/api/intel/reference/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+
 def test_update_nonexistent_id(client):
     """ Ensure a nonexistent ID does not work """
 
     data = {'reference': 'asdf', 'source': 'asdf'}
-    request = client.put('/api/intel/reference/100000', data=data)
+    request = client.put('/api/intel/reference/100000', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 404
     assert response['msg'] == 'Intel reference ID not found'
-
-
-def test_update_missing_parameter(client):
-    """ Ensure the required parameters are given """
-
-    data = {'value': 'asdf'}
-    request = client.post('/api/intel/source', data=data)
-    assert request.status_code == 201
-
-    data = {'username': 'analyst', 'reference': 'asdf', 'source': 'asdf'}
-    request = client.post('/api/intel/reference', data=data)
-    response = json.loads(request.data.decode())
-    _id = response['id']
-    assert request.status_code == 201
-
-    request = client.put('/api/intel/reference/{}'.format(_id))
-    response = json.loads(request.data.decode())
-    assert request.status_code == 400
-    assert response['msg'] == 'Request must include at least reference or source'
 
 
 def test_update_duplicate(client):
     """ Ensure duplicate records cannot be updated """
 
     data = {'value': 'asdf'}
-    request = client.post('/api/intel/source', data=data)
+    request = client.post('/api/intel/source', json=data)
     assert request.status_code == 201
 
     data = {'username': 'analyst', 'reference': 'asdf', 'source': 'asdf'}
-    request = client.post('/api/intel/reference', data=data)
+    request = client.post('/api/intel/reference', json=data)
     response = json.loads(request.data.decode())
     _id = response['id']
     assert request.status_code == 201
 
     data = {'username': 'analyst', 'reference': 'asdf', 'source': 'asdf'}
-    request = client.put('/api/intel/reference/{}'.format(_id), data=data)
+    request = client.put('/api/intel/reference/{}'.format(_id), json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
     assert response['msg'] == 'Intel reference already exists'
@@ -233,17 +375,17 @@ def test_update_nonexistent_source(client):
     """ Ensure a reference cannot be updated with a nonexistent source """
 
     data = {'value': 'asdf'}
-    request = client.post('/api/intel/source', data=data)
+    request = client.post('/api/intel/source', json=data)
     assert request.status_code == 201
 
     data = {'username': 'analyst', 'reference': 'asdf', 'source': 'asdf'}
-    request = client.post('/api/intel/reference', data=data)
+    request = client.post('/api/intel/reference', json=data)
     response = json.loads(request.data.decode())
     _id = response['id']
     assert request.status_code == 201
 
     data = {'source': 'asdf2'}
-    request = client.put('/api/intel/reference/{}'.format(_id), data=data)
+    request = client.put('/api/intel/reference/{}'.format(_id), json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 404
     assert response['msg'] == 'Intel source not found'
@@ -277,17 +419,17 @@ def test_update(client):
     """ Ensure a proper request actually works """
 
     data = {'value': 'asdf'}
-    request = client.post('/api/intel/source', data=data)
+    request = client.post('/api/intel/source', json=data)
     assert request.status_code == 201
 
     data = {'username': 'analyst', 'reference': 'asdf', 'source': 'asdf'}
-    request = client.post('/api/intel/reference', data=data)
+    request = client.post('/api/intel/reference', json=data)
     response = json.loads(request.data.decode())
     _id = response['id']
     assert request.status_code == 201
 
     data = {'reference': 'asdf2'}
-    request = client.put('/api/intel/reference/{}'.format(_id), data=data)
+    request = client.put('/api/intel/reference/{}'.format(_id), json=data)
     assert request.status_code == 200
 
     request = client.get('/api/intel/reference/{}'.format(_id))
@@ -367,11 +509,11 @@ def test_delete(client):
     """ Ensure a proper request actually works """
 
     data = {'value': 'asdf'}
-    request = client.post('/api/intel/source', data=data)
+    request = client.post('/api/intel/source', json=data)
     assert request.status_code == 201
 
     data = {'username': 'analyst', 'reference': 'asdf', 'source': 'asdf'}
-    request = client.post('/api/intel/reference', data=data)
+    request = client.post('/api/intel/reference', json=data)
     response = json.loads(request.data.decode())
     _id = response['id']
     assert request.status_code == 201

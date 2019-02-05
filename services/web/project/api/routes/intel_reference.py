@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_if_token_required
+from project.api.decorators import check_if_token_required, validate_json, validate_schema
 from project.api.errors import error_response
 from project.models import IntelReference, IntelSource, User
 
@@ -12,17 +12,26 @@ from project.models import IntelReference, IntelSource, User
 CREATE
 """
 
+create_schema = {
+    'type': 'object',
+    'properties': {
+        'reference': {'type': 'string', 'minLength': 1, 'maxLength': 512},
+        'source': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+        'username': {'type': 'string', 'minLength': 1, 'maxLength': 255}
+    },
+    'required': ['reference', 'source', 'username'],
+    'additionalProperties': False
+}
+
 
 @bp.route('/intel/reference', methods=['POST'])
 @check_if_token_required
+@validate_json
+@validate_schema(create_schema)
 def create_intel_reference():
     """ Creates a new intel reference. """
 
-    data = request.values or {}
-
-    # Verify the required fields (apikey, reference, and source) are present.
-    if 'reference' not in data or 'source' not in data or 'username' not in data:
-        return error_response(400, 'Request must include: reference, source, username')
+    data = request.get_json()
 
     # Verify the source already exists.
     source = IntelSource.query.filter_by(value=data['source']).first()
@@ -34,22 +43,23 @@ def create_intel_reference():
     if existing:
         return error_response(409, 'Intel reference already exists')
 
-    # Verify the user exists.
-    user = db.session.query(User).filter_by(username=data['username']).first()
+    # Verify the username exists.
+    user = User.query.filter_by(username=data['username']).first()
+    if not user:
+        return error_response(404, 'User username not found: {}'.format(data['username']))
 
-    # If there is an API key, look it up and get the user.
-    if user:
+    # Verify the user is active.
+    if not user.active:
+        return error_response(401, 'Cannot create an intel reference with an inactive user')
 
-        intel_reference = IntelReference(reference=data['reference'], source=source, user=user)
-        db.session.add(intel_reference)
-        db.session.commit()
+    intel_reference = IntelReference(reference=data['reference'], source=source, user=user)
+    db.session.add(intel_reference)
+    db.session.commit()
 
-        response = jsonify(intel_reference.to_dict())
-        response.status_code = 201
-        response.headers['Location'] = url_for('api.read_intel_reference', intel_reference_id=intel_reference.id)
-        return response
-    else:
-        return error_response(401, 'API username does not exist')
+    response = jsonify(intel_reference.to_dict())
+    response.status_code = 201
+    response.headers['Location'] = url_for('api.read_intel_reference', intel_reference_id=intel_reference.id)
+    return response
 
 
 """
@@ -82,22 +92,30 @@ def read_intel_references():
 UPDATE
 """
 
+update_schema = {
+    'type': 'object',
+    'properties': {
+        'reference': {'type': 'string', 'minLength': 1, 'maxLength': 512},
+        'source': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+        'username': {'type': 'string', 'minLength': 1, 'maxLength': 255}
+    },
+    'additionalProperties': False
+}
+
 
 @bp.route('/intel/reference/<int:intel_reference_id>', methods=['PUT'])
 @check_if_token_required
+@validate_json
+@validate_schema(update_schema)
 def update_intel_reference(intel_reference_id):
     """ Updates an existing intel reference. """
 
-    data = request.values or {}
+    data = request.get_json()
 
     # Verify the ID exists.
     intel_reference = IntelReference.query.get(intel_reference_id)
     if not intel_reference:
         return error_response(404, 'Intel reference ID not found')
-
-    # Ensure at least reference or source was specified.
-    if 'reference' not in data and 'source' not in data:
-        return error_response(400, 'Request must include at least reference or source')
 
     # Figure out if there was a reference specified.
     if 'reference' in data:
@@ -117,6 +135,17 @@ def update_intel_reference(intel_reference_id):
     existing = IntelReference.query.filter_by(reference=reference, source=source).first()
     if existing:
         return error_response(409, 'Intel reference already exists')
+
+    # Verify username if one was specified.
+    if 'username' in data:
+        user = User.query.filter_by(username=data['username']).first()
+        if not user:
+            return error_response(404, 'Username not found: {}'.format(data['username']))
+
+        if not user.active:
+            return error_response(401, 'Cannot update an intel reference with an inactive user')
+
+        intel_reference.user = user
 
     # Set the new values.
     intel_reference.reference = reference

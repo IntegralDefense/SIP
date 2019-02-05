@@ -6,7 +6,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_if_token_required
+from project.api.decorators import check_if_token_required, validate_json, validate_schema
 from project.api.errors import error_response
 from project.api.helpers import parse_boolean
 from project.models import Campaign, Indicator, IndicatorConfidence, IndicatorImpact, IndicatorStatus, IndicatorType, \
@@ -16,17 +16,46 @@ from project.models import Campaign, Indicator, IndicatorConfidence, IndicatorIm
 CREATE
 """
 
+create_schema = {
+    'type': 'object',
+    'properties': {
+        'campaigns': {
+            'type': 'array',
+            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+            'minItems': 1
+        },
+        'case_sensitive': {'type': 'boolean'},
+        'confidence': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+        'impact': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+        'references': {
+            'type': 'array',
+            'items': {'type': 'string', 'minLength': 1, 'maxLength': 512},
+            'minItems': 1
+        },
+        'status': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+        'substring': {'type': 'boolean'},
+        'tags': {
+            'type': 'array',
+            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+            'minItems': 1
+        },
+        'username': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+        'type': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+        'value': {'type': 'string', 'minLength': 1, 'maxLength': 512}
+    },
+    'required': ['username', 'type', 'value'],
+    'additionalProperties': False
+}
+
 
 @bp.route('/indicators', methods=['POST'])
 @check_if_token_required
+@validate_json
+@validate_schema(create_schema)
 def create_indicator():
     """ Creates a new indicator. """
 
-    data = request.values or {}
-
-    # Verify the required fields (type, username, value) are present.
-    if 'type' not in data or 'username' not in data or 'value' not in data:
-        return error_response(400, 'Request must include: type, username, value')
+    data = request.get_json()
 
     # Verify the type.
     _type = IndicatorType.query.filter_by(value=data['type']).first()
@@ -53,11 +82,12 @@ def create_indicator():
                           value=data['value'])
 
     # Verify any campaign that was specified.
-    for value in data.getlist('campaigns'):
-        campaign = Campaign.query.filter_by(name=value).first()
-        if not campaign:
-            return error_response(404, 'Campaign not found: {}'.format(value))
-        indicator.campaigns.append(campaign)
+    if 'campaigns' in data:
+        for value in data['campaigns']:
+            campaign = Campaign.query.filter_by(name=value).first()
+            if not campaign:
+                return error_response(404, 'Campaign not found: {}'.format(value))
+            indicator.campaigns.append(campaign)
 
     # Verify the case-sensitive value (defaults to False).
     if 'case_sensitive' in data:
@@ -85,11 +115,12 @@ def create_indicator():
     indicator.impact = impact
 
     # Verify any reference that was specified.
-    for value in data.getlist('references'):
-        reference = IntelReference.query.filter_by(reference=value).first()
-        if not reference:
-            return error_response(404, 'Reference not found: {}'.format(value))
-        indicator.references.append(reference)
+    if 'references' in data:
+        for value in data['references']:
+            reference = IntelReference.query.filter_by(reference=value).first()
+            if not reference:
+                return error_response(404, 'Reference not found: {}'.format(value))
+            indicator.references.append(reference)
 
     # Verify the status (has default).
     if 'status' not in data:
@@ -108,11 +139,12 @@ def create_indicator():
     indicator.substring = substring
 
     # Verify any tags that were specified.
-    for value in data.getlist('tags'):
-        tag = Tag.query.filter_by(value=value).first()
-        if not tag:
-            return error_response(404, 'Tag not found: {}'.format(value))
-        indicator.tags.append(tag)
+    if 'tags' in data:
+        for value in data['tags']:
+            tag = Tag.query.filter_by(value=value).first()
+            if not tag:
+                return error_response(404, 'Tag not found: {}'.format(value))
+            indicator.tags.append(tag)
 
     db.session.add(indicator)
     db.session.commit()
@@ -254,36 +286,61 @@ def read_indicators():
 UPDATE
 """
 
+update_schema = {
+    'type': 'object',
+    'properties': {
+        'campaigns': {
+            'type': 'array',
+            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+            'minItems': 1
+        },
+        'case_sensitive': {'type': 'boolean'},
+        'confidence': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+        'impact': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+        'references': {
+            'type': 'array',
+            'items': {'type': 'string', 'minLength': 1, 'maxLength': 512},
+            'minItems': 1
+        },
+        'status': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+        'substring': {'type': 'boolean'},
+        'tags': {
+            'type': 'array',
+            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+            'minItems': 1
+        },
+        'username': {'type': 'string', 'minLength': 1, 'maxLength': 255}
+    },
+    'additionalProperties': False
+}
+
 
 @bp.route('/indicators/<indicator_id>', methods=['PUT'])
 @check_if_token_required
+@validate_json
+@validate_schema(update_schema)
 def update_indicator(indicator_id):
     """ Updates an existing indicator. """
 
-    data = request.values or {}
+    data = request.get_json()
 
     # Verify the ID exists.
     indicator = Indicator.query.get(indicator_id)
     if not indicator:
         return error_response(404, 'Indicator ID not found')
 
-    # Verify at least one required field was specified.
-    required = ['campaigns', 'case_sensitive', 'confidence', 'impact', 'references', 'status', 'substring', 'tags',
-                'username']
-    if not any(r in data for r in required):
-        return error_response(400, 'Request must include at least one of: {}'.format(', '.join(sorted(required))))
-
     # Verify campaigns if it was specified.
-    valid_campaigns = []
-    for value in data.getlist('campaigns'):
+    if 'campaigns' in data:
+        valid_campaigns = []
+        for value in data['campaigns']:
 
-        # Verify each campaign is actually valid.
-        campaign = Campaign.query.filter_by(name=value).first()
-        if not campaign:
-            error_response(404, 'Campaign not found: {}'.format(value))
-        valid_campaigns.append(campaign)
-    if valid_campaigns:
-        indicator.campaigns = valid_campaigns
+            # Verify each campaign is actually valid.
+            campaign = Campaign.query.filter_by(name=value).first()
+            if not campaign:
+                error_response(404, 'Campaign not found: {}'.format(value))
+            valid_campaigns.append(campaign)
+        if valid_campaigns:
+            indicator.campaigns = valid_campaigns
 
     # Verify case_sensitive if it was specified
     if 'case_sensitive' in data:
@@ -304,16 +361,17 @@ def update_indicator(indicator_id):
         indicator.impact = impact
 
     # Verify references if it was specified.
-    valid_references = []
-    for value in data.getlist('references'):
+    if 'references' in data:
+        valid_references = []
+        for value in data['references']:
 
-        # Verify each reference is actually valid.
-        reference = IntelReference.query.filter_by(reference=value).first()
-        if not reference:
-            error_response(404, 'Intel reference not found: {}'.format(value))
-        valid_references.append(reference)
-    if valid_references:
-        indicator.references = valid_references
+            # Verify each reference is actually valid.
+            reference = IntelReference.query.filter_by(reference=value).first()
+            if not reference:
+                error_response(404, 'Intel reference not found: {}'.format(value))
+            valid_references.append(reference)
+        if valid_references:
+            indicator.references = valid_references
 
     # Verify status if it was specified
     if 'status' in data:
@@ -327,16 +385,17 @@ def update_indicator(indicator_id):
         indicator.substring = parse_boolean(data['substring'], default=False)
 
     # Verify tags if it was specified.
-    valid_tags = []
-    for value in data.getlist('tags'):
+    if 'tags' in data:
+        valid_tags = []
+        for value in data['tags']:
 
-        # Verify each tag is actually valid.
-        tag = Tag.query.filter_by(value=value).first()
-        if not tag:
-            error_response(404, 'Tag not found: {}'.format(value))
-        valid_tags.append(tag)
-    if valid_tags:
-        indicator.tags = valid_tags
+            # Verify each tag is actually valid.
+            tag = Tag.query.filter_by(value=value).first()
+            if not tag:
+                error_response(404, 'Tag not found: {}'.format(value))
+            valid_tags.append(tag)
+        if valid_tags:
+            indicator.tags = valid_tags
 
     # Verify username if one was specified.
     if 'username' in data:

@@ -9,29 +9,288 @@ CREATE TESTS
 """
 
 
-def test_create_missing_parameter(client):
-    """ Ensure the required parameters are given """
+def test_create_schema(client):
+    """ Ensure POST requests conform to the required JSON schema """
 
-    # Missing type
-    data = {'username': 'analyst', 'value': 'asdf'}
-    request = client.post('/api/indicators', data=data)
+    # Invalid JSON
+    data = {}
+    request = client.post('/api/indicators', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['msg'] == 'Request must include: type, username, value'
+    assert response['msg'] == 'Request must include valid JSON'
 
-    # Missing username
+    # Missing required type parameter
+    data = {'username': 'asdf', 'value': 'asdf'}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert response['msg'] == "Request JSON does not match schema: 'type' is a required property"
+
+    # Missing required username parameter
     data = {'type': 'asdf', 'value': 'asdf'}
-    request = client.post('/api/indicators', data=data)
+    request = client.post('/api/indicators', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['msg'] == 'Request must include: type, username, value'
+    assert response['msg'] == "Request JSON does not match schema: 'username' is a required property"
 
-    # Missing value
-    data = {'type': 'asdf', 'username': 'analyst'}
-    request = client.post('/api/indicators', data=data)
+    # Missing required value parameter
+    data = {'type': 'asdf', 'username': 'asdf'}
+    request = client.post('/api/indicators', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['msg'] == 'Request must include: type, username, value'
+    assert response['msg'] == "Request JSON does not match schema: 'value' is a required property"
+
+    # Additional parameter
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'asdf': 'asdf'}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'Additional properties are not allowed' in response['msg']
+
+    # Invalid type parameter type
+    data = {'type': 1, 'username': 'asdf', 'value': 'asdf'}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # Invalid username parameter type
+    data = {'type': 'asdf', 'username': 1, 'value': 'asdf'}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # Invalid value parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 1}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # type parameter too short
+    data = {'type': '', 'username': 'asdf', 'value': 'asdf'}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # type parameter too long
+    data = {'type': 'a' * 256, 'username': 'asdf', 'value': 'asdf'}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # username parameter too short
+    data = {'type': 'asdf', 'username': '', 'value': 'asdf'}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # username parameter too long
+    data = {'type': 'asdf', 'username': 'a' * 256, 'value': 'asdf'}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # value parameter too short
+    data = {'type': 'asdf', 'username': 'asdf', 'value': ''}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # value parameter too long
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'a' * 513}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid campaigns parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'campaigns': 'asdf'}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "'asdf' is not of type 'array'" in response['msg']
+
+    # Empty campaigns parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'campaigns': []}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # Invalid campaigns parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'campaigns': [1]}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # campaigns parameter too short
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'campaigns': ['']}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # campaigns parameter too long
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'campaigns': ['a' * 256]}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid references parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': 'asdf'}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "'asdf' is not of type 'array'" in response['msg']
+
+    # Empty references parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': []}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # Invalid references parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': [1]}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # references parameter too short
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': ['']}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # references parameter too long
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': ['a' * 513]}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid tags parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'tags': 'asdf'}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "'asdf' is not of type 'array'" in response['msg']
+
+    # Empty tags parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'tags': []}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # Invalid tags parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'tags': [1]}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # tags parameter too short
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'tags': ['']}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # tags parameter too long
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'tags': ['a' * 256]}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid case_sensitive parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'case_sensitive': 1}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'boolean'" in response['msg']
+
+    # Invalid substring parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'substring': 1}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'boolean'" in response['msg']
+
+    # Invalid confidence parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'confidence': 1}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # confidence parameter too short
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'confidence': ''}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # confidence parameter too long
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'confidence': 'a' * 256}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid impact parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'impact': 1}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # impact parameter too short
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'impact': ''}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # impact parameter too long
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'impact': 'a' * 256}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid status parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'status': 1}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # status parameter too short
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'status': ''}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # status parameter too long
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'status': 'a' * 256}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
 
 
 def test_create_duplicate(client):
@@ -88,10 +347,16 @@ def test_create_invalid_role(app, client):
 def test_create(client):
     """ Ensure a proper request actually works """
 
-    request, response = create_indicator(client, 'asdf', 'asdf', 'analyst', campaigns='LOLcats,Derpsters',
-                                         case_sensitive=True, confidence='HIGH', impact='HIGH',
-                                         intel_reference='http://blahblah.com', intel_source='OSINT',
-                                         status='Analyzed', substring=True, tags='phish,nanocore')
+    request, response = create_indicator(client, 'asdf', 'asdf', 'analyst',
+                                         campaigns=['LOLcats', 'Derpsters'],
+                                         case_sensitive=True,
+                                         confidence='HIGH',
+                                         impact='HIGH',
+                                         intel_reference='http://blahblah.com',
+                                         intel_source='OSINT',
+                                         status='Analyzed',
+                                         substring=True,
+                                         tags=['phish', 'nanocore'])
     assert request.status_code == 201
     assert response['type'] == 'asdf'
     assert response['value'] == 'asdf'
@@ -182,7 +447,7 @@ def test_read_with_filters(client):
     """ Ensure indicators can be read using the various filters """
 
     indicator1_request, indicator1_response = create_indicator(client, 'IP', '1.1.1.1', 'analyst',
-                                                               campaigns='Derpsters',
+                                                               campaigns=['Derpsters'],
                                                                case_sensitive=True,
                                                                confidence='HIGH',
                                                                impact='HIGH',
@@ -190,13 +455,13 @@ def test_read_with_filters(client):
                                                                intel_source='OSINT',
                                                                status='Analyzed',
                                                                substring=True,
-                                                               tags='phish')
+                                                               tags=['phish'])
     assert indicator1_request.status_code == 201
 
     time.sleep(1)
 
     indicator2_request, indicator2_response = create_indicator(client, 'Email', 'asdf@asdf.com', 'admin',
-                                                               campaigns='LOLcats',
+                                                               campaigns=['LOLcats'],
                                                                case_sensitive=False,
                                                                confidence='LOW',
                                                                impact='LOW',
@@ -204,7 +469,7 @@ def test_read_with_filters(client):
                                                                intel_source='VirusTotal',
                                                                status='New',
                                                                substring=False,
-                                                               tags='nanocore')
+                                                               tags=['nanocore'])
     assert indicator2_request.status_code == 201
 
     time.sleep(1)
@@ -328,6 +593,227 @@ UPDATE TESTS
 """
 
 
+def test_update_schema(client):
+    """ Ensure PUT requests conform to the required JSON schema """
+
+    # Invalid JSON
+    data = {}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert response['msg'] == 'Request must include valid JSON'
+
+    # Additional parameter
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'asdf': 'asdf'}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'Additional properties are not allowed' in response['msg']
+
+    # Invalid username parameter type
+    data = {'type': 'asdf', 'username': 1, 'value': 'asdf'}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # username parameter too short
+    data = {'type': 'asdf', 'username': '', 'value': 'asdf'}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # username parameter too long
+    data = {'type': 'asdf', 'username': 'a' * 256, 'value': 'asdf'}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid campaigns parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'campaigns': 'asdf'}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "'asdf' is not of type 'array'" in response['msg']
+
+    # Empty campaigns parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'campaigns': []}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # Invalid campaigns parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'campaigns': [1]}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # campaigns parameter too short
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'campaigns': ['']}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # campaigns parameter too long
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'campaigns': ['a' * 256]}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid references parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': 'asdf'}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "'asdf' is not of type 'array'" in response['msg']
+
+    # Empty references parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': []}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # Invalid references parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': [1]}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # references parameter too short
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': ['']}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # references parameter too long
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': ['a' * 513]}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid tags parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'tags': 'asdf'}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "'asdf' is not of type 'array'" in response['msg']
+
+    # Empty tags parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'tags': []}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # Invalid tags parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'tags': [1]}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # tags parameter too short
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'tags': ['']}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # tags parameter too long
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'tags': ['a' * 256]}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid case_sensitive parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'case_sensitive': 1}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'boolean'" in response['msg']
+
+    # Invalid substring parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'substring': 1}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'boolean'" in response['msg']
+
+    # Invalid confidence parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'confidence': 1}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # confidence parameter too short
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'confidence': ''}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # confidence parameter too long
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'confidence': 'a' * 256}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid impact parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'impact': 1}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # impact parameter too short
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'impact': ''}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # impact parameter too long
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'impact': 'a' * 256}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid status parameter type
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'status': 1}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # status parameter too short
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'status': ''}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # status parameter too long
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'status': 'a' * 256}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+
 def test_update_nonexistent_username(client):
     """ Ensure an indicator cannot be updated with a nonexistent username """
 
@@ -336,7 +822,7 @@ def test_update_nonexistent_username(client):
     assert request.status_code == 201
 
     data = {'username': 'this_user_does_not_exist'}
-    request = client.put('/api/indicators/{}'.format(_id), data=data)
+    request = client.put('/api/indicators/{}'.format(_id), json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 404
     assert 'User username not found:' in response['msg']
@@ -350,7 +836,7 @@ def test_update_inactive_username(client):
     assert request.status_code == 201
 
     data = {'username': 'inactive'}
-    request = client.put('/api/indicators/{}'.format(_id), data=data)
+    request = client.put('/api/indicators/{}'.format(_id), json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['msg'] == 'Cannot update an indicator with an inactive user'
@@ -360,23 +846,10 @@ def test_update_nonexistent_id(client):
     """ Ensure a nonexistent ID does not work """
 
     data = {'username': 'analyst'}
-    request = client.put('/api/indicators/100000', data=data)
+    request = client.put('/api/indicators/100000', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 404
     assert response['msg'] == 'Indicator ID not found'
-
-
-def test_update_missing_parameter(client):
-    """ Ensure the required parameters are given """
-
-    request, response = create_indicator(client, 'asdf', 'asdf', 'analyst')
-    _id = response['id']
-    assert request.status_code == 201
-
-    request = client.put('/api/indicators/{}'.format(_id))
-    response = json.loads(request.data.decode())
-    assert request.status_code == 400
-    assert 'Request must include at least one of:' in response['msg']
 
 
 def test_update_missing_token(app, client):
@@ -411,20 +884,11 @@ def test_update(client):
     assert indicator_request.status_code == 201
     assert indicator_response['user'] == 'analyst'
 
-    # campaigns string
-    create_campaign(client, 'Derpsters')
-    data = {'campaigns': 'Derpsters'}
-    request = client.put('/api/indicators/{}'.format(_id), data=data)
-    response = json.loads(request.data.decode())
-    assert request.status_code == 200
-    assert response['id'] == _id
-    assert response['campaigns'][0]['name'] == 'Derpsters'
-
     # campaigns list
     create_campaign(client, 'LOLcats')
     create_campaign(client, 'Beans')
     data = {'campaigns': ['LOLcats', 'Beans']}
-    request = client.put('/api/indicators/{}'.format(_id), data=data)
+    request = client.put('/api/indicators/{}'.format(_id), json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert response['id'] == _id
@@ -433,7 +897,7 @@ def test_update(client):
 
     # case_sensitive
     data = {'case_sensitive': not indicator_response['case_sensitive']}
-    request = client.put('/api/indicators/{}'.format(_id), data=data)
+    request = client.put('/api/indicators/{}'.format(_id), json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert response['id'] == _id
@@ -442,7 +906,7 @@ def test_update(client):
     # confidence
     create_indicator_confidence(client, 'HIGH')
     data = {'confidence': 'HIGH'}
-    request = client.put('/api/indicators/{}'.format(_id), data=data)
+    request = client.put('/api/indicators/{}'.format(_id), json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert response['id'] == _id
@@ -451,27 +915,17 @@ def test_update(client):
     # impact
     create_indicator_impact(client, 'HIGH')
     data = {'impact': 'HIGH'}
-    request = client.put('/api/indicators/{}'.format(_id), data=data)
+    request = client.put('/api/indicators/{}'.format(_id), json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert response['id'] == _id
     assert response['impact'] == 'HIGH'
 
-    # references string
-    create_intel_reference(client, 'analyst', 'OSINT', 'http://blahblah.com')
-    data = {'references': 'http://blahblah.com'}
-    request = client.put('/api/indicators/{}'.format(_id), data=data)
-    response = json.loads(request.data.decode())
-    assert request.status_code == 200
-    assert response['id'] == _id
-    assert len(response['references']) == 1
-    assert response['references'][0]['reference'] == 'http://blahblah.com'
-
     # references list
     create_intel_reference(client, 'analyst', 'OSINT', 'http://blahblah2.com')
     create_intel_reference(client, 'analyst', 'OSINT', 'http://blahblah3.com')
     data = {'references': ['http://blahblah2.com', 'http://blahblah3.com']}
-    request = client.put('/api/indicators/{}'.format(_id), data=data)
+    request = client.put('/api/indicators/{}'.format(_id), json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert response['id'] == _id
@@ -482,7 +936,7 @@ def test_update(client):
     # status
     create_indicator_status(client, 'Analyzed')
     data = {'status': 'Analyzed'}
-    request = client.put('/api/indicators/{}'.format(_id), data=data)
+    request = client.put('/api/indicators/{}'.format(_id), json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert response['id'] == _id
@@ -490,27 +944,17 @@ def test_update(client):
 
     # substring
     data = {'substring': not indicator_response['substring']}
-    request = client.put('/api/indicators/{}'.format(_id), data=data)
+    request = client.put('/api/indicators/{}'.format(_id), json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert response['id'] == _id
     assert response['substring'] == data['substring']
 
-    # tags string
-    create_tag(client, 'phish')
-    data = {'tags': 'phish'}
-    request = client.put('/api/indicators/{}'.format(_id), data=data)
-    response = json.loads(request.data.decode())
-    assert request.status_code == 200
-    assert response['id'] == _id
-    assert len(response['tags']) == 1
-    assert response['tags'][0] == 'phish'
-
     # tags list
     create_tag(client, 'nanocore')
     create_tag(client, 'remcos')
     data = {'tags': ['remcos', 'nanocore']}
-    request = client.put('/api/indicators/{}'.format(_id), data=data)
+    request = client.put('/api/indicators/{}'.format(_id), json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert response['id'] == _id
@@ -519,7 +963,7 @@ def test_update(client):
 
     # username
     data = {'username': 'admin'}
-    request = client.put('/api/indicators/{}'.format(_id), data=data)
+    request = client.put('/api/indicators/{}'.format(_id), json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert response['id'] == _id

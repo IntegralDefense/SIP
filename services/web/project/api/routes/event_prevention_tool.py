@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_if_token_required
+from project.api.decorators import check_if_token_required, validate_json, validate_schema
 from project.api.errors import error_response
 from project.models import EventPreventionTool
 
@@ -11,13 +11,24 @@ from project.models import EventPreventionTool
 CREATE
 """
 
+create_schema = {
+    'type': 'object',
+    'properties': {
+        'value': {'type': 'string', 'minLength': 1, 'maxLength': 255}
+    },
+    'required': ['value'],
+    'additionalProperties': False
+}
+
 
 @bp.route('/events/preventiontool', methods=['POST'])
 @check_if_token_required
+@validate_json
+@validate_schema(create_schema)
 def create_event_prevention_tool():
     """ Creates a new event prevention tool. """
 
-    data = request.values or {}
+    data = request.get_json()
 
     # Verify the required fields (value) are present.
     if 'value' not in data:
@@ -70,13 +81,24 @@ def read_event_prevention_tools():
 UPDATE
 """
 
+update_schema = {
+    'type': 'object',
+    'properties': {
+        'value': {'type': 'string', 'minLength': 1, 'maxLength': 255}
+    },
+    'required': ['value'],
+    'additionalProperties': False
+}
+
 
 @bp.route('/events/preventiontool/<int:event_prevention_tool_id>', methods=['PUT'])
 @check_if_token_required
+@validate_json
+@validate_schema(update_schema)
 def update_event_prevention_tool(event_prevention_tool_id):
     """ Updates an existing event prevention tool. """
 
-    data = request.values or {}
+    data = request.get_json()
 
     # Verify the ID exists.
     event_prevention_tool = EventPreventionTool.query.get(event_prevention_tool_id)

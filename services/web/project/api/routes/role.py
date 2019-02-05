@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_if_token_required, admin_required
+from project.api.decorators import admin_required, check_if_token_required, validate_json, validate_schema
 from project.api.errors import error_response
 from project.models import Role
 
@@ -11,17 +11,25 @@ from project.models import Role
 CREATE
 """
 
+create_schema = {
+    'type': 'object',
+    'properties': {
+        'name': {'type': 'string', 'minLength': 1, 'maxLength': 80},
+        'description': {'type': 'string', 'minLength': 1, 'maxLength': 255}
+    },
+    'required': ['name'],
+    'additionalProperties': False
+}
+
 
 @bp.route('/roles', methods=['POST'])
 @admin_required
+@validate_json
+@validate_schema(create_schema)
 def create_role():
     """ Creates a new role. Requires the admin role. """
 
-    data = request.values or {}
-
-    # Verify the required fields (name) are present.
-    if 'name' not in data:
-        return error_response(400, 'Request must include: name')
+    data = request.get_json()
 
     # Verify this name does not already exist.
     existing = Role.query.filter_by(name=data['name']).first()
@@ -74,22 +82,29 @@ def read_roles():
 UPDATE
 """
 
+update_schema = {
+    'type': 'object',
+    'properties': {
+        'name': {'type': 'string', 'minLength': 1, 'maxLength': 80},
+        'description': {'type': 'string', 'minLength': 1, 'maxLength': 255}
+    },
+    'additionalProperties': False
+}
+
 
 @bp.route('/roles/<int:role_id>', methods=['PUT'])
 @admin_required
+@validate_json
+@validate_schema(update_schema)
 def update_role(role_id):
     """ Updates an existing role. Requires the admin role. """
 
-    data = request.values or {}
+    data = request.get_json()
 
     # Verify the ID exists.
     role = Role.query.get(role_id)
     if not role:
         return error_response(404, 'Role ID not found')
-
-    # Verify at least one required field was specified.
-    if 'name' not in data and 'description' not in data:
-        return error_response(400, 'Request must include at least name or description')
 
     # Verify name if one was specified.
     if 'name' in data:

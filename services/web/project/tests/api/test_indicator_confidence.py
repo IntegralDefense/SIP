@@ -6,24 +6,61 @@ CREATE TESTS
 """
 
 
-def test_create_missing_parameter(client):
-    """ Ensure the required parameters are given """
+def test_create_schema(client):
+    """ Ensure POST requests conform to the required JSON schema """
 
-    request = client.post('/api/indicators/confidence')
+    # Invalid JSON
+    data = {}
+    request = client.post('/api/indicators/confidence', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert response['msg'] == 'Request must include "value"'
+    assert response['msg'] == 'Request must include valid JSON'
+
+    # Missing required value parameter
+    data = {'asdf': 'asdf'}
+    request = client.post('/api/indicators/confidence', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert response['msg'] == "Request JSON does not match schema: 'value' is a required property"
+
+    # Additional parameter
+    data = {'value': 'asdf', 'asdf': 'asdf'}
+    request = client.post('/api/indicators/confidence', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'Additional properties are not allowed' in response['msg']
+
+    # Invalid value parameter type
+    data = {'value': 1}
+    request = client.post('/api/indicators/confidence', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # value parameter too short
+    data = {'value': ''}
+    request = client.post('/api/indicators/confidence', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # value parameter too long
+    data = {'value': 'a' * 256}
+    request = client.post('/api/indicators/confidence', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
 
 
 def test_create_duplicate(client):
     """ Ensure a duplicate record cannot be created """
 
     data = {'value': 'asdf'}
-    request = client.post('/api/indicators/confidence', data=data)
+    request = client.post('/api/indicators/confidence', json=data)
     assert request.status_code == 201
 
     data = {'value': 'asdf'}
-    request = client.post('/api/indicators/confidence', data=data)
+    request = client.post('/api/indicators/confidence', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
     assert response['msg'] == 'Indicator confidence already exists'
@@ -57,7 +94,7 @@ def test_create(client):
     """ Ensure a proper request actually works """
 
     data = {'value': 'asdf'}
-    request = client.post('/api/indicators/confidence', data=data)
+    request = client.post('/api/indicators/confidence', json=data)
     assert request.status_code == 201
 
 
@@ -103,15 +140,15 @@ def test_read_all_values(client):
     """ Ensure all values properly return """
 
     data = {'value': 'asdf'}
-    request = client.post('/api/indicators/confidence', data=data)
+    request = client.post('/api/indicators/confidence', json=data)
     assert request.status_code == 201
 
     data = {'value': 'asdf2'}
-    request = client.post('/api/indicators/confidence', data=data)
+    request = client.post('/api/indicators/confidence', json=data)
     assert request.status_code == 201
 
     data = {'value': 'asdf3'}
-    request = client.post('/api/indicators/confidence', data=data)
+    request = client.post('/api/indicators/confidence', json=data)
     assert request.status_code == 201
 
     request = client.get('/api/indicators/confidence')
@@ -124,7 +161,7 @@ def test_read_by_id(client):
     """ Ensure names can be read by their ID """
 
     data = {'value': 'asdf'}
-    request = client.post('/api/indicators/confidence', data=data)
+    request = client.post('/api/indicators/confidence', json=data)
     response = json.loads(request.data.decode())
     _id = response['id']
     assert request.status_code == 201
@@ -141,42 +178,73 @@ UPDATE TESTS
 """
 
 
+def test_update_schema(client):
+    """ Ensure PUT requests conform to the required JSON schema """
+
+    # Invalid JSON
+    data = {}
+    request = client.put('/api/indicators/confidence/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert response['msg'] == 'Request must include valid JSON'
+
+    # Missing required value parameter
+    data = {'asdf': 'asdf'}
+    request = client.put('/api/indicators/confidence/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert response['msg'] == "Request JSON does not match schema: 'value' is a required property"
+
+    # Additional parameter
+    data = {'value': 'asdf', 'asdf': 'asdf'}
+    request = client.put('/api/indicators/confidence/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'Additional properties are not allowed' in response['msg']
+
+    # Invalid value parameter type
+    data = {'value': 1}
+    request = client.put('/api/indicators/confidence/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # value parameter too short
+    data = {'value': ''}
+    request = client.put('/api/indicators/confidence/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # value parameter too long
+    data = {'value': 'a' * 256}
+    request = client.put('/api/indicators/confidence/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+
 def test_update_nonexistent_id(client):
     """ Ensure a nonexistent ID does not work """
 
     data = {'value': 'asdf'}
-    request = client.put('/api/indicators/confidence/100000', data=data)
+    request = client.put('/api/indicators/confidence/100000', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 404
     assert response['msg'] == 'Indicator confidence ID not found'
-
-
-def test_update_missing_parameter(client):
-    """ Ensure the required parameters are given """
-
-    data = {'value': 'asdf'}
-    request = client.post('/api/indicators/confidence', data=data)
-    response = json.loads(request.data.decode())
-    _id = response['id']
-    assert request.status_code == 201
-
-    request = client.put('/api/indicators/confidence/{}'.format(_id))
-    response = json.loads(request.data.decode())
-    assert request.status_code == 400
-    assert response['msg'] == 'Request must include "value"'
 
 
 def test_update_duplicate(client):
     """ Ensure duplicate records cannot be updated """
 
     data = {'value': 'asdf'}
-    request = client.post('/api/indicators/confidence', data=data)
+    request = client.post('/api/indicators/confidence', json=data)
     response = json.loads(request.data.decode())
     _id = response['id']
     assert request.status_code == 201
 
     data = {'value': 'asdf'}
-    request = client.put('/api/indicators/confidence/{}'.format(_id), data=data)
+    request = client.put('/api/indicators/confidence/{}'.format(_id), json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 409
     assert response['msg'] == 'Indicator confidence already exists'
@@ -210,13 +278,13 @@ def test_update(client):
     """ Ensure a proper request actually works """
 
     data = {'value': 'asdf'}
-    request = client.post('/api/indicators/confidence', data=data)
+    request = client.post('/api/indicators/confidence', json=data)
     response = json.loads(request.data.decode())
     _id = response['id']
     assert request.status_code == 201
 
     data = {'value': 'asdf2'}
-    request = client.put('/api/indicators/confidence/{}'.format(_id), data=data)
+    request = client.put('/api/indicators/confidence/{}'.format(_id), json=data)
     assert request.status_code == 200
 
     request = client.get('/api/indicators/confidence/{}'.format(_id))
@@ -282,7 +350,7 @@ def test_delete(client):
     """ Ensure a proper request actually works """
 
     data = {'value': 'asdf'}
-    request = client.post('/api/indicators/confidence', data=data)
+    request = client.post('/api/indicators/confidence', json=data)
     response = json.loads(request.data.decode())
     _id = response['id']
     assert request.status_code == 201

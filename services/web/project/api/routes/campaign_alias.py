@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_if_token_required
+from project.api.decorators import check_if_token_required, validate_json, validate_schema
 from project.api.errors import error_response
 from project.models import Campaign, CampaignAlias
 
@@ -11,17 +11,25 @@ from project.models import Campaign, CampaignAlias
 CREATE
 """
 
+create_schema = {
+    'type': 'object',
+    'properties': {
+        'alias': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+        'campaign': {'type': 'string', 'minLength': 1, 'maxLength': 255}
+    },
+    'required': ['alias', 'campaign'],
+    'additionalProperties': False
+}
+
 
 @bp.route('/campaigns/alias', methods=['POST'])
 @check_if_token_required
+@validate_json
+@validate_schema(create_schema)
 def create_campaign_alias():
     """ Creates a new campaign alias. """
 
-    data = request.values or {}
-
-    # Verify the required fields (alias and campaign) are present.
-    if 'alias' not in data or 'campaign' not in data:
-        return error_response(400, 'Request must include: alias, campaign')
+    data = request.get_json()
 
     # Verify the campaign exists.
     campaign = Campaign.query.filter_by(name=data['campaign']).first()
@@ -78,22 +86,29 @@ def read_campaign_aliases():
 UPDATE
 """
 
+update_schema = {
+    'type': 'object',
+    'properties': {
+        'alias': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+        'campaign': {'type': 'string', 'minLength': 1, 'maxLength': 255}
+    },
+    'additionalProperties': False
+}
+
 
 @bp.route('/campaigns/alias/<int:campaign_alias_id>', methods=['PUT'])
 @check_if_token_required
+@validate_json
+@validate_schema(update_schema)
 def update_campaign_alias(campaign_alias_id):
     """ Updates an existing campaign alias. """
 
-    data = request.values or {}
+    data = request.get_json()
 
     # Verify the ID exists.
     campaign_alias = CampaignAlias.query.get(campaign_alias_id)
     if not campaign_alias:
         return error_response(404, 'Campaign alias ID not found')
-
-    # Verify at least one required field was specified.
-    if 'alias' not in data and 'campaign' not in data:
-        return error_response(400, 'Request must include at least alias or campaign')
 
     # Verify alias if one was specified.
     if 'alias' in data:

@@ -1,6 +1,9 @@
 from flask import current_app, request
 from flask_jwt_extended import verify_jwt_in_request, verify_fresh_jwt_in_request, get_jwt_claims
 from functools import wraps
+from jsonschema import validate
+from jsonschema.exceptions import SchemaError, ValidationError
+from werkzeug.exceptions import BadRequest
 
 from project.api.errors import error_response
 
@@ -49,3 +52,37 @@ def admin_required(function):
             return error_response(401, 'admin role required')
 
     return decorated_function
+
+
+def validate_json(function):
+    """ Verifies that the request contains valid JSON """
+
+    @wraps(function)
+    def decorated_function(*args, **kwargs):
+        try:
+            if not request.get_json():
+                return error_response(400, 'Request must include valid JSON')
+        except BadRequest:
+            return error_response(400, 'Request must include valid JSON')
+        return function(*args, **kwargs)
+
+    return decorated_function
+
+
+def validate_schema(schema):
+    """ Verifies that the request JSON conforms to the given schema """
+
+    def decorator(function):
+
+        @wraps(function)
+        def decorated_function(*args, **kwargs):
+            try:
+                validate(request.json, schema)
+            except SchemaError as e:
+                return error_response(400, 'JSON schema is not valid: {}'.format(e.message))
+            except ValidationError as e:
+                return error_response(400, 'Request JSON does not match schema: {}'.format(e.message))
+            return function(*args, **kwargs)
+        return decorated_function
+
+    return decorator

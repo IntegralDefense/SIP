@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_if_token_required
+from project.api.decorators import check_if_token_required, validate_json, validate_schema
 from project.api.errors import error_response
 from project.models import Tag
 
@@ -11,17 +11,24 @@ from project.models import Tag
 CREATE
 """
 
+create_schema = {
+    'type': 'object',
+    'properties': {
+        'value': {'type': 'string', 'minLength': 1, 'maxLength': 255}
+    },
+    'required': ['value'],
+    'additionalProperties': False
+}
+
 
 @bp.route('/tags', methods=['POST'])
 @check_if_token_required
+@validate_json
+@validate_schema(create_schema)
 def create_tag():
     """ Creates a new tag. """
 
-    data = request.values or {}
-
-    # Verify the required fields (value) are present.
-    if 'value' not in data:
-        return error_response(400, 'Request must include "value"')
+    data = request.get_json()
 
     # Verify this value does not already exist.
     existing = Tag.query.filter_by(value=data['value']).first()
@@ -69,22 +76,29 @@ def read_tags():
 UPDATE
 """
 
+update_schema = {
+    'type': 'object',
+    'properties': {
+        'value': {'type': 'string', 'minLength': 1, 'maxLength': 255}
+    },
+    'required': ['value'],
+    'additionalProperties': False
+}
+
 
 @bp.route('/tags/<int:tag_id>', methods=['PUT'])
 @check_if_token_required
+@validate_json
+@validate_schema(update_schema)
 def update_tag(tag_id):
     """ Updates an existing tag. """
 
-    data = request.values or {}
+    data = request.get_json()
 
     # Verify the ID exists.
     tag = Tag.query.get(tag_id)
     if not tag:
         return error_response(404, 'Tag ID not found')
-
-    # Verify the required fields (value) are present.
-    if 'value' not in data:
-        return error_response(400, 'Request must include "value"')
 
     # Verify this value does not already exist.
     existing = Tag.query.filter_by(value=data['value']).first()

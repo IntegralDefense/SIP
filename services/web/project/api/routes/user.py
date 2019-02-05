@@ -1,5 +1,3 @@
-import uuid
-
 from flask import jsonify, request, url_for
 from flask_security import SQLAlchemyUserDatastore
 from flask_security.utils import hash_password
@@ -7,9 +5,8 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_if_token_required, admin_required
+from project.api.decorators import admin_required, check_if_token_required, validate_json, validate_schema
 from project.api.errors import error_response
-from project.api.helpers import parse_boolean
 from project.models import Role, User
 
 
@@ -17,18 +14,33 @@ from project.models import Role, User
 CREATE
 """
 
+create_schema = {
+    'type': 'object',
+    'properties': {
+        'email': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+        'first_name': {'type': 'string', 'minLength': 1, 'maxLength': 50},
+        'last_name': {'type': 'string', 'minLength': 1, 'maxLength': 50},
+        'password': {'type': 'string', 'minLength': 1},
+        'roles': {
+            'type': 'array',
+            'items': {'type': 'string', 'minLength': 1, 'maxLength': 80},
+            'minItems': 1
+        },
+        'username': {'type': 'string', 'minLength': 1, 'maxLength': 255}
+    },
+    'required': ['email', 'first_name', 'last_name', 'password', 'roles', 'username'],
+    'additionalProperties': False
+}
+
 
 @bp.route('/users', methods=['POST'])
 @admin_required
+@validate_json
+@validate_schema(create_schema)
 def create_user():
     """ Creates a new user. Requires the admin role. """
 
-    data = request.values or {}
-
-    # Verify the required fields are present.
-    if 'email' not in data or 'first_name' not in data or 'last_name' not in data or 'password' not in data \
-            or 'roles' not in data or 'username' not in data:
-        return error_response(400, 'Request must include: email, first_name, last_name, password, roles, username')
+    data = request.get_json()
 
     # Verify this email does not already exist.
     existing = User.query.filter_by(email=data['email']).first()
@@ -41,24 +53,22 @@ def create_user():
         return error_response(409, 'User username already exists')
 
     # Verify any roles that were specified.
-    roles = data.getlist('roles')
-    if not roles:
-        return error_response(400, 'At least one role must be specified')
     valid_roles = []
-    for role in roles:
+    for role in data['roles']:
 
         # Verify each role is actually valid.
         r = Role.query.filter_by(name=role).first()
         if not r:
-            results = Role.query.all()
-            acceptable = sorted([r.name for r in results])
-            return error_response(400, 'Valid roles: {}'.format(', '.join(acceptable)))
+            return error_response(404, 'User role not found: {}'.format(role))
         valid_roles.append(r)
 
     # Create the user in the user datastore.
     user_datastore = SQLAlchemyUserDatastore(db, User, Role)
-    user_datastore.create_user(email=data['email'], password=hash_password(data['password']), username=data['username'],
-                               first_name=data['first_name'], last_name=data['last_name'])
+    user_datastore.create_user(email=data['email'],
+                               first_name=data['first_name'],
+                               last_name=data['last_name'],
+                               password=hash_password(data['password']),
+                               username=data['username'])
 
     # Get the user from the database.
     user = User.query.filter_by(username=data['username']).first()
@@ -109,32 +119,42 @@ def read_users():
 UPDATE
 """
 
+update_schema = {
+    'type': 'object',
+    'properties': {
+        'active': {'type': 'boolean'},
+        'email': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+        'first_name': {'type': 'string', 'minLength': 1, 'maxLength': 50},
+        'last_name': {'type': 'string', 'minLength': 1, 'maxLength': 50},
+        'password': {'type': 'string', 'minLength': 1},
+        'roles': {
+            'type': 'array',
+            'items': {'type': 'string', 'minLength': 1, 'maxLength': 80},
+            'minItems': 1
+        },
+        'username': {'type': 'string', 'minLength': 1, 'maxLength': 255}
+    },
+    'additionalProperties': False
+}
+
 
 @bp.route('/users/<int:user_id>', methods=['PUT'])
 @admin_required
+@validate_json
+@validate_schema(update_schema)
 def update_user(user_id):
     """ Updates an existing user. Requires the admin role. """
 
-    data = request.values or {}
+    data = request.get_json()
 
     # Verify the ID exists.
     user = User.query.get(user_id)
     if not user:
         return error_response(404, 'User ID not found')
 
-    # Verify at least one required field was specified.
-    required = ['active', 'apikey_refresh', 'email', 'first_name', 'last_name', 'password', 'roles', 'username']
-    if not any(r in data for r in required):
-        return error_response(400, 'Request must include at least one of: {}'.format(', '.join(sorted(required))))
-
     # Verify active if it was specified. Defaults to False.
     if 'active' in data:
-        user.active = parse_boolean(data['active'], default=False)
-
-    # Verify apikey if it was specified. Defaults to True.
-    if 'apikey_refresh' in data:
-        if parse_boolean(data['apikey_refresh'], default=True):
-            user.apikey = str(uuid.uuid4())
+        user.active = data['active']
 
     # Verify email if one was specified.
     if 'email' in data:
@@ -159,19 +179,17 @@ def update_user(user_id):
         user.password = hash_password(data['password'])
 
     # Verify roles if any were specified.
-    roles = data.getlist('roles')
-    valid_roles = []
-    for role in roles:
+    if 'roles' in data:
+        valid_roles = []
+        for role in data['roles']:
 
-        # Verify each role is actually valid.
-        r = Role.query.filter_by(name=role).first()
-        if not r:
-            results = Role.query.all()
-            acceptable = sorted([r.name for r in results])
-            return error_response(400, 'Valid roles: {}'.format(', '.join(acceptable)))
-        valid_roles.append(r)
-    if valid_roles:
-        user.roles = valid_roles
+            # Verify each role is actually valid.
+            r = Role.query.filter_by(name=role).first()
+            if not r:
+                return error_response(404, 'User role not found: {}'.format(role))
+            valid_roles.append(r)
+        if valid_roles:
+            user.roles = valid_roles
 
     # Verify username if one was specified.
     if 'username' in data:
