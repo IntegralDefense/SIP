@@ -169,14 +169,6 @@ class User(UserMixin, db.Model):
     roles = db.relationship('Role', secondary=roles_users_association, backref=db.backref('users', lazy='dynamic'))
     username = db.Column(db.String(255), nullable=False, unique=True)
 
-    """
-    events = db.relationship('Event',
-                     secondary='join(IntelReference, Event, IntelReference.id == Event.intel_reference_id)',
-                     primaryjoin='and_(User.id == IntelReference.user_id)',
-                     order_by='Event.created_time', viewonly=True, backref='user'
-                     )
-    """
-
     def __str__(self):
         return str(self.username)
 
@@ -273,17 +265,6 @@ class Event(PaginatedAPIMixin, db.Model):
     created_time = db.Column(db.DateTime, default=datetime.utcnow)
     disposition = db.relationship('EventDisposition')
     _disposition_id = db.Column(db.Integer, db.ForeignKey('event_disposition.id'), nullable=False)
-
-    """
-    indicators = db.relationship('Indicator',
-                     secondary='join(IntelReference, EventReferenceMapping, IntelReference.id == EventReferenceMapping.intel_reference_id).'
-                               'join(IndicatorReferenceMapping, IntelReference.id == IndicatorReferenceMapping.intel_reference_id).'
-                               'join(Indicator, Indicator.id == IndicatorReferenceMapping.indicator_id)',
-                     primaryjoin='and_(Event.id == EventReferenceMapping.event_id)',
-                     order_by='Indicator.created_time', viewonly=True
-                     )
-    """
-
     malware = db.relationship('Malware', secondary=event_malware_association)
     modified_time = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     name = db.Column(db.String(255), unique=True, nullable=False)
@@ -645,7 +626,7 @@ class IntelSource(db.Model):
                 'value': self.value}
 
 
-class IntelReference(db.Model):
+class IntelReference(PaginatedAPIMixin, db.Model):
     __tablename__ = 'intel_reference'
     __table_args__ = (
         db.UniqueConstraint('_intel_source_id', 'reference'),
@@ -657,6 +638,12 @@ class IntelReference(db.Model):
     reference = db.Column(db.String(512), index=True, nullable=False)
     source = db.relationship('IntelSource')
     _intel_source_id = db.Column(db.Integer, db.ForeignKey('intel_source.id'), nullable=False)
+
+    """
+    viewonly is set to True on this relationship so that if any indicator exists that uses this
+    reference, the reference cannot be deleted due to a foreign key constraint.
+    """
+    indicators = db.relationship('Indicator', secondary=indicator_reference_association, viewonly=True, lazy='dynamic')
 
     def __str__(self):
         return str('{} : {}'.format(self.source, self.reference))
