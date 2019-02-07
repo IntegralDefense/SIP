@@ -255,6 +255,29 @@ def test_read_by_id(client):
     assert response['reference'] == 'asdf'
 
 
+def test_read_indicators(client):
+    """ Ensure indicators associated with this reference can be read """
+
+    create_intel_source(client, 'OSINT')
+    create_intel_source(client, 'VirusTotal')
+
+    intel_reference1_request, intel_reference1_response = create_intel_reference(client, 'analyst', 'OSINT', 'http://blahblah.com')
+    intel_reference2_request, intel_reference2_response = create_intel_reference(client, 'analyst', 'VirusTotal', 'http://virustotal.com')
+    assert intel_reference1_request.status_code == 201
+    assert intel_reference2_request.status_code == 201
+
+    indicator1_request, indicator1_response = create_indicator(client, 'IP', '127.0.0.1', 'analyst', intel_reference='http://blahblah.com', intel_source='OSINT')
+    indicator2_request, indicator2_response = create_indicator(client, 'Email', 'asdf@asdf.com', 'analyst', intel_reference='http://virustotal.com', intel_source='VirusTotal')
+    assert indicator1_request.status_code == 201
+    assert indicator2_request.status_code == 201
+
+    request = client.get('/api/intel/reference/{}/indicators'.format(intel_reference1_response['id']))
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 1
+    assert response['items'][0]['value'] == '127.0.0.1'
+
+
 """
 UPDATE TESTS
 """

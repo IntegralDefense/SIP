@@ -88,6 +88,24 @@ def read_intel_references():
     return jsonify([item.to_dict() for item in data])
 
 
+@bp.route('/intel/reference/<int:intel_reference_id>/indicators', methods=['GET'])
+@check_if_token_required
+def read_intel_reference_indicators(intel_reference_id):
+    """ Gets a paginated list of the indicators associated with the intel reference """
+
+    intel_reference = IntelReference.query.get(intel_reference_id)
+    if not intel_reference:
+        return error_response(404, 'Intel reference ID not found')
+
+    # Inject the intel_reference_id parameter into the request arguments.
+    # Also need to cast as a dict since request.args is a MultiDict, which causes issues in to_collection_dict.
+    args = dict(request.args.copy())
+    args['intel_reference_id'] = intel_reference.id
+
+    data = IntelReference.to_collection_dict(intel_reference.indicators, 'api.read_intel_reference_indicators', **args)
+    return jsonify(data)
+
+
 """
 UPDATE
 """

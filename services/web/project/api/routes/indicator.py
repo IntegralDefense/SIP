@@ -76,8 +76,49 @@ def create_indicator():
     if existing:
         return error_response(409, 'Indicator already exists')
 
+    # Verify the case-sensitive value (defaults to False).
+    if 'case_sensitive' in data:
+        case_sensitive = parse_boolean(data['case_sensitive'])
+    else:
+        case_sensitive = False
+
+    # Verify the confidence (has default).
+    if 'confidence' not in data:
+        confidence = IndicatorConfidence.query.order_by(IndicatorConfidence.id).limit(1).first()
+    else:
+        confidence = IndicatorConfidence.query.filter_by(value=data['confidence']).first()
+        if not confidence:
+            return error_response(404, 'Indicator confidence not found: {}'.format(data['confidence']))
+
+    # Verify the impact (has default).
+    if 'impact' not in data:
+        impact = IndicatorImpact.query.order_by(IndicatorImpact.id).limit(1).first()
+    else:
+        impact = IndicatorImpact.query.filter_by(value=data['impact']).first()
+        if not impact:
+            return error_response(404, 'Indicator impact not found: {}'.format(data['impact']))
+
+    # Verify the status (has default).
+    if 'status' not in data:
+        status = IndicatorStatus.query.order_by(IndicatorStatus.id).limit(1).first()
+    else:
+        status = IndicatorStatus.query.filter_by(value=data['status']).first()
+        if not status:
+            return error_response(404, 'Indicator status not found: {}'.format(data['status']))
+
+    # Verify the substring value (defaults to False).
+    if 'substring' in data:
+        substring = parse_boolean(data['substring'])
+    else:
+        substring = False
+
     # Create the indicator object.
-    indicator = Indicator(type=_type,
+    indicator = Indicator(case_sensitive=case_sensitive,
+                          confidence=confidence,
+                          impact=impact,
+                          status=status,
+                          substring=substring,
+                          type=_type,
                           user=user,
                           value=data['value'])
 
@@ -89,31 +130,6 @@ def create_indicator():
                 return error_response(404, 'Campaign not found: {}'.format(value))
             indicator.campaigns.append(campaign)
 
-    # Verify the case-sensitive value (defaults to False).
-    if 'case_sensitive' in data:
-        case_sensitive = parse_boolean(data['case_sensitive'])
-    else:
-        case_sensitive = False
-    indicator.case_sensitive = case_sensitive
-
-    # Verify the confidence (has default).
-    if 'confidence' not in data:
-        confidence = IndicatorConfidence.query.order_by(IndicatorConfidence.id).limit(1).first()
-    else:
-        confidence = IndicatorConfidence.query.filter_by(value=data['confidence']).first()
-        if not confidence:
-            return error_response(404, 'Indicator confidence not found: {}'.format(data['confidence']))
-    indicator.confidence = confidence
-
-    # Verify the impact (has default).
-    if 'impact' not in data:
-        impact = IndicatorImpact.query.order_by(IndicatorImpact.id).limit(1).first()
-    else:
-        impact = IndicatorImpact.query.filter_by(value=data['impact']).first()
-        if not impact:
-            return error_response(404, 'Indicator impact not found: {}'.format(data['impact']))
-    indicator.impact = impact
-
     # Verify any reference that was specified.
     if 'references' in data:
         for value in data['references']:
@@ -121,22 +137,6 @@ def create_indicator():
             if not reference:
                 return error_response(404, 'Reference not found: {}'.format(value))
             indicator.references.append(reference)
-
-    # Verify the status (has default).
-    if 'status' not in data:
-        status = IndicatorStatus.query.order_by(IndicatorStatus.id).limit(1).first()
-    else:
-        status = IndicatorStatus.query.filter_by(value=data['status']).first()
-        if not status:
-            return error_response(404, 'Indicator status not found: {}'.format(data['status']))
-    indicator.status = status
-
-    # Verify the substring value (defaults to False).
-    if 'substring' in data:
-        substring = parse_boolean(data['substring'])
-    else:
-        substring = False
-    indicator.substring = substring
 
     # Verify any tags that were specified.
     if 'tags' in data:
@@ -202,21 +202,11 @@ def read_indicators():
 
     # Confidence filter
     if 'confidence' in request.args:
-        confidence = IndicatorConfidence.query.filter_by(value=request.args.get('confidence')).first()
-        if confidence:
-            confidence_id = confidence.id
-        else:
-            confidence_id = -1
-        filters.add(Indicator._confidence_id == confidence_id)
+        filters.add(Indicator.confidence.has(IndicatorConfidence.value == request.args.get('confidence')))
 
     # Impact filter
     if 'impact' in request.args:
-        impact = IndicatorImpact.query.filter_by(value=request.args.get('impact')).first()
-        if impact:
-            impact_id = impact.id
-        else:
-            impact_id = -1
-        filters.add(Indicator._impact_id == impact_id)
+        filters.add(Indicator.impact.has(IndicatorImpact.value == request.args.get('impact')))
 
     # Modified after filter
     if 'modified_after' in request.args:
@@ -238,21 +228,11 @@ def read_indicators():
     if 'sources' in request.args:
         sources = request.args.get('sources').split(',')
         for s in sources:
-            source = IntelSource.query.filter_by(value=s).first()
-            if source:
-                source_id = source.id
-            else:
-                source_id = -1
-            filters.add(Indicator.references.any(_intel_source_id=source_id))
+            filters.add(Indicator.references.any(IntelReference.source.has(IntelSource.value == s)))
 
     # Status filter
     if 'status' in request.args:
-        status = IndicatorStatus.query.filter_by(value=request.args.get('status')).first()
-        if status:
-            status_id = status.id
-        else:
-            status_id = -1
-        filters.add(Indicator._status_id == status_id)
+        filters.add(Indicator.status.has(IndicatorStatus.value == request.args.get('status')))
 
     # Substring filter
     if 'substring' in request.args:
@@ -267,12 +247,7 @@ def read_indicators():
 
     # Type filter
     if 'type' in request.args:
-        _type = IndicatorType.query.filter_by(value=request.args.get('type')).first()
-        if _type:
-            type_id = _type.id
-        else:
-            type_id = -1
-        filters.add(Indicator._type_id == type_id)
+        filters.add(Indicator.type.has(IndicatorType.value == request.args.get('type')))
 
     # Value filter
     if 'value' in request.args:

@@ -212,12 +212,7 @@ def read_events():
 
     # Campaign filter
     if 'campaign' in request.args:
-        campaign = Campaign.query.filter_by(name=request.args.get('campaign')).first()
-        if campaign:
-            campaign_id = campaign.id
-        else:
-            campaign_id = -1
-        filters.add(Event._campaign_id == campaign_id)
+        filters.add(Event.campaign.has(Campaign.name == request.args.get('campaign')))
 
     # Created after filter
     if 'created_after' in request.args:
@@ -237,12 +232,7 @@ def read_events():
 
     # Disposition filter
     if 'disposition' in request.args:
-        disposition = EventDisposition.query.filter_by(value=request.args.get('disposition')).first()
-        if disposition:
-            disposition_id = disposition.id
-        else:
-            disposition_id = -1
-        filters.add(Event._disposition_id == disposition_id)
+        filters.add(Event.disposition.has(EventDisposition.value == request.args.get('disposition')))
 
     # Malware filter
     if 'malware' in request.args:
@@ -286,21 +276,11 @@ def read_events():
     if 'sources' in request.args:
         sources = request.args.get('sources').split(',')
         for s in sources:
-            source = IntelSource.query.filter_by(value=s).first()
-            if source:
-                source_id = source.id
-            else:
-                source_id = -1
-            filters.add(Event.references.any(_intel_source_id=source_id))
+            filters.add(Event.references.any(IntelReference.source.has(IntelSource.value == s)))
 
     # Status filter
     if 'status' in request.args:
-        status = EventStatus.query.filter_by(value=request.args.get('status')).first()
-        if status:
-            status_id = status.id
-        else:
-            status_id = -1
-        filters.add(Event._status_id == status_id)
+        filters.add(Event.status.has(EventStatus.value == request.args.get('status')))
 
     # Tags filter
     if 'tags' in request.args:
@@ -316,12 +296,7 @@ def read_events():
 
     # Username filter (IntelReference)
     if 'username' in request.args:
-        user = User.query.filter_by(username=request.args.get('username')).first()
-        if user:
-            user_id = user.id
-        else:
-            user_id = -1
-        filters.add(Event.references.any(_user_id=user_id))
+        filters.add(Event.user.has(User.username == request.args.get('username')))
 
     data = Event.to_collection_dict(Event.query.filter(*filters), 'api.read_events', **request.args)
     return jsonify(data)
