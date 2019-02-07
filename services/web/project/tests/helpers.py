@@ -11,6 +11,21 @@ def obtain_token(client, username, password):
     return response['access_token'], response['refresh_token']
 
 
+def create_alert(client, event, type_, url):
+    data = {'event': event, 'type': type_, 'url': url}
+    create_alert_type(client, type_)
+    request = client.post('/api/alerts', json=data)
+    response = json.loads(request.data.decode())
+    return request, response
+
+
+def create_alert_type(client, _type):
+    data = {'value': _type}
+    request = client.post('/api/alerts/type', json=data)
+    response = json.loads(request.data.decode())
+    return request, response
+
+
 def create_campaign(client, campaign, aliases=[]):
     data = {'name': campaign}
     if aliases:

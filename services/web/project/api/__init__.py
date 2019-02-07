@@ -2,6 +2,9 @@ from flask import Blueprint
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
+from project.api.routes import alert
+from project.api.routes import alert_type
+
 from project.api.routes import campaign
 from project.api.routes import campaign_alias
 

@@ -188,6 +188,39 @@ class User(UserMixin, db.Model):
                 'last_name': self.last_name,
                 'roles': sorted([r.name for r in self.roles]),
                 'username': self.username}
+    
+    
+class Alert(PaginatedAPIMixin, db.Model):
+    __tablename__ = 'alert'
+
+    id = db.Column(db.Integer, primary_key=True, nullable=False)
+    type = db.relationship('AlertType')
+    type_id = db.Column(db.Integer, db.ForeignKey('alert_type.id'), nullable=False)
+    url = db.Column(db.String(512), unique=True, nullable=False)
+    event_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
+
+    def __str__(self):
+        return str(self.url)
+
+    def to_dict(self):
+        return {'id': self.id,
+                'event': self.event.name,
+                'type': self.type.value,
+                'url': self.url}
+
+
+class AlertType(db.Model):
+    __tablename__ = 'alert_type'
+
+    id = db.Column(db.Integer, primary_key=True, nullable=False)
+    value = db.Column(db.String(255), unique=True, nullable=False)
+
+    def __str__(self):
+        return str(self.value)
+
+    def to_dict(self):
+        return {'id': self.id,
+                'value': self.value}
 
 
 class Campaign(db.Model):
@@ -231,6 +264,8 @@ class Event(PaginatedAPIMixin, db.Model):
     __tablename__ = 'event'
 
     id = db.Column(db.Integer, primary_key=True, nullable=False)
+
+    alerts = db.relationship('Alert', backref='event')
 
     attack_vectors = db.relationship('EventAttackVector', secondary=event_attack_vector_association)
     campaign = db.relationship('Campaign')
