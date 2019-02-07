@@ -400,15 +400,15 @@ class Indicator(PaginatedAPIMixin, db.Model):
     modified_time = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     references = db.relationship('IntelReference', secondary=indicator_reference_association)
 
-    _children = db.relationship('Indicator', secondary=indicator_relationship_association,
-                                primaryjoin=(indicator_relationship_association.c.parent_id == id),
-                                secondaryjoin=(indicator_relationship_association.c.child_id == id),
-                                backref=db.backref('_parent', lazy='select'), lazy='select')
+    children = db.relationship('Indicator', secondary=indicator_relationship_association,
+                               primaryjoin=(indicator_relationship_association.c.parent_id == id),
+                               secondaryjoin=(indicator_relationship_association.c.child_id == id),
+                               backref=db.backref('parent', lazy='select'), lazy='select')
 
-    _equal = db.relationship('Indicator', secondary=indicator_equal_association,
-                             primaryjoin=(indicator_equal_association.c.left_id == id),
-                             secondaryjoin=(indicator_equal_association.c.right_id == id),
-                             lazy='select')
+    equal = db.relationship('Indicator', secondary=indicator_equal_association,
+                            primaryjoin=(indicator_equal_association.c.left_id == id),
+                            secondaryjoin=(indicator_equal_association.c.right_id == id),
+                            lazy='select')
 
     status = db.relationship('IndicatorStatus')
     _status_id = db.Column(db.Integer, db.ForeignKey('indicator_status.id'), nullable=False)
@@ -436,10 +436,10 @@ class Indicator(PaginatedAPIMixin, db.Model):
             'all_equal': sorted([i.id for i in all_equal]),
             'campaigns': [c.to_dict() for c in self.campaigns],
             'case_sensitive': bool(self.case_sensitive),
-            'children': [i.id for i in children],
+            'children': sorted([i.id for i in children]),
             'confidence': self.confidence.value,
             'created_time': self.created_time,
-            'equal': [i.id for i in equal],
+            'equal': sorted([i.id for i in equal]),
             'impact': self.impact.value,
             'modified_time': self.modified_time,
             'parent': self.get_parent().id if self.get_parent() else None,
@@ -454,20 +454,20 @@ class Indicator(PaginatedAPIMixin, db.Model):
         return data
 
     def add_child(self, other):
-        if not self == other and not other._parent:
-            self._children.append(other)
+        if not self == other and not other.parent:
+            self.children.append(other)
             return True
         return False
 
     def remove_child(self, other):
         result = False
         try:
-            self._children.remove(other)
+            self.children.remove(other)
             result = True
         except ValueError:
             pass
         try:
-            other._parent.remove(self)
+            other.parent.remove(self)
             result = True
         except ValueError:
             pass
@@ -481,19 +481,19 @@ class Indicator(PaginatedAPIMixin, db.Model):
 
     def get_parent(self):
         try:
-            return self._parent[0]
+            return self.parent[0]
         except IndexError:
             return None
 
     def get_children(self, grandchildren=True, _orig=None, _results=None):
         if not grandchildren:
-            return self._children
+            return self.children
 
         if _orig is None:
             _orig = self
             _results = []
 
-        for ind in self._children:
+        for ind in self.children:
             if ind not in _results:
                 _results.append(ind)
                 _results = ind.get_children(_orig=_orig, _results=_results)
@@ -502,27 +502,27 @@ class Indicator(PaginatedAPIMixin, db.Model):
 
     def is_equal(self, other, recursive=True):
         if not recursive:
-            if other in self._equal or self in other._equal:
+            if other in self.equal or self in other.equal:
                 return True
             return False
         return other in self.get_equal(recursive=True)
 
     def make_equal(self, other):
         if not self == other and not self.is_equal(other, recursive=True):
-            self._equal.append(other)
-            other._equal.append(self)
+            self.equal.append(other)
+            other.equal.append(self)
             return True
         return False
 
     def remove_equal(self, other):
         result = False
         try:
-            self._equal.remove(other)
+            self.equal.remove(other)
             result = True
         except ValueError:
             pass
         try:
-            other._equal.remove(self)
+            other.equal.remove(self)
             result = True
         except ValueError:
             pass
@@ -532,14 +532,14 @@ class Indicator(PaginatedAPIMixin, db.Model):
         if _already_checked is None:
             _already_checked = []
         if not recursive:
-            return self._equal
+            return self.equal
 
         if _orig is None:
             _orig = self
             _already_checked = []
             _results = []
 
-        for ind in self._equal:
+        for ind in self.equal:
             if ind == _orig:
                 continue
             if ind not in _results:
