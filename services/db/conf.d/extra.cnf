@@ -7,5 +7,5 @@ default-character-set=utf8mb4
 [mysqld]
 default_authentication_plugin=mysql_native_password
 character-set-server=utf8mb4
-collation-server=utf8mb4_unicode_ci
+collation-server=utf8mb4_0900_as_cs
 max_allowed_packet=256M
