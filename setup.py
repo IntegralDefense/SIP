@@ -67,7 +67,8 @@ MYSQL_PASSWORD={password}
 FLASK_SECRET_KEY = os.urandom(48).hex()
 FLASK_SECURITY_PASSWORD_SALT = os.urandom(48).hex()
 JWT_SECRET_KEY = os.urandom(48).hex()
-WEB_DOCKER_ENV = """FLASK_ENV={environment}
+WEB_DOCKER_ENV = """FLASK_APP=project
+FLASK_ENV={environment}
 APP_SETTINGS={config}
 DATABASE_URL=mysql+pymysql://{user}:{password}@db:3306/SIP
 SECRET_KEY={secret_key}
