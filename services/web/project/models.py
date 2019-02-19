@@ -21,8 +21,14 @@ class PaginatedAPIMixin:
         args = kwargs.copy()
 
         # Read the page and per_page values or use the defaults.
-        page = int(args.get('page', 1))
-        per_page = min(int(args.get('per_page', 10)), 100)
+        if 'page' in args:
+            page = int(args['page'][0])
+        else:
+            page = 1
+        if 'per_page' in args:
+            per_page = min(int(args['per_page'][0]), 100)
+        else:
+            per_page = 10
 
         # Now that we have the page and per_page values, remove them
         # from the arguments so that the url_for function does not
