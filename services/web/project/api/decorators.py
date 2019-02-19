@@ -1,4 +1,6 @@
-from flask import current_app, request
+import gzip
+
+from flask import current_app, request, after_this_request
 from flask_jwt_extended import verify_jwt_in_request, verify_fresh_jwt_in_request, get_jwt_claims
 from functools import wraps
 from jsonschema import validate
@@ -6,6 +8,31 @@ from jsonschema.exceptions import SchemaError, ValidationError
 from werkzeug.exceptions import BadRequest
 
 from project.api.errors import error_response
+
+
+def gzipped_response(function):
+    """ Returns a gzipped version of the response JSON. """
+
+    @wraps(function)
+    def decorated_function(*args, **kwargs):
+        @after_this_request
+        def zipper(response):
+            response.direct_passthrough = False
+
+            if response.status_code < 200 or response.status_code >= 300 or 'Content-Encoding' in response.headers:
+                return response
+
+            compressed = gzip.compress(response.data)
+
+            response.data = compressed
+            response.headers['Content-Encoding'] = 'gzip'
+            response.headers['Content-Length'] = len(response.data)
+
+            return response
+
+        return function(*args, **kwargs)
+
+    return decorated_function
 
 
 def check_if_token_required(function):
