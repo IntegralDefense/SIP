@@ -5,4 +5,4 @@ while ! mysqladmin ping -h"db" -P"3306" --silent; do
     sleep 1
 done
 
-exec gunicorn -b 0.0.0.0:5001 manage:app
+exec flask run --host=0.0.0.0 --port 5001

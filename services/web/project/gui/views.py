@@ -56,8 +56,8 @@ class CampaignView(AnalystView):
 
 
 class IndicatorView(AnalystView):
-    column_exclude_list = ('_children', '_parent', '_equal_to',)
-    form_excluded_columns = ('_children', '_parent', '_equal_to', 'created_time', 'modified_time',)
+    column_exclude_list = ('children', 'parent', 'equal',)
+    form_excluded_columns = ('children', 'parent', 'equal', 'created_time', 'modified_time',)
 
 
 # Enable editing of Users but replace the 'password' field with a separate one that gets hashed upon submit.
