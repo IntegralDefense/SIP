@@ -100,8 +100,8 @@ event_type_association = db.Table('event_type_mapping',
                                   )
 
 indicator_campaign_association = db.Table('indicator_campaign_mapping',
-                                          db.Column('campaign_id', db.Integer, db.ForeignKey('campaign.id')),
-                                          db.Column('indicator_id', db.Integer, db.ForeignKey('indicator.id'))
+                                          db.Column('indicator_id', db.Integer, db.ForeignKey('indicator.id')),
+                                          db.Column('campaign_id', db.Integer, db.ForeignKey('campaign.id'))
                                           )
 
 indicator_equal_association = db.Table('indicator_equal_mapping',
@@ -241,7 +241,7 @@ class CampaignAlias(db.Model):
     id = db.Column(db.Integer, primary_key=True, nullable=False)
     alias = db.Column(db.String(255), unique=True, nullable=False)
     campaign = db.relationship('Campaign')
-    _campaign_id = db.Column(db.Integer, db.ForeignKey('campaign.id'), nullable=False)
+    campaign_id = db.Column(db.Integer, db.ForeignKey('campaign.id'), nullable=False)
 
     def __str__(self):
         return str(self.alias)
@@ -261,10 +261,11 @@ class Event(PaginatedAPIMixin, db.Model):
 
     attack_vectors = db.relationship('EventAttackVector', secondary=event_attack_vector_association)
     campaign = db.relationship('Campaign')
-    _campaign_id = db.Column(db.Integer, db.ForeignKey('campaign.id'), nullable=True)
+    campaign_id = db.Column(db.Integer, db.ForeignKey('campaign.id'), nullable=True)
     created_time = db.Column(db.DateTime, default=datetime.utcnow)
+    description = db.Column(db.UnicodeText)
     disposition = db.relationship('EventDisposition')
-    _disposition_id = db.Column(db.Integer, db.ForeignKey('event_disposition.id'), nullable=False)
+    disposition_id = db.Column(db.Integer, db.ForeignKey('event_disposition.id'), nullable=True)
     malware = db.relationship('Malware', secondary=event_malware_association)
     modified_time = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     name = db.Column(db.String(255), unique=True, nullable=False)
@@ -272,11 +273,11 @@ class Event(PaginatedAPIMixin, db.Model):
     references = db.relationship('IntelReference', secondary=event_reference_association)
     remediations = db.relationship('EventRemediation', secondary=event_remediation_association)
     status = db.relationship('EventStatus')
-    _status_id = db.Column(db.Integer, db.ForeignKey('event_status.id'), nullable=False)
+    status_id = db.Column(db.Integer, db.ForeignKey('event_status.id'), nullable=False)
     tags = db.relationship('Tag', secondary=event_tag_association)
     types = db.relationship('EventType', secondary=event_type_association)
     user = db.relationship('User')
-    _user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def __str__(self):
         return str(self.name)
@@ -286,14 +287,15 @@ class Event(PaginatedAPIMixin, db.Model):
                 'attack_vectors': sorted([at.value for at in self.attack_vectors]),
                 'campaign': self.campaign.to_dict() if self.campaign else None,
                 'created_time': self.created_time,
-                'disposition': self.disposition.value,
+                'description': self.description,
+                'disposition': self.disposition.value if self.disposition else None,
                 'malware': [m.to_dict() for m in self.malware],
                 'modified_time': self.modified_time,
                 'name': self.name,
                 'prevention_tools': sorted([p.value for p in self.prevention_tools]),
                 'remediations': sorted([r.value for r in self.remediations]),
                 'references': [r.to_dict() for r in self.references],
-                'status': self.status.value,
+                'status': self.status.value if self.status else None,
                 'tags': sorted([t.value for t in self.tags]),
                 'types': sorted([t.value for t in self.types]),
                 'user': self.user.username}
@@ -385,18 +387,15 @@ class EventType(db.Model):
 
 class Indicator(PaginatedAPIMixin, db.Model):
     __tablename__ = 'indicator'
-    __table_args__ = (
-        db.UniqueConstraint('_type_id', 'value'),
-    )
 
     id = db.Column(db.Integer, primary_key=True, nullable=False)
     campaigns = db.relationship('Campaign', secondary=indicator_campaign_association)
     case_sensitive = db.Column(db.Boolean, default=False, nullable=False)
     confidence = db.relationship('IndicatorConfidence')
-    _confidence_id = db.Column(db.Integer, db.ForeignKey('indicator_confidence.id'), nullable=False)
+    confidence_id = db.Column(db.Integer, db.ForeignKey('indicator_confidence.id'), nullable=False)
     created_time = db.Column(db.DateTime, default=datetime.utcnow)
     impact = db.relationship('IndicatorImpact')
-    _impact_id = db.Column(db.Integer, db.ForeignKey('indicator_impact.id'), nullable=False)
+    impact_id = db.Column(db.Integer, db.ForeignKey('indicator_impact.id'), nullable=False)
     modified_time = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     references = db.relationship('IntelReference', secondary=indicator_reference_association)
 
@@ -411,14 +410,14 @@ class Indicator(PaginatedAPIMixin, db.Model):
                             lazy='select')
 
     status = db.relationship('IndicatorStatus')
-    _status_id = db.Column(db.Integer, db.ForeignKey('indicator_status.id'), nullable=False)
+    status_id = db.Column(db.Integer, db.ForeignKey('indicator_status.id'), nullable=False)
     substring = db.Column(db.Boolean, default=False, nullable=False)
     tags = db.relationship('Tag', secondary=indicator_tag_association)
     type = db.relationship('IndicatorType')
-    _type_id = db.Column(db.Integer, db.ForeignKey('indicator_type.id'), nullable=False)
-    _user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    type_id = db.Column(db.Integer, db.ForeignKey('indicator_type.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     user = db.relationship('User')
-    value = db.Column(db.String(512), nullable=False)
+    value = db.Column(db.UnicodeText, nullable=False)
 
     def __str__(self):
         return str('{} : {}'.format(self.type, self.value))
@@ -629,15 +628,15 @@ class IntelSource(db.Model):
 class IntelReference(PaginatedAPIMixin, db.Model):
     __tablename__ = 'intel_reference'
     __table_args__ = (
-        db.UniqueConstraint('_intel_source_id', 'reference'),
+        db.UniqueConstraint('intel_source_id', 'reference'),
     )
 
     id = db.Column(db.Integer, primary_key=True, nullable=False)
     user = db.relationship('User')
-    _user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     reference = db.Column(db.String(512), index=True, nullable=False)
     source = db.relationship('IntelSource')
-    _intel_source_id = db.Column(db.Integer, db.ForeignKey('intel_source.id'), nullable=False)
+    intel_source_id = db.Column(db.Integer, db.ForeignKey('intel_source.id'), nullable=False)
 
     """
     viewonly is set to True on this relationship so that if any indicator exists that uses this
@@ -689,7 +688,7 @@ class Tag(db.Model):
     __tablename__ = 'tag'
 
     id = db.Column(db.Integer, primary_key=True, nullable=False)
-    value = db.Column(db.String(255), unique=True, nullable=False)
+    value = db.Column(db.String(255), nullable=False)
 
     def __str__(self):
         return str(self.value)
