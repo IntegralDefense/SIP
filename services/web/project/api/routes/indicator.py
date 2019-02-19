@@ -72,13 +72,13 @@ def create_indicator():
         return error_response(401, 'Cannot create an indicator with an inactive user')
 
     # Verify this type+value does not already exist.
-    existing = Indicator.query.filter_by(_type_id=_type.id, value=data['value']).first()
+    existing = Indicator.query.filter_by(type_id=_type.id, value=data['value']).first()
     if existing:
         return error_response(409, 'Indicator already exists')
 
     # Verify the case-sensitive value (defaults to False).
     if 'case_sensitive' in data:
-        case_sensitive = parse_boolean(data['case_sensitive'])
+        case_sensitive = data['case_sensitive']
     else:
         case_sensitive = False
 
@@ -108,7 +108,7 @@ def create_indicator():
 
     # Verify the substring value (defaults to False).
     if 'substring' in data:
-        substring = parse_boolean(data['substring'])
+        substring = data['substring']
     else:
         substring = False
 
