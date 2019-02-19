@@ -59,6 +59,9 @@ class BaseConfig:
 class DevelopmentConfig(BaseConfig):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
 
+    # Set to True to view SQL queries in the console logs.
+    SQLALCHEMY_ECHO = False
+
 
 class TestingConfig(BaseConfig):
     TESTING = True
