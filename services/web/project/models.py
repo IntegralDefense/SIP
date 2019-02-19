@@ -196,7 +196,6 @@ class Alert(PaginatedAPIMixin, db.Model):
 
     def to_dict(self):
         return {'id': self.id,
-                'event': self.event.name,
                 'type': self.type.value,
                 'url': self.url}
 
@@ -284,6 +283,7 @@ class Event(PaginatedAPIMixin, db.Model):
 
     def to_dict(self):
         return {'id': self.id,
+                'alerts': [a.to_dict() for a in self.alerts],
                 'attack_vectors': sorted([at.value for at in self.attack_vectors]),
                 'campaign': self.campaign.to_dict() if self.campaign else None,
                 'created_time': self.created_time,
