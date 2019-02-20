@@ -226,7 +226,6 @@ def test_read_with_filters(client):
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert len(response['items']) == 1
-    assert response['items'][0]['event'] == 'test event 1'
 
     # Filter by URL
     request = client.get('/api/alerts?url=ace.com')
@@ -247,7 +246,6 @@ def test_read_with_filters(client):
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert len(response['items']) == 1
-    assert response['items'][0]['event'] == 'some other event 2'
 
     # Filter by multiple (conflicting)
     request = client.get('/api/alerts?event=test&type=SIEM')
@@ -269,7 +267,6 @@ def test_read_by_id(client):
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert response['id'] == _id
-    assert response['event'] == 'test event'
     assert response['url'] == 'http://blahblah.com/1'
 
 
