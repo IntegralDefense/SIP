@@ -32,6 +32,12 @@ class BaseConfig:
     SECURITY_SEND_PASSWORD_RESET_NOTICE_EMAIL = False
 
     """
+    PASSWORD REQUIREMENTS
+    """
+
+    MINIMUM_PASSWORD_LENGTH = 12
+
+    """
     API PERMISSIONS
     
     The keys correspond to the HTTP method for the various API function calls.
