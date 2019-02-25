@@ -1,8 +1,8 @@
 import datetime
 
 from dateutil.parser import parse
-from flask import jsonify, request, url_for
-from sqlalchemy import exc
+from flask import current_app, jsonify, request, url_for
+from sqlalchemy import and_, exc
 
 from project import db
 from project.api import bp
@@ -29,7 +29,15 @@ create_schema = {
         'impact': {'type': 'string', 'minLength': 1, 'maxLength': 255},
         'references': {
             'type': 'array',
-            'items': {'type': 'string', 'minLength': 1, 'maxLength': 512},
+            'items': {
+                'type': 'object',
+                'properties': {
+                    'source': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+                    'reference': {'type': 'string', 'minLength': 1, 'maxLength': 512},
+                },
+                'required': ['source', 'reference'],
+                'additionalProperties': False
+            },
             'minItems': 1
         },
         'status': {'type': 'string', 'minLength': 1, 'maxLength': 255},
@@ -39,8 +47,8 @@ create_schema = {
             'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
             'minItems': 1
         },
-        'username': {'type': 'string', 'minLength': 1, 'maxLength': 255},
         'type': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+        'username': {'type': 'string', 'minLength': 1, 'maxLength': 255},
         'value': {'type': 'string', 'minLength': 1, 'maxLength': 512}
     },
     'required': ['username', 'type', 'value'],
@@ -57,11 +65,6 @@ def create_indicator():
 
     data = request.get_json()
 
-    # Verify the type.
-    _type = IndicatorType.query.filter_by(value=data['type']).first()
-    if not _type:
-        return error_response(404, 'Indicator type not found')
-
     # Verify the username.
     user = User.query.filter_by(username=data['username']).first()
     if not user:
@@ -71,8 +74,17 @@ def create_indicator():
     if not user.active:
         return error_response(401, 'Cannot create an indicator with an inactive user')
 
+    # Verify the indicator type.
+    indicator_type = IndicatorType.query.filter_by(value=data['type']).first()
+    if not indicator_type:
+        if current_app.config['INDICATOR_AUTO_CREATE_INDICATORTYPE']:
+            indicator_type = IndicatorType(value=data['type'])
+            db.session.add(indicator_type)
+        else:
+            return error_response(404, 'Indicator type not found: {}'.format(data['type']))
+
     # Verify this type+value does not already exist.
-    existing = Indicator.query.filter_by(type_id=_type.id, value=data['value']).first()
+    existing = Indicator.query.filter_by(type=indicator_type, value=data['value']).first()
     if existing:
         return error_response(409, 'Indicator already exists')
 
@@ -85,26 +97,44 @@ def create_indicator():
     # Verify the confidence (has default).
     if 'confidence' not in data:
         confidence = IndicatorConfidence.query.order_by(IndicatorConfidence.id).limit(1).first()
+        if not confidence:
+            return error_response(400, 'No indicator confidence values exist to use as default')
     else:
         confidence = IndicatorConfidence.query.filter_by(value=data['confidence']).first()
         if not confidence:
-            return error_response(404, 'Indicator confidence not found: {}'.format(data['confidence']))
+            if current_app.config['INDICATOR_AUTO_CREATE_INDICATORCONFIDENCE']:
+                confidence = IndicatorConfidence(value=data['confidence'])
+                db.session.add(confidence)
+            else:
+                return error_response(404, 'Indicator confidence not found: {}'.format(data['confidence']))
 
     # Verify the impact (has default).
     if 'impact' not in data:
         impact = IndicatorImpact.query.order_by(IndicatorImpact.id).limit(1).first()
+        if not impact:
+            return error_response(400, 'No indicator impact values exist to use as default')
     else:
         impact = IndicatorImpact.query.filter_by(value=data['impact']).first()
         if not impact:
-            return error_response(404, 'Indicator impact not found: {}'.format(data['impact']))
+            if current_app.config['INDICATOR_AUTO_CREATE_INDICATORIMPACT']:
+                impact = IndicatorImpact(value=data['impact'])
+                db.session.add(impact)
+            else:
+                return error_response(404, 'Indicator impact not found: {}'.format(data['impact']))
 
     # Verify the status (has default).
     if 'status' not in data:
         status = IndicatorStatus.query.order_by(IndicatorStatus.id).limit(1).first()
+        if not status:
+            return error_response(400, 'No indicator status values exist to use as default')
     else:
         status = IndicatorStatus.query.filter_by(value=data['status']).first()
         if not status:
-            return error_response(404, 'Indicator status not found: {}'.format(data['status']))
+            if current_app.config['INDICATOR_AUTO_CREATE_INDICATORSTATUS']:
+                status = IndicatorStatus(value=data['status'])
+                db.session.add(status)
+            else:
+                return error_response(404, 'Indicator status not found: {}'.format(data['status']))
 
     # Verify the substring value (defaults to False).
     if 'substring' in data:
@@ -118,7 +148,7 @@ def create_indicator():
                           impact=impact,
                           status=status,
                           substring=substring,
-                          type=_type,
+                          type=indicator_type,
                           user=user,
                           value=data['value'])
 
@@ -127,15 +157,32 @@ def create_indicator():
         for value in data['campaigns']:
             campaign = Campaign.query.filter_by(name=value).first()
             if not campaign:
-                return error_response(404, 'Campaign not found: {}'.format(value))
+                if current_app.config['INDICATOR_AUTO_CREATE_CAMPAIGN']:
+                    campaign = Campaign(name=value)
+                    db.session.add(campaign)
+                else:
+                    return error_response(404, 'Campaign not found: {}'.format(value))
+
             indicator.campaigns.append(campaign)
 
-    # Verify any reference that was specified.
+    # Verify any references that were specified.
     if 'references' in data:
-        for value in data['references']:
-            reference = IntelReference.query.filter_by(reference=value).first()
+        for item in data['references']:
+            reference = IntelReference.query.filter(and_(IntelReference.reference == item['reference'],
+                                                         IntelReference.source.has(
+                                                             IntelSource.value == item['source']))).first()
             if not reference:
-                return error_response(404, 'Reference not found: {}'.format(value))
+                if current_app.config['INDICATOR_AUTO_CREATE_INTELREFERENCE']:
+                    source = IntelSource.query.filter_by(value=item['source']).first()
+                    if not source:
+                        source = IntelSource(value=item['source'])
+                        db.session.add(source)
+
+                    reference = IntelReference(reference=item['reference'], source=source, user=user)
+                    db.session.add(reference)
+                else:
+                    return error_response(404, 'Intel reference not found: {}'.format(item['reference']))
+
             indicator.references.append(reference)
 
     # Verify any tags that were specified.
@@ -143,7 +190,12 @@ def create_indicator():
         for value in data['tags']:
             tag = Tag.query.filter_by(value=value).first()
             if not tag:
-                return error_response(404, 'Tag not found: {}'.format(value))
+                if current_app.config['INDICATOR_AUTO_CREATE_TAG']:
+                    tag = Tag(value=value)
+                    db.session.add(tag)
+                else:
+                    return error_response(404, 'Tag not found: {}'.format(value))
+
             indicator.tags.append(tag)
 
     db.session.add(indicator)

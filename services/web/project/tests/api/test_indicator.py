@@ -153,7 +153,7 @@ def test_create_schema(client):
     assert "'asdf' is not of type 'array'" in response['msg']
 
     # Empty references parameter type
-    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': []}
+    data = {'type': 'asdf', 'username': 'analyst', 'value': 'asdf', 'references': []}
     request = client.post('/api/indicators', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
@@ -164,17 +164,31 @@ def test_create_schema(client):
     request = client.post('/api/indicators', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert "1 is not of type 'string'" in response['msg']
+    assert "1 is not of type 'object'" in response['msg']
 
-    # references parameter too short
-    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': ['']}
+    # reference parameter too short
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': [{'reference': '', 'source': 'asdf'}]}
     request = client.post('/api/indicators', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
     assert 'too short' in response['msg']
 
-    # references parameter too long
-    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': ['a' * 513]}
+    # reference parameter too long
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': [{'reference': 'a' * 513, 'source': 'asdf'}]}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # source parameter too short
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': [{'reference': 'asdf', 'source': ''}]}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # source parameter too long
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': [{'reference': 'asdf', 'source': 'a' * 256}]}
     request = client.post('/api/indicators', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
@@ -342,6 +356,258 @@ def test_create_invalid_role(app, client):
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['msg'] == 'user_does_not_have_this_role role required'
+
+
+def test_create_autocreate_campaign(app, client):
+    """ Ensure the auto-create campaign config actually works """
+
+    app.config['INDICATOR_AUTO_CREATE_CAMPAIGN'] = False
+    app.config['INDICATOR_AUTO_CREATE_INDICATORCONFIDENCE'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORIMPACT'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORSTATUS'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORTYPE'] = True
+    app.config['INDICATOR_AUTO_CREATE_INTELREFERENCE'] = True
+    app.config['INDICATOR_AUTO_CREATE_TAG'] = True
+
+    data = {'campaigns': ['Derpsters'],
+            'case_sensitive': False,
+            'confidence': 'LOW',
+            'impact': 'LOW',
+            'references': [{'source': 'OSINT', 'reference': 'http://blahblah.com'}],
+            'status': 'New',
+            'substring': False,
+            'tags': ['phish', 'from_address'],
+            'type': 'Email - Address',
+            'username': 'analyst',
+            'value': 'badguy@evil.com'}
+
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 404
+    assert response['msg'] == 'Campaign not found: Derpsters'
+
+    app.config['INDICATOR_AUTO_CREATE_CAMPAIGN'] = True
+
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 201
+    assert response['campaigns'][0]['name'] == 'Derpsters'
+
+
+def test_create_autocreate_indicator_confidence(app, client):
+    """ Ensure the auto-create indicator confidence config actually works """
+
+    app.config['INDICATOR_AUTO_CREATE_CAMPAIGN'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORCONFIDENCE'] = False
+    app.config['INDICATOR_AUTO_CREATE_INDICATORIMPACT'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORSTATUS'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORTYPE'] = True
+    app.config['INDICATOR_AUTO_CREATE_INTELREFERENCE'] = True
+    app.config['INDICATOR_AUTO_CREATE_TAG'] = True
+
+    data = {'campaigns': ['Derpsters'],
+            'case_sensitive': False,
+            'confidence': 'LOW',
+            'impact': 'LOW',
+            'references': [{'source': 'OSINT', 'reference': 'http://blahblah.com'}],
+            'status': 'New',
+            'substring': False,
+            'tags': ['phish', 'from_address'],
+            'type': 'Email - Address',
+            'username': 'analyst',
+            'value': 'badguy@evil.com'}
+
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 404
+    assert response['msg'] == 'Indicator confidence not found: LOW'
+
+    app.config['INDICATOR_AUTO_CREATE_INDICATORCONFIDENCE'] = True
+
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 201
+    assert response['confidence'] == 'LOW'
+
+
+def test_create_autocreate_indicator_impact(app, client):
+    """ Ensure the auto-create indicator impact config actually works """
+
+    app.config['INDICATOR_AUTO_CREATE_CAMPAIGN'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORCONFIDENCE'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORIMPACT'] = False
+    app.config['INDICATOR_AUTO_CREATE_INDICATORSTATUS'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORTYPE'] = True
+    app.config['INDICATOR_AUTO_CREATE_INTELREFERENCE'] = True
+    app.config['INDICATOR_AUTO_CREATE_TAG'] = True
+
+    data = {'campaigns': ['Derpsters'],
+            'case_sensitive': False,
+            'confidence': 'LOW',
+            'impact': 'LOW',
+            'references': [{'source': 'OSINT', 'reference': 'http://blahblah.com'}],
+            'status': 'New',
+            'substring': False,
+            'tags': ['phish', 'from_address'],
+            'type': 'Email - Address',
+            'username': 'analyst',
+            'value': 'badguy@evil.com'}
+
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 404
+    assert response['msg'] == 'Indicator impact not found: LOW'
+
+    app.config['INDICATOR_AUTO_CREATE_INDICATORIMPACT'] = True
+
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 201
+    assert response['impact'] == 'LOW'
+
+
+def test_create_autocreate_indicator_status(app, client):
+    """ Ensure the auto-create indicator status config actually works """
+
+    app.config['INDICATOR_AUTO_CREATE_CAMPAIGN'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORCONFIDENCE'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORIMPACT'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORSTATUS'] = False
+    app.config['INDICATOR_AUTO_CREATE_INDICATORTYPE'] = True
+    app.config['INDICATOR_AUTO_CREATE_INTELREFERENCE'] = True
+    app.config['INDICATOR_AUTO_CREATE_TAG'] = True
+
+    data = {'campaigns': ['Derpsters'],
+            'case_sensitive': False,
+            'confidence': 'LOW',
+            'impact': 'LOW',
+            'references': [{'source': 'OSINT', 'reference': 'http://blahblah.com'}],
+            'status': 'New',
+            'substring': False,
+            'tags': ['phish', 'from_address'],
+            'type': 'Email - Address',
+            'username': 'analyst',
+            'value': 'badguy@evil.com'}
+
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 404
+    assert response['msg'] == 'Indicator status not found: New'
+
+    app.config['INDICATOR_AUTO_CREATE_INDICATORSTATUS'] = True
+
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 201
+    assert response['status'] == 'New'
+
+
+def test_create_autocreate_indicator_type(app, client):
+    """ Ensure the auto-create indicator type config actually works """
+
+    app.config['INDICATOR_AUTO_CREATE_CAMPAIGN'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORCONFIDENCE'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORIMPACT'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORSTATUS'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORTYPE'] = False
+    app.config['INDICATOR_AUTO_CREATE_INTELREFERENCE'] = True
+    app.config['INDICATOR_AUTO_CREATE_TAG'] = True
+
+    data = {'campaigns': ['Derpsters'],
+            'case_sensitive': False,
+            'confidence': 'LOW',
+            'impact': 'LOW',
+            'references': [{'source': 'OSINT', 'reference': 'http://blahblah.com'}],
+            'status': 'New',
+            'substring': False,
+            'tags': ['phish', 'from_address'],
+            'type': 'Email - Address',
+            'username': 'analyst',
+            'value': 'badguy@evil.com'}
+
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 404
+    assert response['msg'] == 'Indicator type not found: Email - Address'
+
+    app.config['INDICATOR_AUTO_CREATE_INDICATORTYPE'] = True
+
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 201
+    assert response['type'] == 'Email - Address'
+
+
+def test_create_autocreate_intel_reference(app, client):
+    """ Ensure the auto-create intel reference config actually works """
+
+    app.config['INDICATOR_AUTO_CREATE_CAMPAIGN'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORCONFIDENCE'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORIMPACT'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORSTATUS'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORTYPE'] = True
+    app.config['INDICATOR_AUTO_CREATE_INTELREFERENCE'] = False
+    app.config['INDICATOR_AUTO_CREATE_TAG'] = True
+
+    data = {'campaigns': ['Derpsters'],
+            'case_sensitive': False,
+            'confidence': 'LOW',
+            'impact': 'LOW',
+            'references': [{'source': 'OSINT', 'reference': 'http://blahblah.com'}],
+            'status': 'New',
+            'substring': False,
+            'tags': ['phish', 'from_address'],
+            'type': 'Email - Address',
+            'username': 'analyst',
+            'value': 'badguy@evil.com'}
+
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 404
+    assert response['msg'] == 'Intel reference not found: http://blahblah.com'
+
+    app.config['INDICATOR_AUTO_CREATE_INTELREFERENCE'] = True
+
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 201
+    assert response['references'][0]['reference'] == 'http://blahblah.com'
+
+
+def test_create_autocreate_tag(app, client):
+    """ Ensure the auto-create tag config actually works """
+
+    app.config['INDICATOR_AUTO_CREATE_CAMPAIGN'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORCONFIDENCE'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORIMPACT'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORSTATUS'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORTYPE'] = True
+    app.config['INDICATOR_AUTO_CREATE_INTELREFERENCE'] = True
+    app.config['INDICATOR_AUTO_CREATE_TAG'] = False
+
+    data = {'campaigns': ['Derpsters'],
+            'case_sensitive': False,
+            'confidence': 'LOW',
+            'impact': 'LOW',
+            'references': [{'source': 'OSINT', 'reference': 'http://blahblah.com'}],
+            'status': 'New',
+            'substring': False,
+            'tags': ['phish', 'from_address'],
+            'type': 'Email - Address',
+            'username': 'analyst',
+            'value': 'badguy@evil.com'}
+
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 404
+    assert response['msg'] == 'Tag not found: phish'
+
+    app.config['INDICATOR_AUTO_CREATE_TAG'] = True
+
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 201
+    assert response['tags'] == ['from_address', 'phish']
 
 
 def test_create(client):

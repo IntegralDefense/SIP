@@ -7,11 +7,10 @@ then
     exit 1
 fi
 
-# Error if the ACE alert base URL was not specified.
-# https://youraceserver/saq/analysis?direct=
+# Error if the ACE GUI domain name was not specified.
 if [[ -z "$2" ]]
 then
-    echo "You must specify the ACE alert base URL"
+    echo "You must specify the ACE GUI domain name"
     exit 1
 fi
 
@@ -27,7 +26,7 @@ fi
 cp "$1" "$import_dir/ace_events.csv"
 
 docker-compose -f docker-compose-DEV.yml build
-docker-compose -f docker-compose-DEV.yml run web-dev pypy3 manage.py import-ace-events --baseurl="$2"
+docker-compose -f docker-compose-DEV.yml run web-dev pypy3 manage.py import-ace-events --guidomain="$2"
 
 # Delete the events.json file from the container.
 rm "$import_dir/ace_events.csv"

@@ -23,8 +23,8 @@ cli = FlaskGroup(create_app=create_app)
 
 
 @cli.command()
-@click.option('--baseurl', type=str, required=True)
-def import_ace_events(baseurl):
+@click.option('--guidomain', type=str, required=True)
+def import_ace_events(guidomain):
     """ Imports ACE events from the exported MySQL CSV """
 
     # Make sure the events.json file exists.
@@ -261,6 +261,7 @@ def import_ace_events(baseurl):
 
             # Check if the alert must be created. If the alert already exists,
             # it is already associated with an event, so there is no need to add it to the list.
+            baseurl = 'https://{}/saq/analysis?direct='.format(guidomain)
             row_full_url = baseurl + row['uuid']
             if row_full_url not in existing_alerts:
                 new_alert = models.Alert(event=event,

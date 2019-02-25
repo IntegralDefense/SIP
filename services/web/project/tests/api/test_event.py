@@ -136,17 +136,52 @@ def test_create_schema(client):
     request = client.post('/api/events', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert "1 is not of type 'string'" in response['msg']
+    assert "1 is not of type 'object'" in response['msg']
 
-    # malware parameter too short
-    data = {'name': 'asdf', 'username': 'asdf', 'malware': ['']}
+    # malware name parameter too short
+    data = {'name': 'asdf', 'username': 'asdf', 'malware': [{'name': ''}]}
     request = client.post('/api/events', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
     assert 'too short' in response['msg']
 
-    # malware parameter too long
-    data = {'name': 'asdf', 'username': 'asdf', 'malware': ['a' * 256]}
+    # malware name parameter too long
+    data = {'name': 'asdf', 'username': 'asdf', 'malware': [{'name': 'a' * 256}]}
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid malware types parameter type
+    data = {'name': 'asdf', 'username': 'asdf', 'malware': [{'name': 'asdf', 'types': 'asdf'}]}
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "'asdf' is not of type 'array'" in response['msg']
+
+    # Empty malware types parameter
+    data = {'name': 'asdf', 'username': 'asdf', 'malware': [{'name': 'asdf', 'types': []}]}
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # Invalid malware types element parameter type
+    data = {'name': 'asdf', 'username': 'asdf', 'malware': [{'name': 'asdf', 'types': [1]}]}
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # malware types parameter too short
+    data = {'name': 'asdf', 'username': 'asdf', 'malware': [{'name': 'asdf', 'types': ['']}]}
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # malware types parameter too long
+    data = {'name': 'asdf', 'username': 'asdf', 'malware': [{'name': 'asdf', 'types': ['a' * 256]}]}
     request = client.post('/api/events', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
@@ -206,17 +241,31 @@ def test_create_schema(client):
     request = client.post('/api/events', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert "1 is not of type 'string'" in response['msg']
+    assert "1 is not of type 'object'" in response['msg']
 
     # references parameter too short
-    data = {'name': 'asdf', 'username': 'asdf', 'references': ['']}
+    data = {'name': 'asdf', 'username': 'asdf', 'references': [{'reference': '', 'source': 'asdf'}]}
     request = client.post('/api/events', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
     assert 'too short' in response['msg']
 
     # references parameter too long
-    data = {'name': 'asdf', 'username': 'asdf', 'references': ['a' * 513]}
+    data = {'name': 'asdf', 'username': 'asdf', 'references': [{'reference': 'a' * 513, 'source': 'asdf'}]}
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # source parameter too short
+    data = {'name': 'asdf', 'username': 'asdf', 'references': [{'reference': 'asdf', 'source': ''}]}
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # source parameter too long
+    data = {'name': 'asdf', 'username': 'asdf', 'references': [{'reference': 'asdf', 'source': 'a' * 256}]}
     request = client.post('/api/events', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
@@ -442,6 +491,407 @@ def test_create_invalid_role(app, client):
     assert response['msg'] == 'user_does_not_have_this_role role required'
 
 
+def test_create_autocreate_campaign(app, client):
+    """ Ensure the auto-create campaign config actually works """
+
+    app.config['EVENT_AUTO_CREATE_CAMPAIGN'] = False
+    app.config['EVENT_AUTO_CREATE_EVENTATTACKVECTOR'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTDISPOSITION'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTPREVENTIONTOOL'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTREMEDIATION'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTSTATUS'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTTYPE'] = True
+    app.config['EVENT_AUTO_CREATE_INTELREFERENCE'] = True
+    app.config['EVENT_AUTO_CREATE_MALWARE'] = True
+    app.config['EVENT_AUTO_CREATE_TAG'] = True
+
+    data = {'attack_vectors': ['WEBMAIL'],
+            'campaign': 'Derpsters',
+            'disposition': 'DELIVERY',
+            'malware': [{'name': 'Nanocore', 'types': ['RAT']}],
+            'name': 'test event',
+            'prevention_tools': ['IPS'],
+            'references': [{'source': 'OSINT', 'reference': 'http://blahblah.com'}],
+            'remediations': ['REIMAGED'],
+            'status': 'CLOSED',
+            'tags': ['phish', 'nanocore'],
+            'types': ['phish'],
+            'username': 'analyst'}
+
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 404
+    assert response['msg'] == 'Campaign not found: Derpsters'
+
+    app.config['EVENT_AUTO_CREATE_CAMPAIGN'] = True
+
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 201
+    assert response['campaign']['name'] == 'Derpsters'
+
+
+def test_create_autocreate_event_attack_vector(app, client):
+    """ Ensure the auto-create event attack vector config actually works """
+
+    app.config['EVENT_AUTO_CREATE_CAMPAIGN'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTATTACKVECTOR'] = False
+    app.config['EVENT_AUTO_CREATE_EVENTDISPOSITION'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTPREVENTIONTOOL'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTREMEDIATION'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTSTATUS'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTTYPE'] = True
+    app.config['EVENT_AUTO_CREATE_INTELREFERENCE'] = True
+    app.config['EVENT_AUTO_CREATE_MALWARE'] = True
+    app.config['EVENT_AUTO_CREATE_TAG'] = True
+
+    data = {'attack_vectors': ['WEBMAIL'],
+            'campaign': 'Derpsters',
+            'disposition': 'DELIVERY',
+            'malware': [{'name': 'Nanocore', 'types': ['RAT']}],
+            'name': 'test event',
+            'prevention_tools': ['IPS'],
+            'references': [{'source': 'OSINT', 'reference': 'http://blahblah.com'}],
+            'remediations': ['REIMAGED'],
+            'status': 'CLOSED',
+            'tags': ['phish', 'nanocore'],
+            'types': ['phish'],
+            'username': 'analyst'}
+
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 404
+    assert response['msg'] == 'Event attack vector not found: WEBMAIL'
+
+    app.config['EVENT_AUTO_CREATE_EVENTATTACKVECTOR'] = True
+
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 201
+    assert response['attack_vectors'] == ['WEBMAIL']
+
+
+def test_create_autocreate_event_disposition(app, client):
+    """ Ensure the auto-create event disposition config actually works """
+
+    app.config['EVENT_AUTO_CREATE_CAMPAIGN'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTATTACKVECTOR'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTDISPOSITION'] = False
+    app.config['EVENT_AUTO_CREATE_EVENTPREVENTIONTOOL'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTREMEDIATION'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTSTATUS'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTTYPE'] = True
+    app.config['EVENT_AUTO_CREATE_INTELREFERENCE'] = True
+    app.config['EVENT_AUTO_CREATE_MALWARE'] = True
+    app.config['EVENT_AUTO_CREATE_TAG'] = True
+
+    data = {'attack_vectors': ['WEBMAIL'],
+            'campaign': 'Derpsters',
+            'disposition': 'DELIVERY',
+            'malware': [{'name': 'Nanocore', 'types': ['RAT']}],
+            'name': 'test event',
+            'prevention_tools': ['IPS'],
+            'references': [{'source': 'OSINT', 'reference': 'http://blahblah.com'}],
+            'remediations': ['REIMAGED'],
+            'status': 'CLOSED',
+            'tags': ['phish', 'nanocore'],
+            'types': ['phish'],
+            'username': 'analyst'}
+
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 404
+    assert response['msg'] == 'Event disposition not found: DELIVERY'
+
+    app.config['EVENT_AUTO_CREATE_EVENTDISPOSITION'] = True
+
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 201
+    assert response['disposition'] == 'DELIVERY'
+
+
+def test_create_autocreate_event_prevention_tool(app, client):
+    """ Ensure the auto-create event prevention tool config actually works """
+
+    app.config['EVENT_AUTO_CREATE_CAMPAIGN'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTATTACKVECTOR'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTDISPOSITION'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTPREVENTIONTOOL'] = False
+    app.config['EVENT_AUTO_CREATE_EVENTREMEDIATION'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTSTATUS'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTTYPE'] = True
+    app.config['EVENT_AUTO_CREATE_INTELREFERENCE'] = True
+    app.config['EVENT_AUTO_CREATE_MALWARE'] = True
+    app.config['EVENT_AUTO_CREATE_TAG'] = True
+
+    data = {'attack_vectors': ['WEBMAIL'],
+            'campaign': 'Derpsters',
+            'disposition': 'DELIVERY',
+            'malware': [{'name': 'Nanocore', 'types': ['RAT']}],
+            'name': 'test event',
+            'prevention_tools': ['IPS'],
+            'references': [{'source': 'OSINT', 'reference': 'http://blahblah.com'}],
+            'remediations': ['REIMAGED'],
+            'status': 'CLOSED',
+            'tags': ['phish', 'nanocore'],
+            'types': ['phish'],
+            'username': 'analyst'}
+
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 404
+    assert response['msg'] == 'Event prevention tool not found: IPS'
+
+    app.config['EVENT_AUTO_CREATE_EVENTPREVENTIONTOOL'] = True
+
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 201
+    assert response['prevention_tools'] == ['IPS']
+
+
+def test_create_autocreate_event_remediation(app, client):
+    """ Ensure the auto-create event remediation config actually works """
+
+    app.config['EVENT_AUTO_CREATE_CAMPAIGN'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTATTACKVECTOR'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTDISPOSITION'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTPREVENTIONTOOL'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTREMEDIATION'] = False
+    app.config['EVENT_AUTO_CREATE_EVENTSTATUS'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTTYPE'] = True
+    app.config['EVENT_AUTO_CREATE_INTELREFERENCE'] = True
+    app.config['EVENT_AUTO_CREATE_MALWARE'] = True
+    app.config['EVENT_AUTO_CREATE_TAG'] = True
+
+    data = {'attack_vectors': ['WEBMAIL'],
+            'campaign': 'Derpsters',
+            'disposition': 'DELIVERY',
+            'malware': [{'name': 'Nanocore', 'types': ['RAT']}],
+            'name': 'test event',
+            'prevention_tools': ['IPS'],
+            'references': [{'source': 'OSINT', 'reference': 'http://blahblah.com'}],
+            'remediations': ['REIMAGED'],
+            'status': 'CLOSED',
+            'tags': ['phish', 'nanocore'],
+            'types': ['phish'],
+            'username': 'analyst'}
+
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 404
+    assert response['msg'] == 'Event remediation not found: REIMAGED'
+
+    app.config['EVENT_AUTO_CREATE_EVENTREMEDIATION'] = True
+
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 201
+    assert response['remediations'] == ['REIMAGED']
+
+
+def test_create_autocreate_event_status(app, client):
+    """ Ensure the auto-create event status config actually works """
+
+    app.config['EVENT_AUTO_CREATE_CAMPAIGN'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTATTACKVECTOR'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTDISPOSITION'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTPREVENTIONTOOL'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTREMEDIATION'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTSTATUS'] = False
+    app.config['EVENT_AUTO_CREATE_EVENTTYPE'] = True
+    app.config['EVENT_AUTO_CREATE_INTELREFERENCE'] = True
+    app.config['EVENT_AUTO_CREATE_MALWARE'] = True
+    app.config['EVENT_AUTO_CREATE_TAG'] = True
+
+    data = {'attack_vectors': ['WEBMAIL'],
+            'campaign': 'Derpsters',
+            'disposition': 'DELIVERY',
+            'malware': [{'name': 'Nanocore', 'types': ['RAT']}],
+            'name': 'test event',
+            'prevention_tools': ['IPS'],
+            'references': [{'source': 'OSINT', 'reference': 'http://blahblah.com'}],
+            'remediations': ['REIMAGED'],
+            'status': 'CLOSED',
+            'tags': ['phish', 'nanocore'],
+            'types': ['phish'],
+            'username': 'analyst'}
+
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 404
+    assert response['msg'] == 'Event status not found: CLOSED'
+
+    app.config['EVENT_AUTO_CREATE_EVENTSTATUS'] = True
+
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 201
+    assert response['status'] == 'CLOSED'
+
+
+def test_create_autocreate_event_type(app, client):
+    """ Ensure the auto-create event type config actually works """
+
+    app.config['EVENT_AUTO_CREATE_CAMPAIGN'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTATTACKVECTOR'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTDISPOSITION'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTPREVENTIONTOOL'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTREMEDIATION'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTSTATUS'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTTYPE'] = False
+    app.config['EVENT_AUTO_CREATE_INTELREFERENCE'] = True
+    app.config['EVENT_AUTO_CREATE_MALWARE'] = True
+    app.config['EVENT_AUTO_CREATE_TAG'] = True
+
+    data = {'attack_vectors': ['WEBMAIL'],
+            'campaign': 'Derpsters',
+            'disposition': 'DELIVERY',
+            'malware': [{'name': 'Nanocore', 'types': ['RAT']}],
+            'name': 'test event',
+            'prevention_tools': ['IPS'],
+            'references': [{'source': 'OSINT', 'reference': 'http://blahblah.com'}],
+            'remediations': ['REIMAGED'],
+            'status': 'CLOSED',
+            'tags': ['phish', 'nanocore'],
+            'types': ['phish'],
+            'username': 'analyst'}
+
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 404
+    assert response['msg'] == 'Event type not found: phish'
+
+    app.config['EVENT_AUTO_CREATE_EVENTTYPE'] = True
+
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 201
+    assert response['types'] == ['phish']
+
+
+def test_create_autocreate_intel_reference(app, client):
+    """ Ensure the auto-create intel reference config actually works """
+
+    app.config['EVENT_AUTO_CREATE_CAMPAIGN'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTATTACKVECTOR'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTDISPOSITION'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTPREVENTIONTOOL'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTREMEDIATION'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTSTATUS'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTTYPE'] = True
+    app.config['EVENT_AUTO_CREATE_INTELREFERENCE'] = False
+    app.config['EVENT_AUTO_CREATE_MALWARE'] = True
+    app.config['EVENT_AUTO_CREATE_TAG'] = True
+
+    data = {'attack_vectors': ['WEBMAIL'],
+            'campaign': 'Derpsters',
+            'disposition': 'DELIVERY',
+            'malware': [{'name': 'Nanocore', 'types': ['RAT']}],
+            'name': 'test event',
+            'prevention_tools': ['IPS'],
+            'references': [{'source': 'OSINT', 'reference': 'http://blahblah.com'}],
+            'remediations': ['REIMAGED'],
+            'status': 'CLOSED',
+            'tags': ['phish', 'nanocore'],
+            'types': ['phish'],
+            'username': 'analyst'}
+
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 404
+    assert response['msg'] == 'Intel reference not found: http://blahblah.com'
+
+    app.config['EVENT_AUTO_CREATE_INTELREFERENCE'] = True
+
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 201
+    assert response['references'][0]['reference'] == 'http://blahblah.com'
+
+
+def test_create_autocreate_malware(app, client):
+    """ Ensure the auto-create malware config actually works """
+
+    app.config['EVENT_AUTO_CREATE_CAMPAIGN'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTATTACKVECTOR'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTDISPOSITION'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTPREVENTIONTOOL'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTREMEDIATION'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTSTATUS'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTTYPE'] = True
+    app.config['EVENT_AUTO_CREATE_INTELREFERENCE'] = True
+    app.config['EVENT_AUTO_CREATE_MALWARE'] = False
+    app.config['EVENT_AUTO_CREATE_TAG'] = True
+
+    data = {'attack_vectors': ['WEBMAIL'],
+            'campaign': 'Derpsters',
+            'disposition': 'DELIVERY',
+            'malware': [{'name': 'Nanocore', 'types': ['RAT']}],
+            'name': 'test event',
+            'prevention_tools': ['IPS'],
+            'references': [{'source': 'OSINT', 'reference': 'http://blahblah.com'}],
+            'remediations': ['REIMAGED'],
+            'status': 'CLOSED',
+            'tags': ['phish', 'nanocore'],
+            'types': ['phish'],
+            'username': 'analyst'}
+
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 404
+    assert response['msg'] == 'Malware not found: Nanocore'
+
+    app.config['EVENT_AUTO_CREATE_MALWARE'] = True
+
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 201
+    assert response['malware'][0]['name'] == 'Nanocore'
+    assert response['malware'][0]['types'] == ['RAT']
+
+
+def test_create_autocreate_tag(app, client):
+    """ Ensure the auto-create tag config actually works """
+
+    app.config['EVENT_AUTO_CREATE_CAMPAIGN'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTATTACKVECTOR'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTDISPOSITION'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTPREVENTIONTOOL'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTREMEDIATION'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTSTATUS'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTTYPE'] = True
+    app.config['EVENT_AUTO_CREATE_INTELREFERENCE'] = True
+    app.config['EVENT_AUTO_CREATE_MALWARE'] = True
+    app.config['EVENT_AUTO_CREATE_TAG'] = False
+
+    data = {'attack_vectors': ['WEBMAIL'],
+            'campaign': 'Derpsters',
+            'disposition': 'DELIVERY',
+            'malware': [{'name': 'Nanocore', 'types': ['RAT']}],
+            'name': 'test event',
+            'prevention_tools': ['IPS'],
+            'references': [{'source': 'OSINT', 'reference': 'http://blahblah.com'}],
+            'remediations': ['REIMAGED'],
+            'status': 'CLOSED',
+            'tags': ['phish', 'nanocore'],
+            'types': ['phish'],
+            'username': 'analyst'}
+
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 404
+    assert response['msg'] == 'Tag not found: phish'
+
+    app.config['EVENT_AUTO_CREATE_TAG'] = True
+
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 201
+    assert response['tags'] == ['nanocore', 'phish']
+
+
 def test_create(client):
     """ Ensure a proper request actually works """
 
@@ -449,7 +899,8 @@ def test_create(client):
                                      attack_vectors=['WEBMAIL'],
                                      campaign='Derpsters',
                                      disposition='DELIVERY',
-                                     malware=['Remcos', 'Nanocore'],
+                                     malware=[{'name': 'Nanocore', 'types': ['RAT']},
+                                              {'name': 'Remcos', 'types': ['RAT']}],
                                      prevention_tools=['IPS'],
                                      remediations=['REIMAGED'],
                                      status='CLOSED',
@@ -554,7 +1005,7 @@ def test_read_with_filters(client):
                                                    status='OPEN',
                                                    types=['PHISH'],
                                                    campaign='Derpsters',
-                                                   malware=['Nanocore'],
+                                                   malware=[{'name': 'Nanocore', 'types': ['RAT']}],
                                                    tags=['phish'],
                                                    intel_reference='https://wiki.local/20190125 Nanocore phish',
                                                    intel_source='OSINT')
@@ -570,7 +1021,7 @@ def test_read_with_filters(client):
                                                    status='CLOSED',
                                                    types=['HOST COMPROMISE'],
                                                    campaign='LOLcats',
-                                                   malware=['Remcos'],
+                                                   malware=[{'name': 'Remcos', 'types': ['RAT']}],
                                                    tags=['remcos'],
                                                    intel_reference='https://wiki.local/20190125 Remcos infection',
                                                    intel_source='VirusTotal')

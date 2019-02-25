@@ -144,6 +144,28 @@ def test_create_invalid_role(app, client):
     assert response['msg'] == 'user_does_not_have_this_role role required'
 
 
+def test_create_autocreate_alert_type(app, client):
+    """ Ensure the auto-create alert type config actually works """
+
+    app.config['ALERT_AUTO_CREATE_ALERTTYPE'] = False
+
+    create_event(client, 'test event', 'analyst')
+
+    data = {'event': 'test event', 'type': 'ACE', 'url': 'http://blahblah.com'}
+
+    request = client.post('/api/alerts', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 404
+    assert response['msg'] == 'Event type not found: ACE'
+
+    app.config['ALERT_AUTO_CREATE_ALERTTYPE'] = True
+
+    request = client.post('/api/alerts', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 201
+    assert response['type'] == 'ACE'
+
+
 def test_create(client):
     """ Ensure a proper request actually works """
 
@@ -226,7 +248,6 @@ def test_read_with_filters(client):
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert len(response['items']) == 1
-    assert response['items'][0]['event'] == 'test event 1'
 
     # Filter by URL
     request = client.get('/api/alerts?url=ace.com')
@@ -247,7 +268,6 @@ def test_read_with_filters(client):
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert len(response['items']) == 1
-    assert response['items'][0]['event'] == 'some other event 2'
 
     # Filter by multiple (conflicting)
     request = client.get('/api/alerts?event=test&type=SIEM')
@@ -269,7 +289,6 @@ def test_read_by_id(client):
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert response['id'] == _id
-    assert response['event'] == 'test event'
     assert response['url'] == 'http://blahblah.com/1'
 
 

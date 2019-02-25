@@ -21,8 +21,14 @@ class PaginatedAPIMixin:
         args = kwargs.copy()
 
         # Read the page and per_page values or use the defaults.
-        page = int(args.get('page', 1))
-        per_page = min(int(args.get('per_page', 10)), 100)
+        if 'page' in args:
+            page = int(args['page'][0])
+        else:
+            page = 1
+        if 'per_page' in args:
+            per_page = min(int(args['per_page'][0]), 100)
+        else:
+            per_page = 10
 
         # Now that we have the page and per_page values, remove them
         # from the arguments so that the url_for function does not
@@ -196,7 +202,6 @@ class Alert(PaginatedAPIMixin, db.Model):
 
     def to_dict(self):
         return {'id': self.id,
-                'event': self.event.name,
                 'type': self.type.value,
                 'url': self.url}
 
@@ -284,6 +289,7 @@ class Event(PaginatedAPIMixin, db.Model):
 
     def to_dict(self):
         return {'id': self.id,
+                'alerts': [a.to_dict() for a in self.alerts],
                 'attack_vectors': sorted([at.value for at in self.attack_vectors]),
                 'campaign': self.campaign.to_dict() if self.campaign else None,
                 'created_time': self.created_time,
@@ -445,7 +451,7 @@ class Indicator(PaginatedAPIMixin, db.Model):
             'references': [r.to_dict() for r in self.references],
             'status': self.status.value,
             'substring': bool(self.substring),
-            'tags': [t.value for t in self.tags],
+            'tags': sorted([t.value for t in self.tags]),
             'type': self.type.value,
             'user': self.user.username,
             'value': self.value
@@ -611,20 +617,6 @@ class IndicatorType(db.Model):
                 'value': self.value}
 
 
-class IntelSource(db.Model):
-    __tablename__ = 'intel_source'
-
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
-    value = db.Column(db.String(255), unique=True, nullable=False)
-
-    def __str__(self):
-        return str(self.value)
-
-    def to_dict(self):
-        return {'id': self.id,
-                'value': self.value}
-
-
 class IntelReference(PaginatedAPIMixin, db.Model):
     __tablename__ = 'intel_reference'
     __table_args__ = (
@@ -652,6 +644,20 @@ class IntelReference(PaginatedAPIMixin, db.Model):
                 'reference': self.reference,
                 'source': self.source.value,
                 'user': self.user.username}
+
+
+class IntelSource(db.Model):
+    __tablename__ = 'intel_source'
+
+    id = db.Column(db.Integer, primary_key=True, nullable=False)
+    value = db.Column(db.String(255), unique=True, nullable=False)
+
+    def __str__(self):
+        return str(self.value)
+
+    def to_dict(self):
+        return {'id': self.id,
+                'value': self.value}
 
 
 class Malware(db.Model):

@@ -1,15 +1,15 @@
 import datetime
 
 from dateutil.parser import parse
-from flask import jsonify, request, url_for
-from sqlalchemy import exc
+from flask import current_app, jsonify, request, url_for
+from sqlalchemy import and_, exc
 
 from project import db
 from project.api import bp
 from project.api.decorators import check_if_token_required, validate_json, validate_schema
 from project.api.errors import error_response
 from project.models import Campaign, Event, EventAttackVector, EventDisposition, EventPreventionTool, \
-    EventRemediation, EventStatus, EventType, IntelReference, IntelSource, Malware, Tag, User
+    EventRemediation, EventStatus, EventType, IntelReference, IntelSource, Malware, MalwareType, Tag, User
 
 
 """
@@ -28,7 +28,19 @@ create_schema = {
         'disposition': {'type': 'string', 'minLength': 1, 'maxLength': 255},
         'malware': {
             'type': 'array',
-            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+            'items': {
+                'type': 'object',
+                'properties': {
+                    'name':  {'type': 'string', 'minLength': 1, 'maxLength': 255},
+                    'types': {
+                        'type': 'array',
+                        'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+                        'minItems': 1
+                    }
+                },
+                'required': ['name'],
+                'additionalProperties': False
+            },
             'minItems': 1
         },
         'name': {'type': 'string', 'minLength': 1, 'maxLength': 255},
@@ -39,7 +51,15 @@ create_schema = {
         },
         'references': {
             'type': 'array',
-            'items': {'type': 'string', 'minLength': 1, 'maxLength': 512},
+            'items': {
+                'type': 'object',
+                'properties': {
+                    'source': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+                    'reference': {'type': 'string', 'minLength': 1, 'maxLength': 512},
+                },
+                'required': ['source', 'reference'],
+                'additionalProperties': False
+            },
             'minItems': 1
         },
         'remediations': {
@@ -91,18 +111,30 @@ def create_event():
     # Verify the disposition (has default).
     if 'disposition' not in data:
         disposition = EventDisposition.query.order_by(EventDisposition.id).limit(1).first()
+        if not disposition:
+            return error_response(400, 'No event disposition values exist to use as default')
     else:
         disposition = EventDisposition.query.filter_by(value=data['disposition']).first()
         if not disposition:
-            return error_response(404, 'Event disposition not found: {}'.format(data['disposition']))
+            if current_app.config['EVENT_AUTO_CREATE_EVENTDISPOSITION']:
+                disposition = EventDisposition(value=data['disposition'])
+                db.session.add(disposition)
+            else:
+                return error_response(404, 'Event disposition not found: {}'.format(data['disposition']))
 
     # Verify the status (has default).
     if 'status' not in data:
         status = EventStatus.query.order_by(EventStatus.id).limit(1).first()
+        if not status:
+            return error_response(400, 'No event status values exist to use as default')
     else:
         status = EventStatus.query.filter_by(value=data['status']).first()
         if not status:
-            return error_response(404, 'Event status not found: {}'.format(data['status']))
+            if current_app.config['EVENT_AUTO_CREATE_EVENTSTATUS']:
+                status = EventStatus(value=data['status'])
+                db.session.add(status)
+            else:
+                return error_response(404, 'Event status not found: {}'.format(data['status']))
 
     # Create the event object.
     event = Event(name=data['name'], disposition=disposition, status=status, user=user)
@@ -112,22 +144,47 @@ def create_event():
         for value in data['attack_vectors']:
             attack_vector = EventAttackVector.query.filter_by(value=value).first()
             if not attack_vector:
-                error_response(404, 'Attack vector not found: {}'.format(value))
+                if current_app.config['EVENT_AUTO_CREATE_EVENTATTACKVECTOR']:
+                    attack_vector = EventAttackVector(value=value)
+                    db.session.add(attack_vector)
+                else:
+                    return error_response(404, 'Event attack vector not found: {}'.format(value))
+
             event.attack_vectors.append(attack_vector)
 
     # Verify campaign if one was specified.
     if 'campaign' in data:
         campaign = Campaign.query.filter_by(name=data['campaign']).first()
         if not campaign:
-            return error_response(404, 'Campaign not found: {}'.format(data['campaign']))
+            if current_app.config['EVENT_AUTO_CREATE_CAMPAIGN']:
+                campaign = Campaign(name=data['campaign'])
+                db.session.add(campaign)
+            else:
+                return error_response(404, 'Campaign not found: {}'.format(data['campaign']))
+
         event.campaign = campaign
 
     # Verify any malware that was specified.
     if 'malware' in data:
-        for value in data['malware']:
-            malware = Malware.query.filter_by(name=value).first()
+        for item in data['malware']:
+            malware = Malware.query.filter_by(name=item['name']).first()
             if not malware:
-                return error_response(404, 'Malware not found: {}'.format(value))
+                if current_app.config['EVENT_AUTO_CREATE_MALWARE']:
+                    malware = Malware(name=item['name'])
+                    db.session.add(malware)
+
+                    if 'types' in item:
+                        for type_ in item['types']:
+                            malware_type = MalwareType.query.filter_by(value=type_).first()
+                            if not malware_type:
+                                malware_type = MalwareType(value=type_)
+                                db.session.add(malware_type)
+
+                            if malware_type not in malware.types:
+                                malware.types.append(malware_type)
+                else:
+                    return error_response(404, 'Malware not found: {}'.format(item['name']))
+
             event.malware.append(malware)
 
     # Verify any prevention tools that were specified.
@@ -135,15 +192,32 @@ def create_event():
         for value in data['prevention_tools']:
             prevention_tool = EventPreventionTool.query.filter_by(value=value).first()
             if not prevention_tool:
-                return error_response(404, 'Prevention tool not found: {}'.format(value))
+                if current_app.config['EVENT_AUTO_CREATE_EVENTPREVENTIONTOOL']:
+                    prevention_tool = EventPreventionTool(value=value)
+                    db.session.add(prevention_tool)
+                else:
+                    return error_response(404, 'Event prevention tool not found: {}'.format(value))
+
             event.prevention_tools.append(prevention_tool)
 
     # Verify any references that were specified.
     if 'references' in data:
-        for value in data['references']:
-            reference = IntelReference.query.filter_by(reference=value).first()
+        for item in data['references']:
+            reference = IntelReference.query.filter(and_(IntelReference.reference == item['reference'],
+                                                         IntelReference.source.has(
+                                                             IntelSource.value == item['source']))).first()
             if not reference:
-                return error_response(404, 'Reference not found: {}'.format(value))
+                if current_app.config['EVENT_AUTO_CREATE_INTELREFERENCE']:
+                    source = IntelSource.query.filter_by(value=item['source']).first()
+                    if not source:
+                        source = IntelSource(value=item['source'])
+                        db.session.add(source)
+
+                    reference = IntelReference(reference=item['reference'], source=source, user=user)
+                    db.session.add(reference)
+                else:
+                    return error_response(404, 'Intel reference not found: {}'.format(item['reference']))
+
             event.references.append(reference)
 
     # Verify any remediations that were specified.
@@ -151,7 +225,12 @@ def create_event():
         for value in data['remediations']:
             remediation = EventRemediation.query.filter_by(value=value).first()
             if not remediation:
-                return error_response(404, 'Remediation not found: {}'.format(value))
+                if current_app.config['EVENT_AUTO_CREATE_EVENTREMEDIATION']:
+                    remediation = EventRemediation(value=value)
+                    db.session.add(remediation)
+                else:
+                    return error_response(404, 'Event remediation not found: {}'.format(value))
+
             event.remediations.append(remediation)
 
     # Verify any tags that were specified.
@@ -159,16 +238,26 @@ def create_event():
         for value in data['tags']:
             tag = Tag.query.filter_by(value=value).first()
             if not tag:
-                return error_response(404, 'Tag not found: {}'.format(value))
+                if current_app.config['EVENT_AUTO_CREATE_TAG']:
+                    tag = Tag(value=value)
+                    db.session.add(tag)
+                else:
+                    return error_response(404, 'Tag not found: {}'.format(value))
+
             event.tags.append(tag)
 
     # Verify any types that were specified.
     if 'types' in data:
         for value in data['types']:
-            _type = EventType.query.filter_by(value=value).first()
-            if not _type:
-                return error_response(404, 'Type not found: {}'.format(value))
-            event.types.append(_type)
+            event_type = EventType.query.filter_by(value=value).first()
+            if not event_type:
+                if current_app.config['EVENT_AUTO_CREATE_EVENTTYPE']:
+                    event_type = EventType(value=value)
+                    db.session.add(event_type)
+                else:
+                    return error_response(404, 'Event type not found: {}'.format(value))
+
+            event.types.append(event_type)
 
     # Save the event.
     db.session.add(event)
