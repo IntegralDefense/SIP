@@ -6,7 +6,9 @@ from flask_admin.form import SecureForm
 from flask_admin.menu import MenuLink
 from flask_security import current_user
 from flask_security.utils import hash_password
-from wtforms import PasswordField
+from wtforms import PasswordField, validators
+
+from project.config import BaseConfig
 
 
 # Restrict access to 'admin' users
@@ -85,19 +87,13 @@ class AdminUserView(AdminView):
         form_class = super(AdminUserView, self).scaffold_form()
 
         # Add a password field, naming it "password2" and labeling it "New Password".
-        form_class.password2 = PasswordField('New Password')
+        form_class.password2 = PasswordField('New Password', [validators.Length(min=BaseConfig.MINIMUM_PASSWORD_LENGTH)])
         return form_class
 
     # This callback executes when the user saves changes to a newly-created or edited User -- before the changes are
     # committed to the database.
     def on_model_change(self, form, model, is_created):
-
-        # If the password field isn't blank...
-        if len(model.password2):
-
-            # ... then encrypt the new password prior to storing it in the database. If the password field is blank,
-            # the existing password in the database will be retained.
-            model.password = hash_password(model.password2)
+        model.password = hash_password(model.password2)
 
 
 # Basic view that everyone can see

@@ -221,8 +221,10 @@ def test_create_schema(client):
     assert 'too long' in response['msg']
 
 
-def test_create_duplicate(client):
+def test_create_duplicate(app, client):
     """ Ensure a duplicate record cannot be created """
+
+    app.config['MINIMUM_PASSWORD_LENGTH'] = 4
 
     access_token, refresh_token = obtain_token(client, 'admin', 'admin')
     headers = create_auth_header(access_token)
@@ -273,20 +275,43 @@ def test_create_invalid_role(app, client):
     assert response['msg'] == 'admin role required'
 
 
-def test_create(client):
+def test_create_password_length(app, client):
+    """ Ensure the minimum password length requirement actually works """
+
+    app.config['MINIMUM_PASSWORD_LENGTH'] = 4
+
+    access_token, refresh_token = obtain_token(client, 'admin', 'admin')
+    headers = create_auth_header(access_token)
+
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf',
+            'password': 'asd', 'roles': ['analyst', 'admin'], 'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert response['msg'] == 'Password must be at least 4 characters'
+
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf',
+            'password': 'asdf', 'roles': ['analyst', 'admin'], 'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
+    assert request.status_code == 201
+
+
+def test_create(app, client):
     """ Ensure a proper request actually works """
+
+    app.config['MINIMUM_PASSWORD_LENGTH'] = 4
 
     access_token, refresh_token = obtain_token(client, 'admin', 'admin')
     headers = create_auth_header(access_token)
 
     # Try with a roles list
-    data = {'email': 'asdf2', 'first_name': 'asdf', 'last_name': 'asdf',
-            'password': 'asdf', 'roles': ['analyst', 'admin'], 'username': 'asdf2'}
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf',
+            'password': 'asdf', 'roles': ['analyst', 'admin'], 'username': 'asdf'}
     request = client.post('/api/users', json=data, headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 201
     assert response['roles'] == ['admin', 'analyst']
-    assert response['username'] == 'asdf2'
+    assert response['username'] == 'asdf'
 
 
 """
@@ -593,8 +618,31 @@ def test_update_invalid_role(app, client):
     assert response['msg'] == 'admin role required'
 
 
-def test_update(client):
+def test_update_password_length(app, client):
+    """ Ensure the minimum password length requirement actually works """
+
+    app.config['MINIMUM_PASSWORD_LENGTH'] = 4
+
+    access_token, refresh_token = obtain_token(client, 'admin', 'admin')
+    headers = create_auth_header(access_token)
+    data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf',
+            'password': 'asdf', 'roles': ['analyst', 'admin'], 'username': 'asdf'}
+    request = client.post('/api/users', json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    _id = response['id']
+    assert request.status_code == 201
+
+    data = {'password': 'asd'}
+    request = client.put('/api/users/{}'.format(_id), json=data, headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert response['msg'] == 'Password must be at least 4 characters'
+
+
+def test_update(app, client):
     """ Ensure a proper request actually works """
+
+    app.config['MINIMUM_PASSWORD_LENGTH'] = 4
 
     access_token, refresh_token = obtain_token(client, 'admin', 'admin')
     headers = create_auth_header(access_token)
@@ -650,9 +698,6 @@ def test_update(client):
     assert request.status_code == 200
     assert response['id'] == _id
     assert response['last_name'] == 'asdf2'
-
-    # Password
-    # TODO: Not sure how to effectively test changing password.
 
     # Update roles with a list
     data = {'roles': ['analyst', 'admin']}

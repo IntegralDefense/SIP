@@ -1,4 +1,4 @@
-from flask import jsonify, request, url_for
+from flask import current_app, jsonify, request, url_for
 from flask_security import SQLAlchemyUserDatastore
 from flask_security.utils import hash_password
 from sqlalchemy import exc
@@ -51,6 +51,11 @@ def create_user():
     existing = User.query.filter_by(username=data['username']).first()
     if existing:
         return error_response(409, 'User username already exists')
+
+    # Verify the password length.
+    minimum_password_length = current_app.config['MINIMUM_PASSWORD_LENGTH']
+    if len(data['password']) < minimum_password_length:
+        return error_response(400, 'Password must be at least {} characters'.format(minimum_password_length))
 
     # Verify any roles that were specified.
     valid_roles = []
@@ -176,6 +181,12 @@ def update_user(user_id):
 
     # Verify password if one was specified.
     if 'password' in data:
+
+        # Verify the password length.
+        minimum_password_length = current_app.config['MINIMUM_PASSWORD_LENGTH']
+        if len(data['password']) < minimum_password_length:
+            return error_response(400, 'Password must be at least {} characters'.format(minimum_password_length))
+
         user.password = hash_password(data['password'])
 
     # Verify roles if any were specified.
