@@ -126,14 +126,16 @@ def test_create_duplicate(client):
     assert response['msg'] == 'Intel reference already exists'
 
 
-def test_create_nonexistent_source(client):
+def test_create_nonexistent_source(app, client):
     """ Ensure a reference cannot be created with a nonexistent source """
+
+    app.config['INTELREFERENCE_AUTO_CREATE_INTELSOURCE'] = False
 
     data = {'username': 'analyst', 'reference': 'asdf', 'source': 'asdf'}
     request = client.post('/api/intel/reference', json=data)
     response = json.loads(request.data.decode())
-    assert request.status_code == 400
-    assert response['msg'] == 'Intel source not found'
+    assert request.status_code == 404
+    assert response['msg'] == 'Intel source not found: asdf'
 
 
 def test_create_missing_token(app, client):
@@ -158,6 +160,28 @@ def test_create_invalid_role(app, client):
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['msg'] == 'user_does_not_have_this_role role required'
+
+
+def test_create_autocreate_intel_source(app, client):
+    """ Ensure the auto-create intel source config actually works """
+
+    app.config['INTELREFERENCE_AUTO_CREATE_INTELSOURCE'] = False
+
+    data = {'reference': 'http://blahblah.com',
+            'source': 'OSINT',
+            'username': 'analyst'}
+
+    request = client.post('/api/intel/reference', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 404
+    assert response['msg'] == 'Intel source not found: OSINT'
+
+    app.config['INTELREFERENCE_AUTO_CREATE_INTELSOURCE'] = True
+
+    request = client.post('/api/intel/reference', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 201
+    assert response['source'] == 'OSINT'
 
 
 def test_create(client):

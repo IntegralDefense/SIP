@@ -1,4 +1,4 @@
-from flask import jsonify, request, url_for
+from flask import current_app, jsonify, request, url_for
 from sqlalchemy import exc
 
 from project import db
@@ -43,16 +43,18 @@ def create_campaign():
     # Create and add the new name.
     campaign = Campaign(name=data['name'])
 
-    # Verify any types that were specified.
+    # Verify any aliases that were specified.
     if 'aliases' in data:
         for alias in data['aliases']:
+            campaign_alias = CampaignAlias.query.filter_by(alias=alias).first()
+            if not campaign_alias:
+                if current_app.config['CAMPAIGN_AUTO_CREATE_CAMPAIGNALIAS']:
+                    campaign_alias = CampaignAlias(alias=alias, campaign=campaign)
+                    db.session.add(campaign_alias)
+                else:
+                    return error_response(404, 'Campaign alias not found: {}'.format(alias))
 
-            # Verify each alias is actually valid.
-            a = CampaignAlias.query.filter_by(alias=alias).first()
-            if not a:
-                return error_response(404, 'Campaign alias not found: {}'.format(alias))
-
-            campaign.aliases.append(a)
+            campaign.aliases.append(campaign_alias)
 
     db.session.add(campaign)
     db.session.commit()

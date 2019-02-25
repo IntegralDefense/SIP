@@ -451,7 +451,7 @@ class Indicator(PaginatedAPIMixin, db.Model):
             'references': [r.to_dict() for r in self.references],
             'status': self.status.value,
             'substring': bool(self.substring),
-            'tags': [t.value for t in self.tags],
+            'tags': sorted([t.value for t in self.tags]),
             'type': self.type.value,
             'user': self.user.username,
             'value': self.value
@@ -617,20 +617,6 @@ class IndicatorType(db.Model):
                 'value': self.value}
 
 
-class IntelSource(db.Model):
-    __tablename__ = 'intel_source'
-
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
-    value = db.Column(db.String(255), unique=True, nullable=False)
-
-    def __str__(self):
-        return str(self.value)
-
-    def to_dict(self):
-        return {'id': self.id,
-                'value': self.value}
-
-
 class IntelReference(PaginatedAPIMixin, db.Model):
     __tablename__ = 'intel_reference'
     __table_args__ = (
@@ -658,6 +644,20 @@ class IntelReference(PaginatedAPIMixin, db.Model):
                 'reference': self.reference,
                 'source': self.source.value,
                 'user': self.user.username}
+
+
+class IntelSource(db.Model):
+    __tablename__ = 'intel_source'
+
+    id = db.Column(db.Integer, primary_key=True, nullable=False)
+    value = db.Column(db.String(255), unique=True, nullable=False)
+
+    def __str__(self):
+        return str(self.value)
+
+    def to_dict(self):
+        return {'id': self.id,
+                'value': self.value}
 
 
 class Malware(db.Model):

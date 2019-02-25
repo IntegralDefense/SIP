@@ -144,6 +144,28 @@ def test_create_invalid_role(app, client):
     assert response['msg'] == 'user_does_not_have_this_role role required'
 
 
+def test_create_autocreate_alert_type(app, client):
+    """ Ensure the auto-create alert type config actually works """
+
+    app.config['ALERT_AUTO_CREATE_ALERTTYPE'] = False
+
+    create_event(client, 'test event', 'analyst')
+
+    data = {'event': 'test event', 'type': 'ACE', 'url': 'http://blahblah.com'}
+
+    request = client.post('/api/alerts', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 404
+    assert response['msg'] == 'Event type not found: ACE'
+
+    app.config['ALERT_AUTO_CREATE_ALERTTYPE'] = True
+
+    request = client.post('/api/alerts', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 201
+    assert response['type'] == 'ACE'
+
+
 def test_create(client):
     """ Ensure a proper request actually works """
 

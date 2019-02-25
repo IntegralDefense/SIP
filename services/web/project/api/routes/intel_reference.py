@@ -1,5 +1,5 @@
-from flask import jsonify, request, url_for
-from sqlalchemy import exc
+from flask import current_app, jsonify, request, url_for
+from sqlalchemy import and_, exc
 
 from project import db
 from project.api import bp
@@ -33,16 +33,6 @@ def create_intel_reference():
 
     data = request.get_json()
 
-    # Verify the source already exists.
-    source = IntelSource.query.filter_by(value=data['source']).first()
-    if not source:
-        return error_response(400, 'Intel source not found')
-
-    # Verify this reference does not already exist.
-    existing = IntelReference.query.filter_by(reference=data['reference'], source=source).first()
-    if existing:
-        return error_response(409, 'Intel reference already exists')
-
     # Verify the username exists.
     user = User.query.filter_by(username=data['username']).first()
     if not user:
@@ -51,6 +41,22 @@ def create_intel_reference():
     # Verify the user is active.
     if not user.active:
         return error_response(401, 'Cannot create an intel reference with an inactive user')
+
+    # Verify the intel source.
+    source = IntelSource.query.filter_by(value=data['source']).first()
+    if not source:
+        if current_app.config['INTELREFERENCE_AUTO_CREATE_INTELSOURCE']:
+            source = IntelSource(value=data['source'])
+            db.session.add(source)
+        else:
+            return error_response(404, 'Intel source not found: {}'.format(data['source']))
+
+    # Verify this reference does not already exist.
+    existing = IntelReference.query.filter(and_(IntelReference.reference == data['reference'],
+                                                IntelReference.source.has(
+                                                    IntelSource.value == source.value))).first()
+    if existing:
+        return error_response(409, 'Intel reference already exists')
 
     intel_reference = IntelReference(reference=data['reference'], source=source, user=user)
     db.session.add(intel_reference)

@@ -45,11 +45,11 @@ def create_campaign_alias(client, alias, campaign):
 def create_event(client, name, username, attack_vectors=[], campaign='', disposition='', malware=[], prevention_tools=[],
                  remediations=[], status='', tags=[], types=[], intel_reference='', intel_source=''):
     if not disposition:
-        disposition = 'asdf'
+        disposition = 'DELIVERY'
     create_event_disposition(client, disposition)
 
     if not status:
-        status = 'asdf'
+        status = 'OPEN'
     create_event_status(client, status)
 
     data = {'name': name, 'username': username, 'disposition': disposition, 'status': status}
@@ -62,7 +62,7 @@ def create_event(client, name, username, attack_vectors=[], campaign='', disposi
         data['campaign'] = campaign
     if malware:
         for m in malware:
-            create_malware(client, m)
+            create_malware(client, m['name'], types=m['types'])
         data['malware'] = malware
     if prevention_tools:
         for prevention_tool in prevention_tools:
@@ -82,7 +82,7 @@ def create_event(client, name, username, attack_vectors=[], campaign='', disposi
         data['types'] = types
     if intel_reference and intel_source:
         create_intel_reference(client, username, intel_source, intel_reference)
-        data['references'] = [intel_reference]
+        data['references'] = [{'source': intel_source, 'reference': intel_reference}]
 
     request = client.post('/api/events', json=data)
     response = json.loads(request.data.decode())
@@ -159,7 +159,7 @@ def create_indicator(client, _type, value, username, campaigns=[], case_sensitiv
         data['tags'] = tags
     if intel_reference and intel_source:
         create_intel_reference(client, username, intel_source, intel_reference)
-        data['references'] = [intel_reference]
+        data['references'] = [{'source': intel_source, 'reference': intel_reference}]
 
     request = client.post('/api/indicators', json=data)
     response = json.loads(request.data.decode())

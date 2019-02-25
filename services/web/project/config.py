@@ -55,6 +55,44 @@ class BaseConfig:
     # Delete functions
     DELETE = 'admin'
 
+    """
+    CREATE BEHAVIOR
+    
+    Some of the database objects rely on other objects existing before they can be created.
+    For example, an Indicator requires an IndicatorType value, and the settings below control
+    the behavior of whether or not to automatically create the IndicatorType if it does not
+    already exist or issue a 404 response.
+    
+    The default behavior will be to automatically create these supporting objects. 
+    """
+
+    ALERT_AUTO_CREATE_ALERTTYPE = True
+
+    CAMPAIGN_AUTO_CREATE_CAMPAIGNALIAS = True
+
+    EVENT_AUTO_CREATE_CAMPAIGN = True
+    EVENT_AUTO_CREATE_EVENTATTACKVECTOR = True
+    EVENT_AUTO_CREATE_EVENTDISPOSITION = True
+    EVENT_AUTO_CREATE_EVENTPREVENTIONTOOL = True
+    EVENT_AUTO_CREATE_EVENTREMEDIATION = True
+    EVENT_AUTO_CREATE_EVENTSTATUS = True
+    EVENT_AUTO_CREATE_EVENTTYPE = True
+    EVENT_AUTO_CREATE_INTELREFERENCE = True
+    EVENT_AUTO_CREATE_MALWARE = True
+    EVENT_AUTO_CREATE_TAG = True
+
+    INDICATOR_AUTO_CREATE_CAMPAIGN = True
+    INDICATOR_AUTO_CREATE_INDICATORCONFIDENCE = True
+    INDICATOR_AUTO_CREATE_INDICATORIMPACT = True
+    INDICATOR_AUTO_CREATE_INDICATORSTATUS = True
+    INDICATOR_AUTO_CREATE_INDICATORTYPE = True
+    INDICATOR_AUTO_CREATE_INTELREFERENCE = True
+    INDICATOR_AUTO_CREATE_TAG = True
+
+    INTELREFERENCE_AUTO_CREATE_INTELSOURCE = True
+
+    MALWARE_AUTO_CREATE_MALWARETYPE = True
+
 
 class DevelopmentConfig(BaseConfig):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')

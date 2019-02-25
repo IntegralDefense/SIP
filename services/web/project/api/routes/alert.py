@@ -1,4 +1,4 @@
-from flask import jsonify, request, url_for
+from flask import current_app, jsonify, request, url_for
 from sqlalchemy import exc
 
 from project import db
@@ -37,18 +37,22 @@ def create_alert():
     if existing:
         return error_response(409, 'Alert URL already exists')
 
-    # Verify the type exists.
-    t = AlertType.query.filter_by(value=data['type']).first()
-    if not t:
-        return error_response(404, 'Event type not found: {}'.format(data['type']))
-
     # Verify the event exists.
     event = Event.query.filter_by(name=data['event']).first()
     if not event:
         return error_response(404, 'Event not found: {}'.format(data['event']))
 
+    # Verify the alert type.
+    alert_type = AlertType.query.filter_by(value=data['type']).first()
+    if not alert_type:
+        if current_app.config['ALERT_AUTO_CREATE_ALERTTYPE']:
+            alert_type = AlertType(value=data['type'])
+            db.session.add(alert_type)
+        else:
+            return error_response(404, 'Event type not found: {}'.format(data['type']))
+
     # Create and add the new name.
-    alert = Alert(event_id=event.id, type_id=t.id, url=data['url'])
+    alert = Alert(event_id=event.id, type=alert_type, url=data['url'])
 
     db.session.add(alert)
     db.session.commit()
