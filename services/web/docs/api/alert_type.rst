@@ -1,5 +1,5 @@
-Alert
-*****
+AlertType
+*********
 
 .. contents::
   :backlinks: none
@@ -8,7 +8,7 @@ Summary
 -------
 
 .. qrefflask:: project:create_app()
-  :endpoints: api.create_alert, api.read_alert, api.read_alerts, api.update_alert, api.delete_alert
+  :endpoints: api.create_alert_type, api.read_alert_type, api.read_alert_types, api.update_alert_type, api.delete_alert_type
   :order: path
 
 Create
@@ -18,24 +18,24 @@ Create
 
 Required parameters are in **bold**.
 
-.. jsonschema:: ../../project/api/schemas/alert_create.json
+.. jsonschema:: ../../project/api/schemas/value_create.json
 
 |
 
 .. autoflask:: project:create_app()
-  :endpoints: api.create_alert
+  :endpoints: api.create_alert_type
 
 Read Single
 -----------
 
 .. autoflask:: project:create_app()
-  :endpoints: api.read_alert
+  :endpoints: api.read_alert_type
 
 Read Multiple
 -------------
 
 .. autoflask:: project:create_app()
-  :endpoints: api.read_alerts
+  :endpoints: api.read_alert_types
 
 Update
 ------
@@ -44,15 +44,15 @@ Update
 
 Required parameters are in **bold**.
 
-.. jsonschema:: ../../project/api/schemas/alert_update.json
+.. jsonschema:: ../../project/api/schemas/value_update.json
 
 |
 
 .. autoflask:: project:create_app()
-  :endpoints: api.update_alert
+  :endpoints: api.update_alert_type
 
 Delete
 ------
 
 .. autoflask:: project:create_app()
-  :endpoints: api.delete_alert
+  :endpoints: api.delete_alert_type

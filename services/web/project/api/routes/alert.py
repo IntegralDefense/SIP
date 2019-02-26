@@ -5,7 +5,7 @@ from project import db
 from project.api import bp
 from project.api.decorators import check_if_token_required, validate_json, validate_schema
 from project.api.errors import error_response
-from project.api.schemas import alert_schema_create, alert_schema_update
+from project.api.schemas import alert_create, alert_update
 from project.models import Alert, AlertType, Event
 
 """
@@ -16,7 +16,7 @@ CREATE
 @bp.route('/alerts', methods=['POST'])
 @check_if_token_required
 @validate_json
-@validate_schema(alert_schema_create)
+@validate_schema(alert_create)
 def create_alert():
     """ Creates a new alert.
 
@@ -30,13 +30,11 @@ def create_alert():
       Host: 127.0.0.1
       Content-Type: application/json
 
-      [
-        {
-          "event": "Your event name",
-          "type": "SIEM",
-          "url": "http://your-siem.com/alert1"
-        }
-      ]
+      {
+        "event": "Your event name",
+        "type": "SIEM",
+        "url": "http://your-siem.com/alert1"
+      }
 
     **Example response**:
 
@@ -45,14 +43,12 @@ def create_alert():
       HTTP/1.1 201 Created
       Content-Type: application/json
 
-      [
-        {
-          "id": 1,
-          "event": "Your event name",
-          "type": "SIEM",
-          "url": "http://your-siem.com/alert1"
-        }
-      ]
+      {
+        "id": 1,
+        "event": "Your event name",
+        "type": "SIEM",
+        "url": "http://your-siem.com/alert1"
+      }
 
     :reqheader Authorization: Optional JWT Bearer token
     :resheader Content-Type: application/json
@@ -122,14 +118,12 @@ def read_alert(alert_id):
       HTTP/1.1 200 OK
       Content-Type: application/json
 
-      [
-        {
-          "id": 1,
-          "event": "Your event name",
-          "type": "SIEM",
-          "url": "http://your-siem.com/alert1"
-        }
-      ]
+      {
+        "id": 1,
+        "event": "Your event name",
+        "type": "SIEM",
+        "url": "http://your-siem.com/alert1"
+      }
 
     :reqheader Authorization: Optional JWT Bearer token
     :resheader Content-Type: application/json
@@ -228,7 +222,7 @@ UPDATE
 @bp.route('/alerts/<int:alert_id>', methods=['PUT'])
 @check_if_token_required
 @validate_json
-@validate_schema(alert_schema_update)
+@validate_schema(alert_update)
 def update_alert(alert_id):
     """ Updates an existing alert.
 
@@ -242,13 +236,11 @@ def update_alert(alert_id):
       Host: 127.0.0.1
       Content-Type: application/json
 
-      [
-        {
-          "event": "Your other name",
-          "type": "SIEM 2",
-          "url": "http://your-siem2.com/alert2"
-        }
-      ]
+      {
+        "event": "Your other name",
+        "type": "SIEM 2",
+        "url": "http://your-siem2.com/alert2"
+      }
 
     **Example response**:
 
@@ -257,14 +249,12 @@ def update_alert(alert_id):
       HTTP/1.1 200 OK
       Content-Type: application/json
 
-      [
-        {
-          "id": 1,
-          "event": "Your other name",
-          "type": "SIEM 2",
-          "url": "http://your-siem2.com/alert2"
-        }
-      ]
+      {
+        "id": 1,
+        "event": "Your other name",
+        "type": "SIEM 2",
+        "url": "http://your-siem2.com/alert2"
+      }
 
     :reqheader Authorization: Optional JWT Bearer token
     :resheader Content-Type: application/json
