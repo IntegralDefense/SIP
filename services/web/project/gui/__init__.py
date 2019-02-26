@@ -6,6 +6,9 @@ from project.gui.views import AdminView, AdminUserView, AnalystView, CampaignVie
 
 bp = Blueprint('gui', __name__)
 
+admin.add_view(AnalystView(models.Alert, db.session, category='Alerts'))
+admin.add_view(AnalystView(models.AlertType, db.session, category='Alerts'))
+
 admin.add_view(CampaignView(models.Campaign, db.session, category='Campaigns'))
 admin.add_view(AnalystView(models.CampaignAlias, db.session, category='Campaigns'))
 

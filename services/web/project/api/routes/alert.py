@@ -5,30 +5,62 @@ from project import db
 from project.api import bp
 from project.api.decorators import check_if_token_required, validate_json, validate_schema
 from project.api.errors import error_response
+from project.api.schemas import alert_schema_create, alert_schema_update
 from project.models import Alert, AlertType, Event
 
 """
 CREATE
 """
 
-create_schema = {
-    'type': 'object',
-    'properties': {
-        'event': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-        'type': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-        'url': {'type': 'string', 'minLength': 1, 'maxLength': 512}
-    },
-    'required': ['event', 'type', 'url'],
-    'additionalProperties': False
-}
-
 
 @bp.route('/alerts', methods=['POST'])
 @check_if_token_required
 @validate_json
-@validate_schema(create_schema)
+@validate_schema(alert_schema_create)
 def create_alert():
-    """ Creates a new alert. """
+    """ Creates a new alert.
+
+    .. :quickref: Alert; Creates a new alert.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      POST /api/alerts HTTP/1.1
+      Host: 127.0.0.1
+      Content-Type: application/json
+
+      [
+        {
+          "event": "Your event name",
+          "type": "SIEM",
+          "url": "http://your-siem.com/alert1"
+        }
+      ]
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 201 Created
+      Content-Type: application/json
+
+      [
+        {
+          "id": 1,
+          "event": "Your event name",
+          "type": "SIEM",
+          "url": "http://your-siem.com/alert1"
+        }
+      ]
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 201: Alert created
+    :status 404: Alert type not found
+    :status 404: Event name not found
+    :status 409: Alert URL already exists
+    """
 
     data = request.get_json()
 
@@ -49,7 +81,7 @@ def create_alert():
             alert_type = AlertType(value=data['type'])
             db.session.add(alert_type)
         else:
-            return error_response(404, 'Event type not found: {}'.format(data['type']))
+            return error_response(404, 'Alert type not found: {}'.format(data['type']))
 
     # Create and add the new name.
     alert = Alert(event_id=event.id, type=alert_type, url=data['url'])
@@ -71,7 +103,39 @@ READ
 @bp.route('/alerts/<int:alert_id>', methods=['GET'])
 @check_if_token_required
 def read_alert(alert_id):
-    """ Gets a single alert given its ID. """
+    """ Gets a single alert given its ID.
+
+    .. :quickref: Alert; Gets a single alert given its ID.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      GET /api/alerts/1 HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      [
+        {
+          "id": 1,
+          "event": "Your event name",
+          "type": "SIEM",
+          "url": "http://your-siem.com/alert1"
+        }
+      ]
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Alert found
+    :status 404: Alert ID not found
+    """
 
     alert = Alert.query.get(alert_id)
     if not alert:
@@ -83,7 +147,60 @@ def read_alert(alert_id):
 @bp.route('/alerts', methods=['GET'])
 @check_if_token_required
 def read_alerts():
-    """ Gets a list of all the alerts. """
+    """ Gets a paginated list of all the alerts based on filters.
+
+    .. :quickref: Alert; Gets a paginated list of all the alerts based on filters.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      GET /api/alerts?url=your-siem.com HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+        "_links": {
+          "next": null,
+          "prev": null,
+          "self": "/api/alerts?page=1&per_page=10&url=your-siem.com"
+        },
+        "_meta": {
+          "page": 1,
+          "per_page": 10,
+          "total_items": 2,
+          "total_pages": 1
+        },
+        "items": [
+          {
+            "id": 1,
+            "event": "Your event name",
+            "type": "SIEM",
+            "url": "http://your-siem.com/alert1"
+          },
+          {
+            "id": 2,
+            "event": "Your event name",
+            "type": "SIEM",
+            "url": "http://your-siem.com/alert2"
+          }
+        ]
+      }
+
+    :query event: Optional string found in event names
+    :query url: Optional string found in alert URLs
+    :query type: Optional alert type
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Alerts found
+    """
 
     filters = set()
 
@@ -107,23 +224,56 @@ def read_alerts():
 UPDATE
 """
 
-update_schema = {
-    'type': 'object',
-    'properties': {
-        'event': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-        'type': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-        'url': {'type': 'string', 'minLength': 1, 'maxLength': 512}
-    },
-    'additionalProperties': False
-}
-
 
 @bp.route('/alerts/<int:alert_id>', methods=['PUT'])
 @check_if_token_required
 @validate_json
-@validate_schema(update_schema)
+@validate_schema(alert_schema_update)
 def update_alert(alert_id):
-    """ Updates an existing alert. """
+    """ Updates an existing alert.
+
+    .. :quickref: Alert; Updates an existing alert.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      POST /api/alerts/1 HTTP/1.1
+      Host: 127.0.0.1
+      Content-Type: application/json
+
+      [
+        {
+          "event": "Your other name",
+          "type": "SIEM 2",
+          "url": "http://your-siem2.com/alert2"
+        }
+      ]
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      [
+        {
+          "id": 1,
+          "event": "Your other name",
+          "type": "SIEM 2",
+          "url": "http://your-siem2.com/alert2"
+        }
+      ]
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Alert updated
+    :status 404: Alert ID not found
+    :status 404: Alert type not found
+    :status 404: Event name not found
+    :status 409: Alert URL already exists
+    """
 
     data = request.get_json()
 
@@ -174,7 +324,28 @@ DELETE
 @bp.route('/alerts/<int:alert_id>', methods=['DELETE'])
 @check_if_token_required
 def delete_alert(alert_id):
-    """ Deletes an alert. """
+    """ Deletes an alert.
+
+    .. :quickref: Alert; Deletes an alert.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      DELETE /api/alerts/1 HTTP/1.1
+      Host: 127.0.0.1
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 204 No Content
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :status 204: Alert deleted
+    :status 404: Alert ID not found
+    :status 409: Unable to delete alert due to foreign key constraints
+    """
 
     alert = Alert.query.get(alert_id)
     if not alert:

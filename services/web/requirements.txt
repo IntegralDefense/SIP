@@ -9,3 +9,6 @@ jsonschema==2.6.0
 pymysql==0.9.3
 pytest==4.1.1
 python-dateutil==2.7.5
+sphinx==1.8.4
+sphinxcontrib-httpdomain==1.7.0
+sphinx-jsonschema==1.8
