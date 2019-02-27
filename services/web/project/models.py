@@ -202,6 +202,7 @@ class Alert(PaginatedAPIMixin, db.Model):
 
     def to_dict(self):
         return {'id': self.id,
+                'event': self.event.name,
                 'type': self.type.value,
                 'url': self.url}
 

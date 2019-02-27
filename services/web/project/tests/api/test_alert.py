@@ -156,7 +156,7 @@ def test_create_autocreate_alert_type(app, client):
     request = client.post('/api/alerts', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 404
-    assert response['msg'] == 'Event type not found: ACE'
+    assert response['msg'] == 'Alert type not found: ACE'
 
     app.config['ALERT_AUTO_CREATE_ALERTTYPE'] = True
 
