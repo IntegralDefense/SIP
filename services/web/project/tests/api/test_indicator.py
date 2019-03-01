@@ -826,6 +826,13 @@ def test_read_with_filters(client):
     assert len(response['items']) == 1
     assert response['items'][0]['value'] == '1.1.1.1'
 
+    # Filter by user
+    request = client.get('/api/indicators?user=analyst')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 1
+    assert response['items'][0]['user'] == 'analyst'
+
     # Filter by value
     request = client.get('/api/indicators?value=1.1')
     response = json.loads(request.data.decode())

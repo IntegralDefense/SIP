@@ -1,0 +1,51 @@
+{
+    "type": "object",
+    "properties": {
+        "alerts": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1, "maxLength": 512},
+            "minItems": 1
+        },
+        "attack_vectors": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1, "maxLength": 255},
+            "minItems": 1
+        },
+        "campaign": {"type": "string", "minLength": 1, "maxLength": 255},
+        "description": {"type": "string", "minLength": 1},
+        "disposition": {"type": "string", "minLength": 1, "maxLength": 255},
+        "malware": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1, "maxLength": 255},
+            "minItems": 1
+        },
+        "prevention_tools": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1, "maxLength": 255},
+            "minItems": 1
+        },
+        "references": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1, "maxLength": 512},
+            "minItems": 1
+        },
+        "remediations": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1, "maxLength": 255},
+            "minItems": 1
+        },
+        "status": {"type": "string", "minLength": 1, "maxLength": 255},
+        "tags": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1, "maxLength": 255},
+            "minItems": 1
+        },
+        "types": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1, "maxLength": 255},
+            "minItems": 1
+        },
+        "username": {"type": "string", "minLength": 1, "maxLength": 255}
+    },
+    "additionalProperties": false
+}

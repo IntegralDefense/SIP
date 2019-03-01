@@ -5,28 +5,54 @@ from project import db
 from project.api import bp
 from project.api.decorators import check_if_token_required, validate_json, validate_schema
 from project.api.errors import error_response
+from project.api.schemas import value_create, value_update
 from project.models import IndicatorStatus
 
 """
 CREATE
 """
 
-create_schema = {
-    'type': 'object',
-    'properties': {
-        'value': {'type': 'string', 'minLength': 1, 'maxLength': 255}
-    },
-    'required': ['value'],
-    'additionalProperties': False
-}
-
 
 @bp.route('/indicators/status', methods=['POST'])
 @check_if_token_required
 @validate_json
-@validate_schema(create_schema)
+@validate_schema(value_create)
 def create_indicator_status():
-    """ Creates a new indicator status. """
+    """ Creates a new indicator status.
+    
+    .. :quickref: IndicatorStatus; Creates a new indicator status.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      POST /indicators/status HTTP/1.1
+      Host: 127.0.0.1
+      Content-Type: application/json
+
+      {
+        "value": "New"
+      }
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 201 Created
+      Content-Type: application/json
+
+      {
+        "id": 1,
+        "value": "New"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 201: Indicator status created
+    :status 400: JSON does not match the schema
+    :status 401: Invalid role to perform this action
+    :status 409: Indicator status already exists
+    """
 
     data = request.get_json()
 
@@ -55,7 +81,36 @@ READ
 @bp.route('/indicators/status/<int:indicator_status_id>', methods=['GET'])
 @check_if_token_required
 def read_indicator_status(indicator_status_id):
-    """ Gets a single indicator status given its ID. """
+    """ Gets a single indicator status given its ID.
+    
+    .. :quickref: IndicatorStatus; Gets a single indicator status given its ID.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      GET /indicators/status/1 HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+        "id": 1,
+        "value": "New"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Indicator status found
+    :status 401: Invalid role to perform this action
+    :status 404: Indicator status ID not found
+    """
 
     indicator_status = IndicatorStatus.query.get(indicator_status_id)
     if not indicator_status:
@@ -67,7 +122,41 @@ def read_indicator_status(indicator_status_id):
 @bp.route('/indicators/status', methods=['GET'])
 @check_if_token_required
 def read_indicator_statuses():
-    """ Gets a list of all the indicator statuses. """
+    """ Gets a list of all the indicator statuses.
+    
+    .. :quickref: IndicatorStatus; Gets a list of all the indicator statuses.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      GET /indicators/status HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      [
+        {
+          "id": 1,
+          "value": "New"
+        },
+        {
+          "id": 2,
+          "value": "Informational"
+        }
+      ]
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Indicator statuses found
+    :status 401: Invalid role to perform this action
+    """
 
     data = IndicatorStatus.query.all()
     return jsonify([item.to_dict() for item in data])
@@ -77,22 +166,48 @@ def read_indicator_statuses():
 UPDATE
 """
 
-update_schema = {
-    'type': 'object',
-    'properties': {
-        'value': {'type': 'string', 'minLength': 1, 'maxLength': 255}
-    },
-    'required': ['value'],
-    'additionalProperties': False
-}
-
 
 @bp.route('/indicators/status/<int:indicator_status_id>', methods=['PUT'])
 @check_if_token_required
 @validate_json
-@validate_schema(update_schema)
+@validate_schema(value_update)
 def update_indicator_status(indicator_status_id):
-    """ Updates an existing indicator status. """
+    """ Updates an existing indicator status.
+    
+    .. :quickref: IndicatorStatus; Updates an existing indicator status.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      PUT /indicators/status/1 HTTP/1.1
+      Host: 127.0.0.1
+      Content-Type: application/json
+
+      {
+        "value": "Informational",
+      }
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+        "id": 1,
+        "value": "Informational"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Indicator status updated
+    :status 400: JSON does not match the schema
+    :status 401: Invalid role to perform this action
+    :status 404: Indicator status ID not found
+    :status 409: Indicator status already exists
+    """
 
     data = request.get_json()
 
@@ -122,7 +237,29 @@ DELETE
 @bp.route('/indicators/status/<int:indicator_status_id>', methods=['DELETE'])
 @check_if_token_required
 def delete_indicator_status(indicator_status_id):
-    """ Deletes an indicator status. """
+    """ Deletes an indicator status.
+    
+    .. :quickref: IndicatorStatus; Deletes an indicator status.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      DELETE /indicators/status/1 HTTP/1.1
+      Host: 127.0.0.1
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 204 No Content
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :status 204: Indicator status deleted
+    :status 401: Invalid role to perform this action
+    :status 404: Indicator status ID not found
+    :status 409: Unable to delete indicator status due to foreign key constraints
+    """
 
     indicator_status = IndicatorStatus.query.get(indicator_status_id)
     if not indicator_status:

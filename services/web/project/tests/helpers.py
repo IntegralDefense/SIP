@@ -42,8 +42,8 @@ def create_campaign_alias(client, alias, campaign):
     return request, response
 
 
-def create_event(client, name, username, attack_vectors=[], campaign='', disposition='', malware=[], prevention_tools=[],
-                 remediations=[], status='', tags=[], types=[], intel_reference='', intel_source=''):
+def create_event(client, name, username, alerts=[], attack_vectors=[], campaign='', description='', disposition='', malware=[],
+                 prevention_tools=[], remediations=[], status='', tags=[], types=[], intel_reference='', intel_source=''):
     if not disposition:
         disposition = 'DELIVERY'
     create_event_disposition(client, disposition)
@@ -53,6 +53,10 @@ def create_event(client, name, username, attack_vectors=[], campaign='', disposi
     create_event_status(client, status)
 
     data = {'name': name, 'username': username, 'disposition': disposition, 'status': status}
+    if alerts:
+        for alert in alerts:
+            create_alert(client, name, alert['type'], alert['url'])
+        data['alerts'] = alerts
     if attack_vectors:
         for attack_vector in attack_vectors:
             create_event_attack_vector(client, attack_vector)
@@ -60,6 +64,8 @@ def create_event(client, name, username, attack_vectors=[], campaign='', disposi
     if campaign:
         create_campaign(client, campaign)
         data['campaign'] = campaign
+    if description:
+        data['description'] = description
     if malware:
         for m in malware:
             create_malware(client, m['name'], types=m['types'])

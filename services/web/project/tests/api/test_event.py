@@ -82,6 +82,62 @@ def test_create_schema(client):
     assert request.status_code == 400
     assert 'too long' in response['msg']
 
+    # Invalid alerts parameter type
+    data = {'name': 'asdf', 'username': 'asdf', 'alerts': 'asdf'}
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "'asdf' is not of type 'array'" in response['msg']
+
+    # Empty alerts parameter type
+    data = {'name': 'asdf', 'username': 'asdf', 'alerts': []}
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # Invalid alerts parameter type
+    data = {'name': 'asdf', 'username': 'asdf', 'alerts': [1]}
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'object'" in response['msg']
+
+    # alerts type parameter too short
+    data = {'name': 'asdf', 'username': 'asdf', 'alerts': [{'type': '', 'url': 'asdf'}]}
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # alerts type parameter too long
+    data = {'name': 'asdf', 'username': 'asdf', 'alerts': [{'type': 'a' * 256, 'url': 'asdf'}]}
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # alerts url parameter too short
+    data = {'name': 'asdf', 'username': 'asdf', 'alerts': [{'type': 'asdf', 'url': ''}]}
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # alerts url parameter too long
+    data = {'name': 'asdf', 'username': 'asdf', 'alerts': [{'type': 'asdf', 'url': 'a' * 513}]}
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid description parameter type
+    data = {'name': 'asdf', 'username': 'asdf', 'description': 1}
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
     # Invalid attack_vectors parameter type
     data = {'name': 'asdf', 'username': 'asdf', 'attack_vectors': 'asdf'}
     request = client.post('/api/events', json=data)
@@ -491,9 +547,52 @@ def test_create_invalid_role(app, client):
     assert response['msg'] == 'user_does_not_have_this_role role required'
 
 
+def test_create_autocreate_alert(app, client):
+    """ Ensure the auto-create alert config actually works """
+
+    app.config['EVENT_AUTO_CREATE_ALERT'] = False
+    app.config['EVENT_AUTO_CREATE_CAMPAIGN'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTATTACKVECTOR'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTDISPOSITION'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTPREVENTIONTOOL'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTREMEDIATION'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTSTATUS'] = True
+    app.config['EVENT_AUTO_CREATE_EVENTTYPE'] = True
+    app.config['EVENT_AUTO_CREATE_INTELREFERENCE'] = True
+    app.config['EVENT_AUTO_CREATE_MALWARE'] = True
+    app.config['EVENT_AUTO_CREATE_TAG'] = True
+
+    data = {'alerts': [{'type': 'ACE', 'url': 'http://ace/alert1'}],
+            'attack_vectors': ['WEBMAIL'],
+            'campaign': 'Derpsters',
+            'disposition': 'DELIVERY',
+            'malware': [{'name': 'Nanocore', 'types': ['RAT']}],
+            'name': 'test event',
+            'prevention_tools': ['IPS'],
+            'references': [{'source': 'OSINT', 'reference': 'http://blahblah.com'}],
+            'remediations': ['REIMAGED'],
+            'status': 'CLOSED',
+            'tags': ['phish', 'nanocore'],
+            'types': ['phish'],
+            'username': 'analyst'}
+
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 404
+    assert response['msg'] == 'Alert not found: http://ace/alert1'
+
+    app.config['EVENT_AUTO_CREATE_ALERT'] = True
+
+    request = client.post('/api/events', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 201
+    assert response['alerts'][0]['url'] == 'http://ace/alert1'
+
+
 def test_create_autocreate_campaign(app, client):
     """ Ensure the auto-create campaign config actually works """
 
+    app.config['EVENT_AUTO_CREATE_ALERT'] = True
     app.config['EVENT_AUTO_CREATE_CAMPAIGN'] = False
     app.config['EVENT_AUTO_CREATE_EVENTATTACKVECTOR'] = True
     app.config['EVENT_AUTO_CREATE_EVENTDISPOSITION'] = True
@@ -505,7 +604,8 @@ def test_create_autocreate_campaign(app, client):
     app.config['EVENT_AUTO_CREATE_MALWARE'] = True
     app.config['EVENT_AUTO_CREATE_TAG'] = True
 
-    data = {'attack_vectors': ['WEBMAIL'],
+    data = {'alerts': [{'type': 'ACE', 'url': 'http://ace/alert1'}],
+            'attack_vectors': ['WEBMAIL'],
             'campaign': 'Derpsters',
             'disposition': 'DELIVERY',
             'malware': [{'name': 'Nanocore', 'types': ['RAT']}],
@@ -534,6 +634,7 @@ def test_create_autocreate_campaign(app, client):
 def test_create_autocreate_event_attack_vector(app, client):
     """ Ensure the auto-create event attack vector config actually works """
 
+    app.config['EVENT_AUTO_CREATE_ALERT'] = True
     app.config['EVENT_AUTO_CREATE_CAMPAIGN'] = True
     app.config['EVENT_AUTO_CREATE_EVENTATTACKVECTOR'] = False
     app.config['EVENT_AUTO_CREATE_EVENTDISPOSITION'] = True
@@ -545,7 +646,8 @@ def test_create_autocreate_event_attack_vector(app, client):
     app.config['EVENT_AUTO_CREATE_MALWARE'] = True
     app.config['EVENT_AUTO_CREATE_TAG'] = True
 
-    data = {'attack_vectors': ['WEBMAIL'],
+    data = {'alerts': [{'type': 'ACE', 'url': 'http://ace/alert1'}],
+            'attack_vectors': ['WEBMAIL'],
             'campaign': 'Derpsters',
             'disposition': 'DELIVERY',
             'malware': [{'name': 'Nanocore', 'types': ['RAT']}],
@@ -574,6 +676,7 @@ def test_create_autocreate_event_attack_vector(app, client):
 def test_create_autocreate_event_disposition(app, client):
     """ Ensure the auto-create event disposition config actually works """
 
+    app.config['EVENT_AUTO_CREATE_ALERT'] = True
     app.config['EVENT_AUTO_CREATE_CAMPAIGN'] = True
     app.config['EVENT_AUTO_CREATE_EVENTATTACKVECTOR'] = True
     app.config['EVENT_AUTO_CREATE_EVENTDISPOSITION'] = False
@@ -585,7 +688,8 @@ def test_create_autocreate_event_disposition(app, client):
     app.config['EVENT_AUTO_CREATE_MALWARE'] = True
     app.config['EVENT_AUTO_CREATE_TAG'] = True
 
-    data = {'attack_vectors': ['WEBMAIL'],
+    data = {'alerts': [{'type': 'ACE', 'url': 'http://ace/alert1'}],
+            'attack_vectors': ['WEBMAIL'],
             'campaign': 'Derpsters',
             'disposition': 'DELIVERY',
             'malware': [{'name': 'Nanocore', 'types': ['RAT']}],
@@ -614,6 +718,7 @@ def test_create_autocreate_event_disposition(app, client):
 def test_create_autocreate_event_prevention_tool(app, client):
     """ Ensure the auto-create event prevention tool config actually works """
 
+    app.config['EVENT_AUTO_CREATE_ALERT'] = True
     app.config['EVENT_AUTO_CREATE_CAMPAIGN'] = True
     app.config['EVENT_AUTO_CREATE_EVENTATTACKVECTOR'] = True
     app.config['EVENT_AUTO_CREATE_EVENTDISPOSITION'] = True
@@ -625,7 +730,8 @@ def test_create_autocreate_event_prevention_tool(app, client):
     app.config['EVENT_AUTO_CREATE_MALWARE'] = True
     app.config['EVENT_AUTO_CREATE_TAG'] = True
 
-    data = {'attack_vectors': ['WEBMAIL'],
+    data = {'alerts': [{'type': 'ACE', 'url': 'http://ace/alert1'}],
+            'attack_vectors': ['WEBMAIL'],
             'campaign': 'Derpsters',
             'disposition': 'DELIVERY',
             'malware': [{'name': 'Nanocore', 'types': ['RAT']}],
@@ -654,6 +760,7 @@ def test_create_autocreate_event_prevention_tool(app, client):
 def test_create_autocreate_event_remediation(app, client):
     """ Ensure the auto-create event remediation config actually works """
 
+    app.config['EVENT_AUTO_CREATE_ALERT'] = True
     app.config['EVENT_AUTO_CREATE_CAMPAIGN'] = True
     app.config['EVENT_AUTO_CREATE_EVENTATTACKVECTOR'] = True
     app.config['EVENT_AUTO_CREATE_EVENTDISPOSITION'] = True
@@ -665,7 +772,8 @@ def test_create_autocreate_event_remediation(app, client):
     app.config['EVENT_AUTO_CREATE_MALWARE'] = True
     app.config['EVENT_AUTO_CREATE_TAG'] = True
 
-    data = {'attack_vectors': ['WEBMAIL'],
+    data = {'alerts': [{'type': 'ACE', 'url': 'http://ace/alert1'}],
+            'attack_vectors': ['WEBMAIL'],
             'campaign': 'Derpsters',
             'disposition': 'DELIVERY',
             'malware': [{'name': 'Nanocore', 'types': ['RAT']}],
@@ -694,6 +802,7 @@ def test_create_autocreate_event_remediation(app, client):
 def test_create_autocreate_event_status(app, client):
     """ Ensure the auto-create event status config actually works """
 
+    app.config['EVENT_AUTO_CREATE_ALERT'] = True
     app.config['EVENT_AUTO_CREATE_CAMPAIGN'] = True
     app.config['EVENT_AUTO_CREATE_EVENTATTACKVECTOR'] = True
     app.config['EVENT_AUTO_CREATE_EVENTDISPOSITION'] = True
@@ -705,7 +814,8 @@ def test_create_autocreate_event_status(app, client):
     app.config['EVENT_AUTO_CREATE_MALWARE'] = True
     app.config['EVENT_AUTO_CREATE_TAG'] = True
 
-    data = {'attack_vectors': ['WEBMAIL'],
+    data = {'alerts': [{'type': 'ACE', 'url': 'http://ace/alert1'}],
+            'attack_vectors': ['WEBMAIL'],
             'campaign': 'Derpsters',
             'disposition': 'DELIVERY',
             'malware': [{'name': 'Nanocore', 'types': ['RAT']}],
@@ -734,6 +844,7 @@ def test_create_autocreate_event_status(app, client):
 def test_create_autocreate_event_type(app, client):
     """ Ensure the auto-create event type config actually works """
 
+    app.config['EVENT_AUTO_CREATE_ALERT'] = True
     app.config['EVENT_AUTO_CREATE_CAMPAIGN'] = True
     app.config['EVENT_AUTO_CREATE_EVENTATTACKVECTOR'] = True
     app.config['EVENT_AUTO_CREATE_EVENTDISPOSITION'] = True
@@ -745,7 +856,8 @@ def test_create_autocreate_event_type(app, client):
     app.config['EVENT_AUTO_CREATE_MALWARE'] = True
     app.config['EVENT_AUTO_CREATE_TAG'] = True
 
-    data = {'attack_vectors': ['WEBMAIL'],
+    data = {'alerts': [{'type': 'ACE', 'url': 'http://ace/alert1'}],
+            'attack_vectors': ['WEBMAIL'],
             'campaign': 'Derpsters',
             'disposition': 'DELIVERY',
             'malware': [{'name': 'Nanocore', 'types': ['RAT']}],
@@ -774,6 +886,7 @@ def test_create_autocreate_event_type(app, client):
 def test_create_autocreate_intel_reference(app, client):
     """ Ensure the auto-create intel reference config actually works """
 
+    app.config['EVENT_AUTO_CREATE_ALERT'] = True
     app.config['EVENT_AUTO_CREATE_CAMPAIGN'] = True
     app.config['EVENT_AUTO_CREATE_EVENTATTACKVECTOR'] = True
     app.config['EVENT_AUTO_CREATE_EVENTDISPOSITION'] = True
@@ -785,7 +898,8 @@ def test_create_autocreate_intel_reference(app, client):
     app.config['EVENT_AUTO_CREATE_MALWARE'] = True
     app.config['EVENT_AUTO_CREATE_TAG'] = True
 
-    data = {'attack_vectors': ['WEBMAIL'],
+    data = {'alerts': [{'type': 'ACE', 'url': 'http://ace/alert1'}],
+            'attack_vectors': ['WEBMAIL'],
             'campaign': 'Derpsters',
             'disposition': 'DELIVERY',
             'malware': [{'name': 'Nanocore', 'types': ['RAT']}],
@@ -814,6 +928,7 @@ def test_create_autocreate_intel_reference(app, client):
 def test_create_autocreate_malware(app, client):
     """ Ensure the auto-create malware config actually works """
 
+    app.config['EVENT_AUTO_CREATE_ALERT'] = True
     app.config['EVENT_AUTO_CREATE_CAMPAIGN'] = True
     app.config['EVENT_AUTO_CREATE_EVENTATTACKVECTOR'] = True
     app.config['EVENT_AUTO_CREATE_EVENTDISPOSITION'] = True
@@ -825,7 +940,8 @@ def test_create_autocreate_malware(app, client):
     app.config['EVENT_AUTO_CREATE_MALWARE'] = False
     app.config['EVENT_AUTO_CREATE_TAG'] = True
 
-    data = {'attack_vectors': ['WEBMAIL'],
+    data = {'alerts': [{'type': 'ACE', 'url': 'http://ace/alert1'}],
+            'attack_vectors': ['WEBMAIL'],
             'campaign': 'Derpsters',
             'disposition': 'DELIVERY',
             'malware': [{'name': 'Nanocore', 'types': ['RAT']}],
@@ -855,6 +971,7 @@ def test_create_autocreate_malware(app, client):
 def test_create_autocreate_tag(app, client):
     """ Ensure the auto-create tag config actually works """
 
+    app.config['EVENT_AUTO_CREATE_ALERT'] = True
     app.config['EVENT_AUTO_CREATE_CAMPAIGN'] = True
     app.config['EVENT_AUTO_CREATE_EVENTATTACKVECTOR'] = True
     app.config['EVENT_AUTO_CREATE_EVENTDISPOSITION'] = True
@@ -866,7 +983,8 @@ def test_create_autocreate_tag(app, client):
     app.config['EVENT_AUTO_CREATE_MALWARE'] = True
     app.config['EVENT_AUTO_CREATE_TAG'] = False
 
-    data = {'attack_vectors': ['WEBMAIL'],
+    data = {'alerts': [{'type': 'ACE', 'url': 'http://ace/alert1'}],
+            'attack_vectors': ['WEBMAIL'],
             'campaign': 'Derpsters',
             'disposition': 'DELIVERY',
             'malware': [{'name': 'Nanocore', 'types': ['RAT']}],
@@ -886,8 +1004,13 @@ def test_create_autocreate_tag(app, client):
 
     app.config['EVENT_AUTO_CREATE_TAG'] = True
 
+    request = client.get('/api/events')
+    response = json.loads(request.data.decode())
+    print(response)
+
     request = client.post('/api/events', json=data)
     response = json.loads(request.data.decode())
+    print(response)
     assert request.status_code == 201
     assert response['tags'] == ['nanocore', 'phish']
 
@@ -998,7 +1121,9 @@ def test_read_with_filters(client):
     """ Ensure events can be read using the various filters """
 
     event1_request, event1_response = create_event(client, '20190125 Nanocore phish', 'analyst',
+                                                   alerts=[{'type': 'ACE', 'url': 'http://ace/alert1'}],
                                                    attack_vectors=['CORPORATE EMAIL'],
+                                                   description='Phish with link to download Nanocore',
                                                    disposition='EXPLOITATION',
                                                    prevention_tools=['ANTIVIRUS'],
                                                    remediations=['REMOVED FROM INBOX'],
@@ -1013,8 +1138,10 @@ def test_read_with_filters(client):
 
     time.sleep(1)
 
-    event2_request, event2_response = create_event(client, '20190125 Remcos infection', 'analyst',
+    event2_request, event2_response = create_event(client, '20190125 Remcos infection', 'admin',
+                                                   alerts=[{'type': 'SIEM', 'url': 'http://siem/alert2'}],
                                                    attack_vectors=['USB'],
+                                                   description='USB drive infected with Remcos',
                                                    disposition='DELIVERY',
                                                    prevention_tools=['PROXY'],
                                                    remediations=['REIMAGED'],
@@ -1028,6 +1155,20 @@ def test_read_with_filters(client):
     assert event2_request.status_code == 201
 
     time.sleep(1)
+
+    # Filter by alert_types
+    request = client.get('/api/events?alert_types=ACE')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 1
+    assert response['items'][0]['alerts'][0]['type'] == 'ACE'
+
+    # Filter by alert_url
+    request = client.get('/api/events?alert_url=siem')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 1
+    assert response['items'][0]['alerts'][0]['type'] == 'SIEM'
 
     # Filter by attack_vector
     request = client.get('/api/events?attack_vectors=CORPORATE EMAIL')
@@ -1143,6 +1284,13 @@ def test_read_with_filters(client):
     assert len(response['items']) == 1
     assert response['items'][0]['references'][0]['source'] == 'OSINT'
 
+    # Filter by user
+    request = client.get('/api/events?user=analyst')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 1
+    assert response['items'][0]['user'] == 'analyst'
+
     # Filter by multiple
     request = client.get('/api/events?tags=phish&disposition=EXPLOITATION')
     response = json.loads(request.data.decode())
@@ -1199,6 +1347,48 @@ def test_update_schema(client):
     response = json.loads(request.data.decode())
     assert request.status_code == 400
     assert 'too long' in response['msg']
+
+    # Invalid alerts parameter type
+    data = {'alerts': 'asdf'}
+    request = client.put('/api/events/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "'asdf' is not of type 'array'" in response['msg']
+
+    # Empty alerts parameter type
+    data = {'alerts': []}
+    request = client.put('/api/events/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # Invalid alerts parameter type
+    data = {'alerts': [1]}
+    request = client.put('/api/events/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # alerts parameter too short
+    data = {'alerts': ['']}
+    request = client.put('/api/events/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # alerts parameter too long
+    data = {'alerts': ['a' * 513]}
+    request = client.put('/api/events/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid description parameter type
+    data = {'description': 1}
+    request = client.put('/api/events/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
 
     # Invalid attack_vectors parameter type
     data = {'attack_vectors': 'asdf'}
@@ -1579,6 +1769,15 @@ def test_update(client):
     assert event_request.status_code == 201
     assert event_response['user'] == 'analyst'
 
+    # alerts
+    create_alert(client, 'asdf', 'ACE', 'http://ace/alert1')
+    data = {'alerts': ['http://ace/alert1']}
+    request = client.put('/api/events/{}'.format(_id), json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert response['id'] == _id
+    assert response['alerts'][0]['url'] == 'http://ace/alert1'
+
     # attack_vectors
     create_event_attack_vector(client, 'CORPORATE EMAIL')
     create_event_attack_vector(client, 'WEBMAIL')
@@ -1597,6 +1796,14 @@ def test_update(client):
     assert request.status_code == 200
     assert response['id'] == _id
     assert response['campaign']['name'] == 'Derpsters'
+
+    # description
+    data = {'description': 'This event did some stuff'}
+    request = client.put('/api/events/{}'.format(_id), json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert response['id'] == _id
+    assert response['description'] == 'This event did some stuff'
 
     # disposition
     create_event_disposition(client, 'DELIVERY')

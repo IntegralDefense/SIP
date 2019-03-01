@@ -1,0 +1,27 @@
+{
+    "type": "object",
+    "properties": {
+        "campaigns": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1, "maxLength": 255},
+            "minItems": 1
+        },
+        "case_sensitive": {"type": "boolean"},
+        "confidence": {"type": "string", "minLength": 1, "maxLength": 255},
+        "impact": {"type": "string", "minLength": 1, "maxLength": 255},
+        "references": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1, "maxLength": 512},
+            "minItems": 1
+        },
+        "status": {"type": "string", "minLength": 1, "maxLength": 255},
+        "substring": {"type": "boolean"},
+        "tags": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1, "maxLength": 255},
+            "minItems": 1
+        },
+        "username": {"type": "string", "minLength": 1, "maxLength": 255}
+    },
+    "additionalProperties": false
+}

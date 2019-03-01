@@ -1,6 +1,8 @@
 SIP: Simple Intel Platform
 ==========================
 
+Read the full documentation at `Read the Docs <https://simple-intel-platform.readthedocs.io/en/latest/>`_.
+
 Run the included setup script to begin configuration.
 
 ::

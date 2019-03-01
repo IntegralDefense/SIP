@@ -5,28 +5,54 @@ from project import db
 from project.api import bp
 from project.api.decorators import check_if_token_required, validate_json, validate_schema
 from project.api.errors import error_response
+from project.api.schemas import value_create, value_update
 from project.models import IndicatorImpact
 
 """
 CREATE
 """
 
-create_schema = {
-    'type': 'object',
-    'properties': {
-        'value': {'type': 'string', 'minLength': 1, 'maxLength': 255}
-    },
-    'required': ['value'],
-    'additionalProperties': False
-}
-
 
 @bp.route('/indicators/impact', methods=['POST'])
 @check_if_token_required
 @validate_json
-@validate_schema(create_schema)
+@validate_schema(value_create)
 def create_indicator_impact():
-    """ Creates a new indicator impact. """
+    """ Creates a new indicator impact.
+    
+    .. :quickref: IndicatorImpact; Creates a new indicator impact.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      POST /indicators/impact HTTP/1.1
+      Host: 127.0.0.1
+      Content-Type: application/json
+
+      {
+        "value": "LOW"
+      }
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 201 Created
+      Content-Type: application/json
+
+      {
+        "id": 1,
+        "value": "LOW"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 201: Indicator impact created
+    :status 400: JSON does not match the schema
+    :status 401: Invalid role to perform this action
+    :status 409: Indicator impact already exists
+    """
 
     data = request.get_json()
 
@@ -55,7 +81,36 @@ READ
 @bp.route('/indicators/impact/<int:indicator_impact_id>', methods=['GET'])
 @check_if_token_required
 def read_indicator_impact(indicator_impact_id):
-    """ Gets a single indicator impact given its ID. """
+    """ Gets a single indicator impact given its ID.
+    
+    .. :quickref: IndicatorImpact; Gets a single indicator impact given its ID.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      GET /indicators/impact/1 HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+        "id": 1,
+        "value": "LOW"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Indicator impact found
+    :status 401: Invalid role to perform this action
+    :status 404: Indicator impact ID not found
+    """
 
     indicator_impact = IndicatorImpact.query.get(indicator_impact_id)
     if not indicator_impact:
@@ -67,7 +122,41 @@ def read_indicator_impact(indicator_impact_id):
 @bp.route('/indicators/impact', methods=['GET'])
 @check_if_token_required
 def read_indicator_impacts():
-    """ Gets a list of all the indicator impacts. """
+    """ Gets a list of all the indicator impacts.
+    
+    .. :quickref: IndicatorImpact; Gets a list of all the indicator impacts.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      GET /indicators/impact HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      [
+        {
+          "id": 1,
+          "value": "LOW"
+        },
+        {
+          "id": 2,
+          "value": "HIGH"
+        }
+      ]
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Indicator impacts found
+    :status 401: Invalid role to perform this action
+    """
 
     data = IndicatorImpact.query.all()
     return jsonify([item.to_dict() for item in data])
@@ -77,22 +166,48 @@ def read_indicator_impacts():
 UPDATE
 """
 
-update_schema = {
-    'type': 'object',
-    'properties': {
-        'value': {'type': 'string', 'minLength': 1, 'maxLength': 255}
-    },
-    'required': ['value'],
-    'additionalProperties': False
-}
-
 
 @bp.route('/indicators/impact/<int:indicator_impact_id>', methods=['PUT'])
 @check_if_token_required
 @validate_json
-@validate_schema(update_schema)
+@validate_schema(value_update)
 def update_indicator_impact(indicator_impact_id):
-    """ Updates an existing indicator impact. """
+    """ Updates an existing indicator impact.
+    
+    .. :quickref: IndicatorImpact; Updates an existing indicator impact.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      PUT /indicators/impact/1 HTTP/1.1
+      Host: 127.0.0.1
+      Content-Type: application/json
+
+      {
+        "value": "HIGH",
+      }
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+        "id": 1,
+        "value": "HIGH"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Indicator impact updated
+    :status 400: JSON does not match the schema
+    :status 401: Invalid role to perform this action
+    :status 404: Indicator impact ID not found
+    :status 409: Indicator impact already exists
+    """
 
     data = request.get_json()
 
@@ -122,7 +237,29 @@ DELETE
 @bp.route('/indicators/impact/<int:indicator_impact_id>', methods=['DELETE'])
 @check_if_token_required
 def delete_indicator_impact(indicator_impact_id):
-    """ Deletes an indicator impact. """
+    """ Deletes an indicator impact.
+    
+    .. :quickref: IndicatorImpact; Deletes an indicator impact.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      DELETE /indicators/impact/1 HTTP/1.1
+      Host: 127.0.0.1
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 204 No Content
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :status 204: Indicator impact deleted
+    :status 401: Invalid role to perform this action
+    :status 404: Indicator impact ID not found
+    :status 409: Unable to delete indicator impact due to foreign key constraints
+    """
 
     indicator_impact = IndicatorImpact.query.get(indicator_impact_id)
     if not indicator_impact:

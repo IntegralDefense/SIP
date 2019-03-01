@@ -8,89 +8,141 @@ from project import db
 from project.api import bp
 from project.api.decorators import check_if_token_required, validate_json, validate_schema
 from project.api.errors import error_response
-from project.models import Campaign, Event, EventAttackVector, EventDisposition, EventPreventionTool, \
+from project.api.schemas import event_create, event_update
+from project.models import Alert, AlertType, Campaign, Event, EventAttackVector, EventDisposition, EventPreventionTool, \
     EventRemediation, EventStatus, EventType, IntelReference, IntelSource, Malware, MalwareType, Tag, User
-
 
 """
 CREATE
 """
 
-create_schema = {
-    'type': 'object',
-    'properties': {
-        'attack_vectors': {
-            'type': 'array',
-            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-            'minItems': 1
-        },
-        'campaign': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-        'disposition': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-        'malware': {
-            'type': 'array',
-            'items': {
-                'type': 'object',
-                'properties': {
-                    'name':  {'type': 'string', 'minLength': 1, 'maxLength': 255},
-                    'types': {
-                        'type': 'array',
-                        'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-                        'minItems': 1
-                    }
-                },
-                'required': ['name'],
-                'additionalProperties': False
-            },
-            'minItems': 1
-        },
-        'name': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-        'prevention_tools': {
-            'type': 'array',
-            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-            'minItems': 1
-        },
-        'references': {
-            'type': 'array',
-            'items': {
-                'type': 'object',
-                'properties': {
-                    'source': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-                    'reference': {'type': 'string', 'minLength': 1, 'maxLength': 512},
-                },
-                'required': ['source', 'reference'],
-                'additionalProperties': False
-            },
-            'minItems': 1
-        },
-        'remediations': {
-            'type': 'array',
-            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-            'minItems': 1
-        },
-        'status': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-        'tags': {
-            'type': 'array',
-            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-            'minItems': 1
-        },
-        'types': {
-            'type': 'array',
-            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-            'minItems': 1
-        },
-        'username': {'type': 'string', 'minLength': 1, 'maxLength': 255}
-    },
-    'required': ['name', 'username'],
-    'additionalProperties': False
-}
-
 
 @bp.route('/events', methods=['POST'])
 @check_if_token_required
 @validate_json
-@validate_schema(create_schema)
+@validate_schema(event_create)
 def create_event():
-    """ Creates a new event. """
+    """ Creates a new event.
+
+    .. :quickref: Event; Creates a new event.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      POST /events HTTP/1.1
+      Host: 127.0.0.1
+      Content-Type: application/json
+
+      {
+        "alerts": [
+          {
+            "type": "SIEM",
+            "url": "http://your-siem.com/alert1"
+          }
+        ],
+        "attack_vectors": ["CORPORATE EMAIL"],
+        "campaign": "LOLcats",
+        "description": "Phish with a link to download a NanoCore .exe",
+        "disposition": "DELIVERY",
+        "malware": [
+          {
+            "name": "NanoCore",
+            "types": ["RAT"]
+          }
+        ],
+        "name": "20190228 - NanoCore phish",
+        "prevention_tools": ["ANTIVIRUS"],
+        "references": [
+          {
+            "source": "Your company",
+            "reference": "http://yourwiki.com/page-for-the-event"
+          }
+        ],
+        "remediations": ["REMOVED FROM MAILBOX"],
+        "status": "OPEN",
+        "tags": ["phish", "nanocore"],
+        "types": ["phish"],
+        "username": "your_SIP_username"
+      }
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 201 Created
+      Content-Type: application/json
+
+      {
+        "alerts": [
+          {
+            "event": "20190228 - NanoCore phish",
+            "id": 1,
+            "type": "SIEM",
+            "url": "http://your-siem.com/alert1"
+          }
+        ],
+        "attack_vectors": ["CORPORATE EMAIL"],
+        "campaign": {
+          "aliases": [],
+          "created_time": "Thu, 28 Feb 2019 17:10:44 GMT",
+          "id": 1,
+          "modified_time": "Thu, 28 Feb 2019 17:10:44 GMT",
+          "name": "LOLcats"
+        },
+        "created_time": "Thu, 28 Feb 2019 22:33:09 GMT",
+        "description": "Phish with a link to download a NanoCore .exe",
+        "disposition": "DELIVERY",
+        "id": 1,
+        "malware": [
+          {
+            "id": 1,
+            "name": "NanoCore",
+            "types": [
+              "RAT"
+            ]
+          }
+        ],
+        "modified_time": "Thu, 28 Feb 2019 22:33:09 GMT",
+        "name": "20190228 - NanoCore phish",
+        "prevention_tools": ["ANTIVIRUS"],
+        "references": [
+          {
+            "id": 1,
+            "reference": "http://yourwiki.com/page-for-the-event",
+            "source": "Your company",
+            "user": "your_SIP_username"
+          }
+        ],
+        "remediations": ["REMOVED FROM MAILBOX"],
+        "status": "OPEN",
+        "tags": ["nanocore", "phish"],
+        "types": ["phish"],
+        "user": "your_SIP_username"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 201: Event created
+    :status 400: Disposition not given and no default to select
+    :status 400: Status not given and no default to select
+    :status 400: JSON does not match the schema
+    :status 401: Invalid role to perform this action
+    :status 401: Username is inactive
+    :status 404: Alert not found
+    :status 404: Attack vector not found
+    :status 404: Campaign not found
+    :status 404: Disposition not found
+    :status 404: Malware not found
+    :status 404: Prevention tool not found
+    :status 404: Reference not found
+    :status 404: Remediation not found
+    :status 404: Status not found
+    :status 404: Tag not found
+    :status 404: Type not found
+    :status 404: Username not found
+    :status 409: Event name already exists
+    """
 
     data = request.get_json()
 
@@ -163,6 +215,10 @@ def create_event():
                 return error_response(404, 'Campaign not found: {}'.format(data['campaign']))
 
         event.campaign = campaign
+
+    # Set the description if one was specified.
+    if 'description' in data:
+        event.description = data['description']
 
     # Verify any malware that was specified.
     if 'malware' in data:
@@ -259,6 +315,27 @@ def create_event():
 
             event.types.append(event_type)
 
+    # Verify any alerts that were specified. The alerts are added at the very end due
+    # to how the relationships between Alert <> Event are configured. By adding an alert,
+    # it will also add and commit the event. This is done last in case the auto-create
+    # functionality is disabled and one of the other fields issues a 404, which will
+    # correctly issue the 404 response and will not create the event.
+    if 'alerts' in data:
+        for value in data['alerts']:
+            alert = Alert.query.filter_by(url=value['url']).first()
+            if not alert:
+                if current_app.config['EVENT_AUTO_CREATE_ALERT']:
+                    alert_type = AlertType.query.filter_by(value=value['type']).first()
+                    if not alert_type:
+                        alert_type = AlertType(value=value['type'])
+                        db.session.add(alert_type)
+                    alert = Alert(type=alert_type, url=value['url'], event_id=event.id)
+                    db.session.add(alert)
+                else:
+                    return error_response(404, 'Alert not found: {}'.format(value['url']))
+
+            event.alerts.append(alert)
+
     # Save the event.
     db.session.add(event)
     db.session.commit()
@@ -277,7 +354,79 @@ READ
 @bp.route('/events/<int:event_id>', methods=['GET'])
 @check_if_token_required
 def read_event(event_id):
-    """ Gets a single event given its ID. """
+    """ Gets a single event given its ID.
+
+    .. :quickref: Event; Gets a single event given its ID.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      GET /events/1 HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+        "alerts": [
+          {
+            "event": "20190228 - NanoCore phish",
+            "id": 1,
+            "type": "SIEM",
+            "url": "http://your-siem.com/alert1"
+          }
+        ],
+        "attack_vectors": ["CORPORATE EMAIL"],
+        "campaign": {
+          "aliases": [],
+          "created_time": "Thu, 28 Feb 2019 17:10:44 GMT",
+          "id": 1,
+          "modified_time": "Thu, 28 Feb 2019 17:10:44 GMT",
+          "name": "LOLcats"
+        },
+        "created_time": "Thu, 28 Feb 2019 22:33:09 GMT",
+        "description": "Phish with a link to download a NanoCore .exe",
+        "disposition": "DELIVERY",
+        "id": 1,
+        "malware": [
+          {
+            "id": 1,
+            "name": "NanoCore",
+            "types": [
+              "RAT"
+            ]
+          }
+        ],
+        "modified_time": "Thu, 28 Feb 2019 22:33:09 GMT",
+        "name": "20190228 - NanoCore phish",
+        "prevention_tools": ["ANTIVIRUS"],
+        "references": [
+          {
+            "id": 1,
+            "reference": "http://yourwiki.com/page-for-the-event",
+            "source": "Your company",
+            "user": "your_SIP_username"
+          }
+        ],
+        "remediations": ["REMOVED FROM MAILBOX"],
+        "status": "OPEN",
+        "tags": ["nanocore", "phish"],
+        "types": ["phish"],
+        "user": "your_SIP_username"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Event found
+    :status 401: Invalid role to perform this action
+    :status 404: Event ID not found
+    """
 
     event = Event.query.get(event_id)
     if not event:
@@ -289,9 +438,112 @@ def read_event(event_id):
 @bp.route('/events', methods=['GET'])
 @check_if_token_required
 def read_events():
-    """ Gets a paginated list of events based on various filter criteria. """
+    """ Gets a paginated list of events based on various filter criteria.
+
+    .. :quickref: Event; Gets a paginated list of events based on various filter criteria.
+
+    **Example request**:
+
+    *NOTE*: Multiple query parameters can be used and will be applied with AND logic.
+
+    .. sourcecode:: http
+
+      GET /events?attack_vectors=WEBMAIL&created_after=2019-03-01 HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+        "_links": {
+          "next": null,
+          "prev": null,
+          "self": "/api/events?page=1&per_page=10&attack_vectors=WEBMAIL"
+        },
+        "_meta": {
+          "page": 1,
+          "per_page": 10,
+          "total_items": 1,
+          "total_pages": 1
+        },
+        "items": [
+          {
+            "alerts": [
+              {
+                "event": "20190228 - Credential harvester phish",
+                "id": 2,
+                "type": "SIEM",
+                "url": "http://your-siem.com/alert2"
+              }
+            ],
+            "attack_vectors": ["WEBMAIL"],
+            "campaign": null,
+            "created_time": "Fri, 01 Mar 2019 15:50:32 GMT",
+            "description": "Phish with a link to a credential harvester",
+            "disposition": "DELIVERY",
+            "id": 5,
+            "malware": [],
+            "modified_time": "Fri, 01 Mar 2019 15:50:32 GMT",
+            "name": "20190228 - Credential harvester phish",
+            "prevention_tools": ["PROXY"],
+            "references": [
+              {
+                "id": 2,
+                "reference": "http://yourwiki.com/event2",
+                "source": "Your company",
+                "user": "your_SIP_username"
+              }
+            ],
+            "remediations": ["REMOVED FROM MAILBOX"],
+            "status": "CLOSED",
+            "tags": ["credential_harvesting", "phish"],
+            "types": ["phish"],
+            "user": "your_SIP_username"
+          }
+        ]
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :query alert_types: Comma-separated list of alert types
+    :query alert_url: String found in alert URLs (uses wildcard search)
+    :query attack_vectors: Comma-separated list of attack vectors
+    :query campaign: Campaign name
+    :query created_after: Parsable date or datetime in GMT. Ex: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
+    :query created_before: Parsable date or datetime in GMT. Ex: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
+    :query description: String found in descriptions (uses wildcard search)
+    :query disposition: Disposition value
+    :query malware: Comma-separated list of malware names
+    :query modified_after: Parsable date or datetime in GMT. Ex: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
+    :query modified_before: Parsable date or datetime in GMT. Ex: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
+    :query name: String found in event names (uses wildcard search)
+    :query prevention_tools: Comma-separated list of prevention tools
+    :query remediations: Comma-separated list of remediations
+    :query sources: Comma-separated list of intel sources
+    :query status: Status value
+    :query tags: Comma-separated list of tags
+    :query types: Comma-separated list of event types
+    :query user: Username of person who created the event
+    :status 200: Events found
+    :status 401: Invalid role to perform this action
+    """
 
     filters = set()
+
+    # Alerts types filter
+    if 'alert_types' in request.args:
+        alert_types = request.args.get('alert_types').split(',')
+        for alert_type in alert_types:
+            filters.add(Event.alerts.any(Alert.type.has(AlertType.value == alert_type)))
+
+    # Alerts URL filter
+    if 'alert_url' in request.args:
+        filters.add(Event.alerts.any(Alert.url.like('%{}%'.format(request.args.get('alert_url')))))
 
     # Attack vector filter
     if 'attack_vectors' in request.args:
@@ -318,6 +570,10 @@ def read_events():
         except (ValueError, OverflowError):
             created_before = datetime.date.min
         filters.add(Event.created_time < created_before)
+
+    # Description filter
+    if 'description' in request.args:
+        filters.add(Event.description.like('%{}%'.format(request.args.get('description'))))
 
     # Disposition filter
     if 'disposition' in request.args:
@@ -383,9 +639,9 @@ def read_events():
         for _type in types:
             filters.add(Event.types.any(value=_type))
 
-    # Username filter (IntelReference)
-    if 'username' in request.args:
-        filters.add(Event.user.has(User.username == request.args.get('username')))
+    # User filter
+    if 'user' in request.args:
+        filters.add(Event.user.has(User.username == request.args.get('user')))
 
     data = Event.to_collection_dict(Event.query.filter(*filters), 'api.read_events', **request.args)
     return jsonify(data)
@@ -395,59 +651,105 @@ def read_events():
 UPDATE
 """
 
-update_schema = {
-    'type': 'object',
-    'properties': {
-        'attack_vectors': {
-            'type': 'array',
-            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-            'minItems': 1
-        },
-        'campaign': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-        'disposition': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-        'malware': {
-            'type': 'array',
-            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-            'minItems': 1
-        },
-        'prevention_tools': {
-            'type': 'array',
-            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-            'minItems': 1
-        },
-        'references': {
-            'type': 'array',
-            'items': {'type': 'string', 'minLength': 1, 'maxLength': 512},
-            'minItems': 1
-        },
-        'remediations': {
-            'type': 'array',
-            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-            'minItems': 1
-        },
-        'status': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-        'tags': {
-            'type': 'array',
-            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-            'minItems': 1
-        },
-        'types': {
-            'type': 'array',
-            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-            'minItems': 1
-        },
-        'username': {'type': 'string', 'minLength': 1, 'maxLength': 255}
-    },
-    'additionalProperties': False
-}
-
 
 @bp.route('/events/<int:event_id>', methods=['PUT'])
 @check_if_token_required
 @validate_json
-@validate_schema(update_schema)
+@validate_schema(event_update)
 def update_event(event_id):
-    """ Updates an existing event. """
+    """ Updates an existing event.
+
+    .. :quickref: Event; Updates an existing event.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      PUT /events/1 HTTP/1.1
+      Host: 127.0.0.1
+      Content-Type: application/json
+
+      {
+        "description": "Phish with a link to download a Remcos .exe",
+        "malware": ["Remcos"],
+        "tags": ["remcos", "phish"]
+      }
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+        "alerts": [
+          {
+            "event": "20190228 - NanoCore phish",
+            "id": 1,
+            "type": "SIEM",
+            "url": "http://your-siem.com/alert1"
+          }
+        ],
+        "attack_vectors": ["CORPORATE EMAIL"],
+        "campaign": {
+          "aliases": [],
+          "created_time": "Thu, 28 Feb 2019 17:10:44 GMT",
+          "id": 1,
+          "modified_time": "Thu, 28 Feb 2019 19:04:45 GMT",
+          "name": "LOLcats"
+        },
+        "created_time": "Thu, 28 Feb 2019 22:33:09 GMT",
+        "description": "Phish with a link to download a Remcos .exe",
+        "disposition": "DELIVERY",
+        "id": 1,
+        "malware": [
+          {
+            "id": 2,
+            "name": "Remcos",
+            "types": [
+              "RAT"
+            ]
+          }
+        ],
+        "modified_time": "Thu, 28 Feb 2019 22:33:09 GMT",
+        "name": "20190228 - NanoCore phish",
+        "prevention_tools": ["ANTIVIRUS"],
+        "references": [
+          {
+            "id": 1,
+            "reference": "http://yourwiki.com/page-for-the-event",
+            "source": "Your company",
+            "user": "your_SIP_username"
+          }
+        ],
+        "remediations": ["REMOVED FROM MAILBOX"],
+        "status": "OPEN",
+        "tags": ["phish", "remcos"],
+        "types": ["phish"],
+        "user": "your_SIP_username"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Event updated
+    :status 400: JSON does not match the schema
+    :status 401: Invalid role to perform this action
+    :status 401: Username is inactive
+    :status 404: Alert URL not found
+    :status 404: Attack vector not found
+    :status 404: Campaign not found
+    :status 404: Disposition not found
+    :status 404: Event ID not found
+    :status 404: Malware not found
+    :status 404: Prevention tool not found
+    :status 404: Reference not found
+    :status 404: Remediation not found
+    :status 404: Status not found
+    :status 404: Tag not found
+    :status 404: Type not found
+    :status 404: Username not found
+    """
 
     data = request.get_json()
 
@@ -455,6 +757,19 @@ def update_event(event_id):
     event = Event.query.get(event_id)
     if not event:
         return error_response(404, 'Event ID not found')
+
+    # Verify alerts if it was specified.
+    if 'alerts' in data:
+        valid_alerts = []
+        for url in data['alerts']:
+
+            # Verify each alert is actually valid.
+            alert = Alert.query.filter_by(url=url).first()
+            if not alert:
+                error_response(404, 'Alert not found: {}'.format(url))
+            valid_alerts.append(alert)
+        if valid_alerts:
+            event.alerts = valid_alerts
 
     # Verify attack_vectors if it was specified.
     if 'attack_vectors' in data:
@@ -475,6 +790,10 @@ def update_event(event_id):
         if not campaign:
             return error_response(404, 'Campaign not found: {}'.format(data['campaign']))
         event.campaign = campaign
+
+    # Update the description if one was specified.
+    if 'description' in data:
+        event.description = data['description']
 
     # Verify disposition if one was specified.
     if 'disposition' in data:
@@ -593,7 +912,29 @@ DELETE
 @bp.route('/events/<int:event_id>', methods=['DELETE'])
 @check_if_token_required
 def delete_event(event_id):
-    """ Deletes an event. """
+    """ Deletes an event.
+
+    .. :quickref: Event; Deletes an event.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      DELETE /events/1 HTTP/1.1
+      Host: 127.0.0.1
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 204 No Content
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :status 204: Event deleted
+    :status 401: Invalid role to perform this action
+    :status 404: Event ID not found
+    :status 409: Unable to delete event due to foreign key constraints
+    """
 
     event = Event.query.get(event_id)
     if not event:
