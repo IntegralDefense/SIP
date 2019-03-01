@@ -1,6 +1,10 @@
 SIP: Simple Intel Platform
 ==========================
 
+.. image:: https://readthedocs.org/projects/simple-intel-platform/badge/?version=latest
+  :target: https://simple-intel-platform.readthedocs.io/en/latest/?badge=latest
+  :alt: Documentation Status
+
 Read the full documentation at `Read the Docs <https://simple-intel-platform.readthedocs.io/en/latest/>`_.
 
 Run the included setup script to begin configuration.
