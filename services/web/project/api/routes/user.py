@@ -7,6 +7,7 @@ from project import db
 from project.api import bp
 from project.api.decorators import admin_required, check_if_token_required, validate_json, validate_schema
 from project.api.errors import error_response
+from project.api.schemas import user_create, user_update
 from project.models import Role, User
 
 
@@ -14,31 +15,61 @@ from project.models import Role, User
 CREATE
 """
 
-create_schema = {
-    'type': 'object',
-    'properties': {
-        'email': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-        'first_name': {'type': 'string', 'minLength': 1, 'maxLength': 50},
-        'last_name': {'type': 'string', 'minLength': 1, 'maxLength': 50},
-        'password': {'type': 'string', 'minLength': 1},
-        'roles': {
-            'type': 'array',
-            'items': {'type': 'string', 'minLength': 1, 'maxLength': 80},
-            'minItems': 1
-        },
-        'username': {'type': 'string', 'minLength': 1, 'maxLength': 255}
-    },
-    'required': ['email', 'first_name', 'last_name', 'password', 'roles', 'username'],
-    'additionalProperties': False
-}
-
 
 @bp.route('/users', methods=['POST'])
 @admin_required
 @validate_json
-@validate_schema(create_schema)
+@validate_schema(user_create)
 def create_user():
-    """ Creates a new user. Requires the admin role. """
+    """ Creates a new user. Requires the admin role.
+
+    .. :quickref: User; Creates a new user. Requires the admin role.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      POST /users HTTP/1.1
+      Host: 127.0.0.1
+      Content-Type: application/json
+
+      {
+        "email": "johndoe@company.com",
+        "first_name": "John",
+        "last_name": "Doe",
+        "password": "asdfasdfasdf",
+        "roles": ["analyst"],
+        "username": "johndoe"
+      }
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 201 Created
+      Content-Type: application/json
+
+      {
+        "active": true,
+        "email": "johndoe@company.com",
+        "first_name": "John",
+        "id": 2,
+        "last_name": "Doe",
+        "roles": ["analyst"],
+        "username": "johndoe"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 201: User created
+    :status 400: Password does not meet length requirement
+    :status 400: JSON does not match the schema
+    :status 401: Invalid role to perform this action
+    :status 404: Role not found
+    :status 409: Email address already exists
+    :status 409: Username already exists
+    :status 500: Unable to add user to datastore
+    """
 
     data = request.get_json()
 
@@ -102,7 +133,41 @@ READ
 @bp.route('/users/<int:user_id>', methods=['GET'])
 @check_if_token_required
 def read_user(user_id):
-    """ Gets a single user given its ID. """
+    """ Gets a single user given its ID.
+
+    .. :quickref: User; Gets a single user given its ID.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      GET /users/2 HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+        "active": true,
+        "email": "johndoe@company.com",
+        "first_name": "John",
+        "id": 2,
+        "last_name": "Doe",
+        "roles": ["analyst"],
+        "username": "johndoe"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: User found
+    :status 401: Invalid role to perform this action
+    :status 404: User ID not found
+    """
 
     user = User.query.get(user_id)
     if not user:
@@ -114,7 +179,51 @@ def read_user(user_id):
 @bp.route('/users', methods=['GET'])
 @check_if_token_required
 def read_users():
-    """ Gets a list of all the users. """
+    """ Gets a list of all the users.
+
+    .. :quickref: User; Gets a list of all the users.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      GET /users HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      [
+        {
+          "active": true,
+          "email": "admin@localhost",
+          "first_name": "Admin",
+          "id": 1,
+          "last_name": "Admin",
+          "roles": ["admin", "analyst"],
+          "username": "admin"
+        },
+        {
+          "active": true,
+          "email": "johndoe@company.com",
+          "first_name": "John",
+          "id": 2,
+          "last_name": "Doe",
+          "roles": ["analyst"],
+          "username": "johndoe"
+        }
+      ]
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Users found
+    :status 401: Invalid role to perform this action
+    """
 
     data = User.query.all()
     return jsonify([item.to_dict() for item in data])
@@ -124,31 +233,56 @@ def read_users():
 UPDATE
 """
 
-update_schema = {
-    'type': 'object',
-    'properties': {
-        'active': {'type': 'boolean'},
-        'email': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-        'first_name': {'type': 'string', 'minLength': 1, 'maxLength': 50},
-        'last_name': {'type': 'string', 'minLength': 1, 'maxLength': 50},
-        'password': {'type': 'string', 'minLength': 1},
-        'roles': {
-            'type': 'array',
-            'items': {'type': 'string', 'minLength': 1, 'maxLength': 80},
-            'minItems': 1
-        },
-        'username': {'type': 'string', 'minLength': 1, 'maxLength': 255}
-    },
-    'additionalProperties': False
-}
-
 
 @bp.route('/users/<int:user_id>', methods=['PUT'])
 @admin_required
 @validate_json
-@validate_schema(update_schema)
+@validate_schema(user_update)
 def update_user(user_id):
-    """ Updates an existing user. Requires the admin role. """
+    """ Updates an existing user. Requires the admin role.
+
+    .. :quickref: User; Updates an existing user. Requires the admin role.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      PUT /users/2 HTTP/1.1
+      Host: 127.0.0.1
+      Content-Type: application/json
+
+      {
+        "active": false
+      }
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+        "active": false,
+        "email": "johndoe@company.com",
+        "first_name": "John",
+        "id": 2,
+        "last_name": "Doe",
+        "roles": ["analyst"],
+        "username": "johndoe"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: User updated
+    :status 400: Password does not meet length requirement
+    :status 400: JSON does not match the schema
+    :status 401: Invalid role to perform this action
+    :status 404: Role not found
+    :status 404: User ID not found
+    :status 409: Email address already exists
+    :status 409: Username already exists
+    """
 
     data = request.get_json()
 
@@ -226,7 +360,29 @@ DELETE
 @bp.route('/users/<int:user_id>', methods=['DELETE'])
 @admin_required
 def delete_user(user_id):
-    """ Deletes a user. Requires the admin role. """
+    """ Deletes a user. Requires the admin role.
+
+    .. :quickref: User; Deletes a user. Requires the admin role.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      DELETE /users/2 HTTP/1.1
+      Host: 127.0.0.1
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 204 No Content
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :status 204: User deleted
+    :status 401: Invalid role to perform this action
+    :status 404: User ID not found
+    :status 409: Unable to delete user due to foreign key constraints
+    """
 
     user = User.query.get(user_id)
     if not user:

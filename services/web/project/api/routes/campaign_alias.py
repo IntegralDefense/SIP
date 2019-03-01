@@ -5,36 +5,65 @@ from project import db
 from project.api import bp
 from project.api.decorators import check_if_token_required, validate_json, validate_schema
 from project.api.errors import error_response
+from project.api.schemas import campaign_alias_create, campaign_alias_update
 from project.models import Campaign, CampaignAlias
 
 """
 CREATE
 """
 
-create_schema = {
-    'type': 'object',
-    'properties': {
-        'alias': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-        'campaign': {'type': 'string', 'minLength': 1, 'maxLength': 255}
-    },
-    'required': ['alias', 'campaign'],
-    'additionalProperties': False
-}
-
 
 @bp.route('/campaigns/alias', methods=['POST'])
 @check_if_token_required
 @validate_json
-@validate_schema(create_schema)
+@validate_schema(campaign_alias_create)
 def create_campaign_alias():
-    """ Creates a new campaign alias. """
+    """ Creates a new campaign alias.
+    
+    .. :quickref: CampaignAlias; Creates a new campaign alias.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      POST /campaigns/alias HTTP/1.1
+      Host: 127.0.0.1
+      Content-Type: application/json
+
+      {
+        "alias": "icanhaz",
+        "campaign": "LOLcats"
+      }
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 201 Created
+      Content-Type: application/json
+
+      {
+        "id": 1,
+        "alias": "icanhaz",
+        "campaign": "LOLcats"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 201: Campaign alias created
+    :status 400: JSON does not match the schema
+    :status 401: Invalid role to perform this action
+    :status 404: Campaign does not exist
+    :status 409: Campaign alias already exists
+    :status 409: Campaign alias cannot be the same as its name
+    """
 
     data = request.get_json()
 
     # Verify the campaign exists.
     campaign = Campaign.query.filter_by(name=data['campaign']).first()
     if not campaign:
-        return error_response(400, 'Campaign does not exist')
+        return error_response(404, 'Campaign does not exist')
 
     # Verify this alias does not already exist.
     existing = CampaignAlias.query.filter_by(alias=data['alias']).first()
@@ -64,7 +93,37 @@ READ
 @bp.route('/campaigns/alias/<int:campaign_alias_id>', methods=['GET'])
 @check_if_token_required
 def read_campaign_alias(campaign_alias_id):
-    """ Gets a single campaign alias given its ID. """
+    """ Gets a single campaign alias given its ID.
+    
+    .. :quickref: CampaignAlias; Gets a single campaign alias given its ID.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      GET /campaigns/alias/1 HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+        "id": 1,
+        "alias": "icanhaz",
+        "campaign": "LOLcats"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Campaign alias found
+    :status 401: Invalid role to perform this action
+    :status 404: Campaign alias ID not found
+    """
 
     campaign_alias = CampaignAlias.query.get(campaign_alias_id)
     if not campaign_alias:
@@ -76,7 +135,43 @@ def read_campaign_alias(campaign_alias_id):
 @bp.route('/campaigns/alias', methods=['GET'])
 @check_if_token_required
 def read_campaign_aliases():
-    """ Gets a list of all the campaign aliases. """
+    """ Gets a list of all the campaign aliases.
+    
+    .. :quickref: CampaignAlias; Gets a list of all the campaign aliases.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      GET /campaigns/alias HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      [
+        {
+          "id": 1,
+          "alias": "icanhaz",
+          "campaign": "LOLcats"
+        },
+        {
+          "id": 2,
+          "alias": "Dino",
+          "campaign": "Riders"
+        }
+      ]
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Campaign aliases found
+    :status 401: Invalid role to perform this action
+    """
 
     data = CampaignAlias.query.all()
     return jsonify([item.to_dict() for item in data])
@@ -86,22 +181,52 @@ def read_campaign_aliases():
 UPDATE
 """
 
-update_schema = {
-    'type': 'object',
-    'properties': {
-        'alias': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-        'campaign': {'type': 'string', 'minLength': 1, 'maxLength': 255}
-    },
-    'additionalProperties': False
-}
-
 
 @bp.route('/campaigns/alias/<int:campaign_alias_id>', methods=['PUT'])
 @check_if_token_required
 @validate_json
-@validate_schema(update_schema)
+@validate_schema(campaign_alias_update)
 def update_campaign_alias(campaign_alias_id):
-    """ Updates an existing campaign alias. """
+    """ Updates an existing campaign alias.
+    
+    .. :quickref: CampaignAlias; Updates an existing campaign alias.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      PUT /campaigns/alias/1 HTTP/1.1
+      Host: 127.0.0.1
+      Content-Type: application/json
+
+      {
+        "alias": "Dino",
+        "campaign": "Riders"
+      }
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+        "id": 1,
+        "alias": "Dino",
+        "campaign": "Riders"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Campaign alias updated
+    :status 400: JSON does not match the schema
+    :status 401: Invalid role to perform this action
+    :status 404: Campaign alias ID not found
+    :status 404: Campaign not found
+    :status 409: Campaign alias already exists
+    :status 409: Campaign alias cannot be the same as its name
+    """
 
     data = request.get_json()
 
@@ -150,7 +275,29 @@ DELETE
 @bp.route('/campaigns/alias/<int:campaign_alias_id>', methods=['DELETE'])
 @check_if_token_required
 def delete_campaign_alias(campaign_alias_id):
-    """ Deletes a campaign alias. """
+    """ Deletes a campaign alias.
+    
+    .. :quickref: CampaignAlias; Deletes an campaign alias.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      DELETE /campaigns/alias/1 HTTP/1.1
+      Host: 127.0.0.1
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 204 No Content
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :status 204: Campaign alias deleted
+    :status 401: Invalid role to perform this action
+    :status 404: Campaign alias ID not found
+    :status 409: Unable to delete campaign alias due to foreign key constraints
+    """
 
     campaign_alias = CampaignAlias.query.get(campaign_alias_id)
     if not campaign_alias:

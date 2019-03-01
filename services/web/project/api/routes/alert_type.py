@@ -49,6 +49,8 @@ def create_alert_type():
     :reqheader Authorization: Optional JWT Bearer token
     :resheader Content-Type: application/json
     :status 201: Alert type created
+    :status 400: JSON does not match the schema
+    :status 401: Invalid role to perform this action
     :status 409: Alert type already exists
     """
 
@@ -106,6 +108,7 @@ def read_alert_type(alert_type_id):
     :reqheader Authorization: Optional JWT Bearer token
     :resheader Content-Type: application/json
     :status 200: Alert type found
+    :status 401: Invalid role to perform this action
     :status 404: Alert type ID not found
     """
 
@@ -152,6 +155,7 @@ def read_alert_types():
     :reqheader Authorization: Optional JWT Bearer token
     :resheader Content-Type: application/json
     :status 200: Alert types found
+    :status 401: Invalid role to perform this action
     """
 
     data = AlertType.query.all()
@@ -176,7 +180,7 @@ def update_alert_type(alert_type_id):
 
     .. sourcecode:: http
 
-      POST /api/alerts/type/1 HTTP/1.1
+      PUT /api/alerts/type/1 HTTP/1.1
       Host: 127.0.0.1
       Content-Type: application/json
 
@@ -199,6 +203,8 @@ def update_alert_type(alert_type_id):
     :reqheader Authorization: Optional JWT Bearer token
     :resheader Content-Type: application/json
     :status 200: Alert type updated
+    :status 400: JSON does not match the schema
+    :status 401: Invalid role to perform this action
     :status 404: Alert type ID not found
     :status 409: Alert type already exists
     """
@@ -250,6 +256,7 @@ def delete_alert_type(alert_type_id):
 
     :reqheader Authorization: Optional JWT Bearer token
     :status 204: Alert type deleted
+    :status 401: Invalid role to perform this action
     :status 404: Alert type ID not found
     :status 409: Unable to delete alert type due to foreign key constraints
     """

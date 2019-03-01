@@ -9,6 +9,7 @@ from project.api import bp
 from project.api.decorators import check_if_token_required, validate_json, validate_schema
 from project.api.errors import error_response
 from project.api.helpers import parse_boolean
+from project.api.schemas import indicator_create, indicator_update
 from project.models import Campaign, Indicator, IndicatorConfidence, IndicatorImpact, IndicatorStatus, IndicatorType, \
     IntelReference, IntelSource, Tag, User
 
@@ -16,52 +17,123 @@ from project.models import Campaign, Indicator, IndicatorConfidence, IndicatorIm
 CREATE
 """
 
-create_schema = {
-    'type': 'object',
-    'properties': {
-        'campaigns': {
-            'type': 'array',
-            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-            'minItems': 1
-        },
-        'case_sensitive': {'type': 'boolean'},
-        'confidence': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-        'impact': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-        'references': {
-            'type': 'array',
-            'items': {
-                'type': 'object',
-                'properties': {
-                    'source': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-                    'reference': {'type': 'string', 'minLength': 1, 'maxLength': 512},
-                },
-                'required': ['source', 'reference'],
-                'additionalProperties': False
-            },
-            'minItems': 1
-        },
-        'status': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-        'substring': {'type': 'boolean'},
-        'tags': {
-            'type': 'array',
-            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-            'minItems': 1
-        },
-        'type': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-        'username': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-        'value': {'type': 'string', 'minLength': 1, 'maxLength': 512}
-    },
-    'required': ['username', 'type', 'value'],
-    'additionalProperties': False
-}
-
 
 @bp.route('/indicators', methods=['POST'])
 @check_if_token_required
 @validate_json
-@validate_schema(create_schema)
+@validate_schema(indicator_create)
 def create_indicator():
-    """ Creates a new indicator. """
+    """ Creates a new indicator.
+
+    .. :quickref: Indicator; Creates a new indicator.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      POST /indicators HTTP/1.1
+      Host: 127.0.0.1
+      Content-Type: application/json
+
+      {
+        "campaigns": ["LOLcats", "Derpsters"],
+        "case_sensitive": false,
+        "confidence": "LOW",
+        "impact": "LOW",
+        "references": [
+          {
+            "source": "Your company",
+            "reference": "http://yourwiki.com/page-for-the-event"
+          },
+          {
+            "source": "OSINT",
+            "reference": "http://somehelpfulblog.com/malware-analysis"
+          }
+        ],
+        "status": "NEW",
+        "substring": false,
+        "tags": ["phish", "from_address"],
+        "type": "Email - Address",
+        "username": "your_SIP_username",
+        "value": "badguy@evil.com"
+      }
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 201 Created
+      Content-Type: application/json
+
+      {
+        "all_children": [],
+        "all_equal": [],
+        "campaigns": [
+          {
+            "aliases": [],
+            "created_time": "Thu, 28 Feb 2019 17:10:44 GMT",
+            "id": 1,
+            "modified_time": "Thu, 28 Feb 2019 17:10:44 GMT",
+            "name": "LOLcats"
+          },
+          {
+            "aliases": [],
+            "created_time": "Fri, 01 Mar 2019 17:58:45 GMT",
+            "id": 2,
+            "modified_time": "Fri, 01 Mar 2019 17:58:45 GMT",
+            "name": "Derpsters"
+          }
+        ],
+        "case_sensitive": false,
+        "children": [],
+        "confidence": "LOW",
+        "created_time": "Fri, 01 Mar 2019 18:00:51 GMT",
+        "equal": [],
+        "id": 1,
+        "impact": "LOW",
+        "modified_time": "Fri, 01 Mar 2019 18:00:51 GMT",
+        "parent": null,
+        "references": [
+          {
+            "id": 1,
+            "reference": "http://yourwiki.com/page-for-the-event",
+            "source": "Your company",
+            "user": "your_SIP_username"
+          },
+          {
+            "id": 3,
+            "reference": "http://somehelpfulblog.com/malware-analysis",
+            "source": "OSINT",
+            "user": "your_SIP_username"
+          }
+        ],
+        "status": "NEW",
+        "substring": false,
+        "tags": ["from_address", "phish"],
+        "type": "Email - Address",
+        "user": "your_SIP_username",
+        "value": "badguy@evil.com"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 201: Indicator created
+    :status 400: Confidence not given and no default to select
+    :status 400: Impact not given and no default to select
+    :status 400: Status not given and no default to select
+    :status 400: JSON does not match the schema
+    :status 401: Invalid role to perform this action
+    :status 401: Username is inactive
+    :status 404: Campaign not found
+    :status 404: Confidence not found
+    :status 404: Impact not found
+    :status 404: Reference not found
+    :status 404: Status not found
+    :status 404: Tag not found
+    :status 404: Type not found
+    :status 404: Username not found
+    :status 409: Indicator already exists
+    """
 
     data = request.get_json()
 
@@ -215,7 +287,81 @@ READ
 @bp.route('/indicators/<int:indicator_id>', methods=['GET'])
 @check_if_token_required
 def read_indicator(indicator_id):
-    """ Gets a single indicator given its ID. """
+    """ Gets a single indicator given its ID.
+
+    .. :quickref: Indicator; Gets a single indicator given its ID.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      GET /indicators/1 HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+        "all_children": [],
+        "all_equal": [],
+        "campaigns": [
+          {
+            "aliases": [],
+            "created_time": "Thu, 28 Feb 2019 17:10:44 GMT",
+            "id": 1,
+            "modified_time": "Thu, 28 Feb 2019 17:10:44 GMT",
+            "name": "LOLcats"
+          },
+          {
+            "aliases": [],
+            "created_time": "Fri, 01 Mar 2019 17:58:45 GMT",
+            "id": 2,
+            "modified_time": "Fri, 01 Mar 2019 17:58:45 GMT",
+            "name": "Derpsters"
+          }
+        ],
+        "case_sensitive": false,
+        "children": [],
+        "confidence": "LOW",
+        "created_time": "Fri, 01 Mar 2019 18:00:51 GMT",
+        "equal": [],
+        "id": 1,
+        "impact": "LOW",
+        "modified_time": "Fri, 01 Mar 2019 18:00:51 GMT",
+        "parent": null,
+        "references": [
+          {
+            "id": 1,
+            "reference": "http://yourwiki.com/page-for-the-event",
+            "source": "Your company",
+            "user": "your_SIP_username"
+          },
+          {
+            "id": 3,
+            "reference": "http://somehelpfulblog.com/malware-analysis",
+            "source": "OSINT",
+            "user": "your_SIP_username"
+          }
+        ],
+        "status": "NEW",
+        "substring": false,
+        "tags": ["from_address", "phish"],
+        "type": "Email - Address",
+        "user": "your_SIP_username",
+        "value": "badguy@evil.com"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Indicator found
+    :status 401: Invalid role to perform this action
+    :status 404: Indicator ID not found
+    """
 
     indicator = Indicator.query.get(indicator_id)
     if not indicator:
@@ -227,7 +373,111 @@ def read_indicator(indicator_id):
 @bp.route('/indicators', methods=['GET'])
 @check_if_token_required
 def read_indicators():
-    """ Gets a paginated list of indicators based on various filter criteria. """
+    """ Gets a paginated list of indicators based on various filter criteria.
+
+    .. :quickref: Indicator; Gets a paginated list of indicators based on various filter criteria.
+
+    **Example request**:
+
+    *NOTE*: Multiple query parameters can be used and will be applied with AND logic.
+
+    .. sourcecode:: http
+
+      GET /indicators?value=evil.com&status=NEW HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+        "_links": {
+          "next": null,
+          "prev": null,
+          "self": "/api/indicators?page=1&per_page=10&value=evil.com&status=NEW"
+        },
+        "_meta": {
+          "page": 1,
+          "per_page": 10,
+          "total_items": 1,
+          "total_pages": 1
+        },
+        "items": [
+          {
+            "all_children": [],
+            "all_equal": [],
+            "campaigns": [
+              {
+                "aliases": [],
+                "created_time": "Thu, 28 Feb 2019 17:10:44 GMT",
+                "id": 1,
+                "modified_time": "Thu, 28 Feb 2019 17:10:44 GMT",
+                "name": "LOLcats"
+              },
+              {
+                "aliases": [],
+                "created_time": "Fri, 01 Mar 2019 17:58:45 GMT",
+                "id": 2,
+                "modified_time": "Fri, 01 Mar 2019 17:58:45 GMT",
+                "name": "Derpsters"
+              }
+            ],
+            "case_sensitive": false,
+            "children": [],
+            "confidence": "LOW",
+            "created_time": "Fri, 01 Mar 2019 18:00:51 GMT",
+            "equal": [],
+            "id": 1,
+            "impact": "LOW",
+            "modified_time": "Fri, 01 Mar 2019 18:00:51 GMT",
+            "parent": null,
+            "references": [
+              {
+                "id": 1,
+                "reference": "http://yourwiki.com/page-for-the-event",
+                "source": "Your company",
+                "user": "your_SIP_username"
+              },
+              {
+                "id": 3,
+                "reference": "http://somehelpfulblog.com/malware-analysis",
+                "source": "OSINT",
+                "user": "your_SIP_username"
+              }
+            ],
+            "status": "NEW",
+            "substring": false,
+            "tags": ["from_address", "phish"],
+            "type": "Email - Address",
+            "user": "your_SIP_username",
+            "value": "badguy@evil.com"
+          }
+        ]
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :query case_sensitive: True/False
+    :query confidence: Confidence value
+    :query created_after: Parsable date or datetime in GMT. Ex: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
+    :query created_before: Parsable date or datetime in GMT. Ex: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
+    :query impact: Impact value
+    :query modified_after: Parsable date or datetime in GMT. Ex: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
+    :query modified_before: Parsable date or datetime in GMT. Ex: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
+    :query sources: Comma-separated list of intel sources
+    :query status: Status value
+    :query substring: True/False
+    :query tags: Comma-separated list of tags
+    :query type: Type value
+    :query user: Username of person who created the associated reference
+    :query value: String found in value (uses wildcard search)
+    :status 200: Indicators found
+    :status 401: Invalid role to perform this action
+    """
 
     filters = set()
 
@@ -235,6 +485,10 @@ def read_indicators():
     if 'case_sensitive' in request.args:
         arg = parse_boolean(request.args.get('case_sensitive'), default=None)
         filters.add(Indicator.case_sensitive.is_(arg))
+
+    # Confidence filter
+    if 'confidence' in request.args:
+        filters.add(Indicator.confidence.has(IndicatorConfidence.value == request.args.get('confidence')))
 
     # Created after filter
     if 'created_after' in request.args:
@@ -251,10 +505,6 @@ def read_indicators():
         except (ValueError, OverflowError):
             created_before = datetime.date.min
         filters.add(Indicator.created_time < created_before)
-
-    # Confidence filter
-    if 'confidence' in request.args:
-        filters.add(Indicator.confidence.has(IndicatorConfidence.value == request.args.get('confidence')))
 
     # Impact filter
     if 'impact' in request.args:
@@ -301,6 +551,10 @@ def read_indicators():
     if 'type' in request.args:
         filters.add(Indicator.type.has(IndicatorType.value == request.args.get('type')))
 
+    # Username filter
+    if 'user' in request.args:
+        filters.add(Indicator.references.any(IntelReference.user.has(User.username == request.args.get('user'))))
+
     # Value filter
     if 'value' in request.args:
         filters.add(Indicator.value.like('%{}%'.format(request.args.get('value'))))
@@ -313,41 +567,101 @@ def read_indicators():
 UPDATE
 """
 
-update_schema = {
-    'type': 'object',
-    'properties': {
-        'campaigns': {
-            'type': 'array',
-            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-            'minItems': 1
-        },
-        'case_sensitive': {'type': 'boolean'},
-        'confidence': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-        'impact': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-        'references': {
-            'type': 'array',
-            'items': {'type': 'string', 'minLength': 1, 'maxLength': 512},
-            'minItems': 1
-        },
-        'status': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-        'substring': {'type': 'boolean'},
-        'tags': {
-            'type': 'array',
-            'items': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-            'minItems': 1
-        },
-        'username': {'type': 'string', 'minLength': 1, 'maxLength': 255}
-    },
-    'additionalProperties': False
-}
-
 
 @bp.route('/indicators/<indicator_id>', methods=['PUT'])
 @check_if_token_required
 @validate_json
-@validate_schema(update_schema)
+@validate_schema(indicator_update)
 def update_indicator(indicator_id):
-    """ Updates an existing indicator. """
+    """ Updates an existing indicator.
+
+    .. :quickref: Indicator; Updates an existing indicator.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      PUT /indicators/1 HTTP/1.1
+      Host: 127.0.0.1
+      Content-Type: application/json
+
+      {
+        "confidence": "HIGH",
+        "status": "ENABLED"
+      }
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+        "all_children": [],
+        "all_equal": [],
+        "campaigns": [
+          {
+            "aliases": [],
+            "created_time": "Thu, 28 Feb 2019 17:10:44 GMT",
+            "id": 1,
+            "modified_time": "Thu, 28 Feb 2019 17:10:44 GMT",
+            "name": "LOLcats"
+          },
+          {
+            "aliases": [],
+            "created_time": "Fri, 01 Mar 2019 17:58:45 GMT",
+            "id": 2,
+            "modified_time": "Fri, 01 Mar 2019 17:58:45 GMT",
+            "name": "Derpsters"
+          }
+        ],
+        "case_sensitive": false,
+        "children": [],
+        "confidence": "HIGH",
+        "created_time": "Fri, 01 Mar 2019 18:00:51 GMT",
+        "equal": [],
+        "id": 1,
+        "impact": "LOW",
+        "modified_time": "Fri, 01 Mar 2019 13:37:02 GMT",
+        "parent": null,
+        "references": [
+          {
+            "id": 1,
+            "reference": "http://yourwiki.com/page-for-the-event",
+            "source": "Your company",
+            "user": "your_SIP_username"
+          },
+          {
+            "id": 3,
+            "reference": "http://somehelpfulblog.com/malware-analysis",
+            "source": "OSINT",
+            "user": "your_SIP_username"
+          }
+        ],
+        "status": "ENABLED",
+        "substring": false,
+        "tags": ["from_address", "phish"],
+        "type": "Email - Address",
+        "user": "your_SIP_username",
+        "value": "badguy@evil.com"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Indicator updated
+    :status 400: JSON does not match the schema
+    :status 401: Invalid role to perform this action
+    :status 401: Username is inactive
+    :status 404: Campaign not found
+    :status 404: Confidence not found
+    :status 404: Impact not found
+    :status 404: Indicator ID not found
+    :status 404: Reference not found
+    :status 404: Status not found
+    :status 404: Tag not found
+    :status 404: Username not found
+    """
 
     data = request.get_json()
 
@@ -449,7 +763,29 @@ DELETE
 @bp.route('/indicators/<indicator_id>', methods=['DELETE'])
 @check_if_token_required
 def delete_indicator(indicator_id):
-    """ Deletes an indicator """
+    """ Deletes an indicator.
+
+    .. :quickref: Indicator; Deletes an indicator.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      DELETE /indicators/1 HTTP/1.1
+      Host: 127.0.0.1
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 204 No Content
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :status 204: Indicator deleted
+    :status 401: Invalid role to perform this action
+    :status 404: Indicator ID not found
+    :status 409: Unable to delete indicator due to foreign key constraints
+    """
 
     indicator = Indicator.query.get(indicator_id)
     if not indicator:

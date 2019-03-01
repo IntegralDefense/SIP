@@ -5,29 +5,56 @@ from project import db
 from project.api import bp
 from project.api.decorators import admin_required, check_if_token_required, validate_json, validate_schema
 from project.api.errors import error_response
+from project.api.schemas import role_create, role_update
 from project.models import Role
 
 """
 CREATE
 """
 
-create_schema = {
-    'type': 'object',
-    'properties': {
-        'name': {'type': 'string', 'minLength': 1, 'maxLength': 80},
-        'description': {'type': 'string', 'minLength': 1, 'maxLength': 255}
-    },
-    'required': ['name'],
-    'additionalProperties': False
-}
-
 
 @bp.route('/roles', methods=['POST'])
 @admin_required
 @validate_json
-@validate_schema(create_schema)
+@validate_schema(role_create)
 def create_role():
-    """ Creates a new role. Requires the admin role. """
+    """ Creates a new role. Requires the admin role.
+
+    .. :quickref: Role; Creates a new role. Requires the admin role.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      POST /roles HTTP/1.1
+      Host: 127.0.0.1
+      Content-Type: application/json
+
+      {
+        "name": "analyst",
+        "description": "Users that create and process intel"
+      }
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 201 Created
+      Content-Type: application/json
+
+      {
+        "id": 1,
+        "name": "analyst",
+        "description": "Users that create and process intel"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 201: Role created
+    :status 400: JSON does not match the schema
+    :status 401: Invalid role to perform this action
+    :status 409: Role already exists
+    """
 
     data = request.get_json()
 
@@ -60,7 +87,37 @@ READ
 @bp.route('/roles/<int:role_id>', methods=['GET'])
 @check_if_token_required
 def read_role(role_id):
-    """ Gets a single role given its ID. """
+    """ Gets a single role given its ID.
+
+    .. :quickref: Role; Gets a single role given its ID.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      GET /roles/1 HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+        "id": 1,
+        "name": "analyst",
+        "description": "Users that create and process intel"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Role found
+    :status 401: Invalid role to perform this action
+    :status 404: Role ID not found
+    """
 
     role = Role.query.get(role_id)
     if not role:
@@ -72,7 +129,43 @@ def read_role(role_id):
 @bp.route('/roles', methods=['GET'])
 @check_if_token_required
 def read_roles():
-    """ Gets a list of all the roles. """
+    """ Gets a list of all the roles.
+
+    .. :quickref: Role; Gets a list of all the roles.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      GET /roles HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      [
+        {
+          "id": 1,
+          "name": "analyst",
+          "description": "Users that create and process intel"
+        },
+        {
+          "id": 2,
+          "name": "readonly",
+          "description": "Users that can only read the database"
+        }
+      ]
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Roles found
+    :status 401: Invalid role to perform this action
+    """
 
     data = Role.query.all()
     return jsonify([item.to_dict() for item in data])
@@ -82,22 +175,49 @@ def read_roles():
 UPDATE
 """
 
-update_schema = {
-    'type': 'object',
-    'properties': {
-        'name': {'type': 'string', 'minLength': 1, 'maxLength': 80},
-        'description': {'type': 'string', 'minLength': 1, 'maxLength': 255}
-    },
-    'additionalProperties': False
-}
-
 
 @bp.route('/roles/<int:role_id>', methods=['PUT'])
 @admin_required
 @validate_json
-@validate_schema(update_schema)
+@validate_schema(role_update)
 def update_role(role_id):
-    """ Updates an existing role. Requires the admin role. """
+    """ Updates an existing role. Requires the admin role.
+
+    .. :quickref: Role; Updates an existing role. Requires the admin role.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      PUT /roles/1 HTTP/1.1
+      Host: 127.0.0.1
+      Content-Type: application/json
+
+      {
+        "name": "intelusers"
+      }
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+        "id": 1,
+        "name": "intelusers",
+        "description": "Users that create and process intel"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Role updated
+    :status 400: JSON does not match the schema
+    :status 401: Invalid role to perform this action
+    :status 404: Role ID not found
+    :status 409: Role already exists
+    """
 
     data = request.get_json()
 
@@ -133,7 +253,29 @@ DELETE
 @bp.route('/roles/<int:role_id>', methods=['DELETE'])
 @admin_required
 def delete_role(role_id):
-    """ Deletes a role. Requires the admin role. """
+    """ Deletes a role. Requires the admin role.
+
+    .. :quickref: Role; Deletes a role. Requires the admin role.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      DELETE /roles/1 HTTP/1.1
+      Host: 127.0.0.1
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 204 No Content
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :status 204: Role deleted
+    :status 401: Invalid role to perform this action
+    :status 404: Role ID not found
+    :status 409: Unable to delete role due to foreign key constraints
+    """
 
     role = Role.query.get(role_id)
     if not role:

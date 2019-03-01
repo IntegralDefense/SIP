@@ -1,0 +1,81 @@
+{
+    "type": "object",
+    "properties": {
+        "alerts": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "type": {"type": "string", "minLength": 1, "maxLength": 255},
+                    "url": {"type": "string", "minLength": 1, "maxLength": 512}
+                },
+                "required": ["type", "url"],
+                "additionalProperties": false
+            },
+            "minItems": 1
+        },
+        "attack_vectors": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1, "maxLength": 255},
+            "minItems": 1
+        },
+        "campaign": {"type": "string", "minLength": 1, "maxLength": 255},
+        "description": {"type": "string", "minLength": 1},
+        "disposition": {"type": "string", "minLength": 1, "maxLength": 255},
+        "malware": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name":  {"type": "string", "minLength": 1, "maxLength": 255},
+                    "types": {
+                        "type": "array",
+                        "items": {"type": "string", "minLength": 1, "maxLength": 255},
+                        "minItems": 1
+                    }
+                },
+                "required": ["name"],
+                "additionalProperties": false
+            },
+            "minItems": 1
+        },
+        "name": {"type": "string", "minLength": 1, "maxLength": 255},
+        "prevention_tools": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1, "maxLength": 255},
+            "minItems": 1
+        },
+        "references": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "source": {"type": "string", "minLength": 1, "maxLength": 255},
+                    "reference": {"type": "string", "minLength": 1, "maxLength": 512}
+                },
+                "required": ["source", "reference"],
+                "additionalProperties": false
+            },
+            "minItems": 1
+        },
+        "remediations": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1, "maxLength": 255},
+            "minItems": 1
+        },
+        "status": {"type": "string", "minLength": 1, "maxLength": 255},
+        "tags": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1, "maxLength": 255},
+            "minItems": 1
+        },
+        "types": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1, "maxLength": 255},
+            "minItems": 1
+        },
+        "username": {"type": "string", "minLength": 1, "maxLength": 255}
+    },
+    "required": ["name", "username"],
+    "additionalProperties": false
+}

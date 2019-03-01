@@ -148,5 +148,5 @@ def test_delete(client):
 
     request = client.delete('/api/indicators/{}/{}/relationship'.format(indicator1_response['id'], indicator2_response['id']))
     response = json.loads(request.data.decode())
-    assert request.status_code == 400
+    assert request.status_code == 404
     assert response['msg'] == 'Relationship does not exist'

@@ -5,28 +5,54 @@ from project import db
 from project.api import bp
 from project.api.decorators import check_if_token_required, validate_json, validate_schema
 from project.api.errors import error_response
+from project.api.schemas import value_create, value_update
 from project.models import EventStatus
 
 """
 CREATE
 """
 
-create_schema = {
-    'type': 'object',
-    'properties': {
-        'value': {'type': 'string', 'minLength': 1, 'maxLength': 255}
-    },
-    'required': ['value'],
-    'additionalProperties': False
-}
-
 
 @bp.route('/events/status', methods=['POST'])
 @check_if_token_required
 @validate_json
-@validate_schema(create_schema)
+@validate_schema(value_create)
 def create_event_status():
-    """ Creates a new event status. """
+    """ Creates a new event status.
+    
+    .. :quickref: EventStatus; Creates a new event status.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      POST /events/status HTTP/1.1
+      Host: 127.0.0.1
+      Content-Type: application/json
+
+      {
+        "value": "OPEN"
+      }
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 201 Created
+      Content-Type: application/json
+
+      {
+        "id": 1,
+        "value": "OPEN"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 201: Event status created
+    :status 400: JSON does not match the schema
+    :status 401: Invalid role to perform this action
+    :status 409: Event status already exists
+    """
 
     data = request.get_json()
 
@@ -55,7 +81,36 @@ READ
 @bp.route('/events/status/<int:event_status_id>', methods=['GET'])
 @check_if_token_required
 def read_event_status(event_status_id):
-    """ Gets a single event status given its ID. """
+    """ Gets a single event status given its ID.
+    
+    .. :quickref: EventStatus; Gets a single event status given its ID.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      GET /events/status/1 HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+        "id": 1,
+        "value": "OPEN"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Event status found
+    :status 401: Invalid role to perform this action
+    :status 404: Event status ID not found
+    """
 
     event_status = EventStatus.query.get(event_status_id)
     if not event_status:
@@ -66,8 +121,42 @@ def read_event_status(event_status_id):
 
 @bp.route('/events/status', methods=['GET'])
 @check_if_token_required
-def read_event_statuss():
-    """ Gets a list of all the event statuss. """
+def read_event_statuses():
+    """ Gets a list of all the event statuses.
+    
+    .. :quickref: EventStatus; Gets a list of all the event statuses.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      GET /events/status HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      [
+        {
+          "id": 1,
+          "value": "OPEN"
+        },
+        {
+          "id": 2,
+          "value": "CLOSED"
+        }
+      ]
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Event statuses found
+    :status 401: Invalid role to perform this action
+    """
 
     data = EventStatus.query.all()
     return jsonify([item.to_dict() for item in data])
@@ -77,22 +166,48 @@ def read_event_statuss():
 UPDATE
 """
 
-update_schema = {
-    'type': 'object',
-    'properties': {
-        'value': {'type': 'string', 'minLength': 1, 'maxLength': 255}
-    },
-    'required': ['value'],
-    'additionalProperties': False
-}
-
 
 @bp.route('/events/status/<int:event_status_id>', methods=['PUT'])
 @check_if_token_required
 @validate_json
-@validate_schema(update_schema)
+@validate_schema(value_update)
 def update_event_status(event_status_id):
-    """ Updates an existing event status. """
+    """ Updates an existing event status.
+    
+    .. :quickref: EventStatus; Updates an existing event status.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      PUT /events/status/1 HTTP/1.1
+      Host: 127.0.0.1
+      Content-Type: application/json
+
+      {
+        "value": "CLOSED",
+      }
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+        "id": 1,
+        "value": "CLOSED"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Event status updated
+    :status 400: JSON does not match the schema
+    :status 401: Invalid role to perform this action
+    :status 404: Event status ID not found
+    :status 409: Event status already exists
+    """
 
     data = request.get_json()
 
@@ -122,7 +237,29 @@ DELETE
 @bp.route('/events/status/<int:event_status_id>', methods=['DELETE'])
 @check_if_token_required
 def delete_event_status(event_status_id):
-    """ Deletes an event status. """
+    """ Deletes an event status.
+    
+    .. :quickref: EventStatus; Deletes an event status.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      DELETE /events/status/1 HTTP/1.1
+      Host: 127.0.0.1
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 204 No Content
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :status 204: Event status deleted
+    :status 401: Invalid role to perform this action
+    :status 404: Event status ID not found
+    :status 409: Unable to delete event status due to foreign key constraints
+    """
 
     event_status = EventStatus.query.get(event_status_id)
     if not event_status:

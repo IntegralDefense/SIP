@@ -80,13 +80,13 @@ def test_create_schema(client):
     assert 'too long' in response['msg']
 
 
-def test_create_nonexistent_source(client):
+def test_create_nonexistent_campaign(client):
     """ Ensure an alias cannot be created with a nonexistent campaign """
 
     data = {'alias': 'asdf', 'campaign': 'asdf'}
     request = client.post('/api/campaigns/alias', json=data)
     response = json.loads(request.data.decode())
-    assert request.status_code == 400
+    assert request.status_code == 404
     assert response['msg'] == 'Campaign does not exist'
 
 

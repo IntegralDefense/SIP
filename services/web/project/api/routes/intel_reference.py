@@ -5,6 +5,7 @@ from project import db
 from project.api import bp
 from project.api.decorators import check_if_token_required, validate_json, validate_schema
 from project.api.errors import error_response
+from project.api.schemas import intel_reference_create, intel_reference_update
 from project.models import IntelReference, IntelSource, User
 
 
@@ -12,24 +13,54 @@ from project.models import IntelReference, IntelSource, User
 CREATE
 """
 
-create_schema = {
-    'type': 'object',
-    'properties': {
-        'reference': {'type': 'string', 'minLength': 1, 'maxLength': 512},
-        'source': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-        'username': {'type': 'string', 'minLength': 1, 'maxLength': 255}
-    },
-    'required': ['reference', 'source', 'username'],
-    'additionalProperties': False
-}
-
 
 @bp.route('/intel/reference', methods=['POST'])
 @check_if_token_required
 @validate_json
-@validate_schema(create_schema)
+@validate_schema(intel_reference_create)
 def create_intel_reference():
-    """ Creates a new intel reference. """
+    """ Creates a new intel reference.
+
+    .. :quickref: IntelReference; Creates a new intel reference.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      POST /intel/reference HTTP/1.1
+      Host: 127.0.0.1
+      Content-Type: application/json
+
+      {
+        "reference": "http://yourwiki.com/page-for-the-event",
+        "source": "Your company",
+        "username": "your_SIP_username"
+      }
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 201 Created
+      Content-Type: application/json
+
+      {
+        "id": 1,
+        "reference": "http://yourwiki.com/page-for-the-event",
+        "source": "Your company",
+        "username": "your_SIP_username"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 201: Intel reference created
+    :status 400: JSON does not match the schema
+    :status 401: Invalid role to perform this action
+    :status 401: Username is inactive
+    :status 404: Source not found
+    :status 404: Username not found
+    :status 409: Intel reference already exists
+    """
 
     data = request.get_json()
 
@@ -76,7 +107,38 @@ READ
 @bp.route('/intel/reference/<int:intel_reference_id>', methods=['GET'])
 @check_if_token_required
 def read_intel_reference(intel_reference_id):
-    """ Gets a single intel reference given its ID. """
+    """ Gets a single intel reference given its ID.
+
+    .. :quickref: IntelReference; Gets a single intel reference given its ID.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      GET /intel/reference/1 HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+        "id": 1,
+        "reference": "http://yourwiki.com/page-for-the-event",
+        "source": "Your company",
+        "username": "your_SIP_username"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Intel source found
+    :status 401: Invalid role to perform this action
+    :status 404: Intel source ID not found
+    """
 
     intel_reference = IntelReference.query.get(intel_reference_id)
     if not intel_reference:
@@ -88,16 +150,162 @@ def read_intel_reference(intel_reference_id):
 @bp.route('/intel/reference', methods=['GET'])
 @check_if_token_required
 def read_intel_references():
-    """ Gets a list of all the intel references. """
+    """ Gets a paginated list of all the intel references.
 
-    data = IntelReference.query.all()
-    return jsonify([item.to_dict() for item in data])
+    .. :quickref: IntelReference; Gets a paginated list of all the intel references.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      GET /intel/reference HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+        "_links": {
+          "next": null,
+          "prev": null,
+          "self": "/api/intel/reference?page=1&per_page=10"
+        },
+        "_meta": {
+          "page": 1,
+          "per_page": 10,
+          "total_items": 3,
+          "total_pages": 1
+        },
+        "items": [
+          {
+            "id": 1,
+            "reference": "http://yourwiki.com/page-for-the-event",
+            "source": "Your company",
+            "user": "your_SIP_username"
+          },
+          {
+            "id": 2,
+            "reference": "http://yourwiki.com/event2",
+            "source": "Your company",
+            "user": "your_SIP_username"
+          },
+          {
+            "id": 3,
+            "reference": "http://somehelpfulblog.com/malware-analysis",
+            "source": "OSINT",
+            "user": "your_SIP_username"
+          }
+        ]
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Intel references found
+    :status 401: Invalid role to perform this action
+    """
+
+    filters = set()
+    data = IntelReference.to_collection_dict(IntelReference.query.filter(*filters), 'api.read_intel_references', **request.args)
+    return jsonify(data)
 
 
 @bp.route('/intel/reference/<int:intel_reference_id>/indicators', methods=['GET'])
 @check_if_token_required
 def read_intel_reference_indicators(intel_reference_id):
-    """ Gets a paginated list of the indicators associated with the intel reference """
+    """ Gets a paginated list of the indicators associated with the intel reference.
+
+    .. :quickref: Indicator; Gets a paginated list of the indicators associated with the intel reference.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      GET /intel/reference/1/indicators HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+        "_links": {
+          "next": null,
+          "prev": null,
+          "self": "/api/intel/reference/1/indicators?page=1&per_page=10"
+        },
+        "_meta": {
+          "page": 1,
+          "per_page": 10,
+          "total_items": 1,
+          "total_pages": 1
+        },
+        "items": [
+          {
+            "all_children": [],
+            "all_equal": [],
+            "campaigns": [
+              {
+                "aliases": [],
+                "created_time": "Thu, 28 Feb 2019 17:10:44 GMT",
+                "id": 1,
+                "modified_time": "Thu, 28 Feb 2019 17:10:44 GMT",
+                "name": "LOLcats"
+              },
+              {
+                "aliases": [],
+                "created_time": "Fri, 01 Mar 2019 17:58:45 GMT",
+                "id": 2,
+                "modified_time": "Fri, 01 Mar 2019 17:58:45 GMT",
+                "name": "Derpsters"
+              }
+            ],
+            "case_sensitive": false,
+            "children": [],
+            "confidence": "LOW",
+            "created_time": "Fri, 01 Mar 2019 18:00:51 GMT",
+            "equal": [],
+            "id": 2,
+            "impact": "LOW",
+            "modified_time": "Fri, 01 Mar 2019 18:00:51 GMT",
+            "parent": null,
+            "references": [
+              {
+                "id": 1,
+                "reference": "http://yourwiki.com/page-for-the-event",
+                "source": "Your company",
+                "user": "your_SIP_username"
+              },
+              {
+                "id": 3,
+                "reference": "http://somehelpfulblog.com/malware-analysis",
+                "source": "OSINT",
+                "user": "your_SIP_username"
+              }
+            ],
+            "status": "NEW",
+            "substring": false,
+            "tags": ["from_address", "phish"],
+            "type": "Email - Address",
+            "user": "your_SIP_username",
+            "value": "badguy@evil.com"
+          }
+        ]
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Indicators found
+    :status 401: Invalid role to perform this action
+    """
 
     intel_reference = IntelReference.query.get(intel_reference_id)
     if not intel_reference:
@@ -116,23 +324,53 @@ def read_intel_reference_indicators(intel_reference_id):
 UPDATE
 """
 
-update_schema = {
-    'type': 'object',
-    'properties': {
-        'reference': {'type': 'string', 'minLength': 1, 'maxLength': 512},
-        'source': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-        'username': {'type': 'string', 'minLength': 1, 'maxLength': 255}
-    },
-    'additionalProperties': False
-}
-
 
 @bp.route('/intel/reference/<int:intel_reference_id>', methods=['PUT'])
 @check_if_token_required
 @validate_json
-@validate_schema(update_schema)
+@validate_schema(intel_reference_update)
 def update_intel_reference(intel_reference_id):
-    """ Updates an existing intel reference. """
+    """ Updates an existing intel reference.
+
+    .. :quickref: IntelReference; Updates an existing intel reference.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      PUT /intel/source/1 HTTP/1.1
+      Host: 127.0.0.1
+      Content-Type: application/json
+
+      {
+        "reference": "d41d8cd98f00b204e9800998ecf8427e"
+      }
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+        "id": 1,
+        "reference": "d41d8cd98f00b204e9800998ecf8427e",
+        "source": "Your company",
+        "username": "your_SIP_username"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Intel reference updated
+    :status 400: JSON does not match the schema
+    :status 401: Invalid role to perform this action
+    :status 401: Username is inactive
+    :status 404: Intel reference ID not found
+    :status 404: Intel source not found
+    :status 404: Username not found
+    :status 409: Intel reference already exists
+    """
 
     data = request.get_json()
 
@@ -188,7 +426,29 @@ DELETE
 @bp.route('/intel/reference/<int:intel_reference_id>', methods=['DELETE'])
 @check_if_token_required
 def delete_intel_reference(intel_reference_id):
-    """ Deletes an intel reference. """
+    """ Deletes an intel reference.
+
+    .. :quickref: IntelReference; Deletes an intel reference.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      DELETE /intel/reference/1 HTTP/1.1
+      Host: 127.0.0.1
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 204 No Content
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :status 204: Intel reference deleted
+    :status 401: Invalid role to perform this action
+    :status 404: Intel reference ID not found
+    :status 409: Unable to delete intel reference due to foreign key constraints
+    """
 
     intel_reference = IntelReference.query.get(intel_reference_id)
     if not intel_reference:

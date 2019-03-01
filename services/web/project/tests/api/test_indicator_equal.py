@@ -46,8 +46,8 @@ def test_create_duplicate(client):
 
     request = client.post('/api/indicators/{}/{}/equal'.format(indicator1_response['id'], indicator2_response['id']))
     response = json.loads(request.data.decode())
-    assert request.status_code == 400
-    assert response['msg'] == 'The indicators are already equal'
+    assert request.status_code == 409
+    assert response['msg'] == 'The indicators are already directly or indirectly equal'
 
 
 def test_create_missing_token(app, client):
@@ -148,5 +148,5 @@ def test_delete(client):
 
     request = client.delete('/api/indicators/{}/{}/equal'.format(indicator1_response['id'], indicator2_response['id']))
     response = json.loads(request.data.decode())
-    assert request.status_code == 400
+    assert request.status_code == 404
     assert response['msg'] == 'Relationship does not exist or the indicators are not directly equal'

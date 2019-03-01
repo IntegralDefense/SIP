@@ -5,28 +5,54 @@ from project import db
 from project.api import bp
 from project.api.decorators import check_if_token_required, validate_json, validate_schema
 from project.api.errors import error_response
+from project.api.schemas import value_create, value_update
 from project.models import Tag
 
 """
 CREATE
 """
 
-create_schema = {
-    'type': 'object',
-    'properties': {
-        'value': {'type': 'string', 'minLength': 1, 'maxLength': 255}
-    },
-    'required': ['value'],
-    'additionalProperties': False
-}
-
 
 @bp.route('/tags', methods=['POST'])
 @check_if_token_required
 @validate_json
-@validate_schema(create_schema)
+@validate_schema(value_create)
 def create_tag():
-    """ Creates a new tag. """
+    """ Creates a new tag.
+    
+    .. :quickref: Tag; Creates a new tag.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      POST /tags HTTP/1.1
+      Host: 127.0.0.1
+      Content-Type: application/json
+
+      {
+        "value": "phish"
+      }
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 201 Created
+      Content-Type: application/json
+
+      {
+        "id": 1,
+        "value": "phish"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 201: Tag created
+    :status 400: JSON does not match the schema
+    :status 401: Invalid role to perform this action
+    :status 409: Tag already exists
+    """
 
     data = request.get_json()
 
@@ -54,7 +80,36 @@ READ
 @bp.route('/tags/<int:tag_id>', methods=['GET'])
 @check_if_token_required
 def read_tag(tag_id):
-    """ Gets a single tag given its ID. """
+    """ Gets a single tag given its ID.
+    
+    .. :quickref: Tag; Gets a single tag given its ID.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      GET /tags/1 HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+        "id": 1,
+        "value": "phish"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Tag found
+    :status 401: Invalid role to perform this action
+    :status 404: Tag ID not found
+    """
 
     tag = Tag.query.get(tag_id)
     if not tag:
@@ -66,7 +121,41 @@ def read_tag(tag_id):
 @bp.route('/tags', methods=['GET'])
 @check_if_token_required
 def read_tags():
-    """ Gets a list of all the tags. """
+    """ Gets a list of all the tags.
+    
+    .. :quickref: Tag; Gets a list of all the tags.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      GET /tags HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      [
+        {
+          "id": 1,
+          "value": "phish"
+        },
+        {
+          "id": 2,
+          "value": "from_address"
+        }
+      ]
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Tags found
+    :status 401: Invalid role to perform this action
+    """
 
     data = Tag.query.all()
     return jsonify([item.to_dict() for item in data])
@@ -76,22 +165,48 @@ def read_tags():
 UPDATE
 """
 
-update_schema = {
-    'type': 'object',
-    'properties': {
-        'value': {'type': 'string', 'minLength': 1, 'maxLength': 255}
-    },
-    'required': ['value'],
-    'additionalProperties': False
-}
-
 
 @bp.route('/tags/<int:tag_id>', methods=['PUT'])
 @check_if_token_required
 @validate_json
-@validate_schema(update_schema)
+@validate_schema(value_update)
 def update_tag(tag_id):
-    """ Updates an existing tag. """
+    """ Updates an existing tag.
+    
+    .. :quickref: Tag; Updates an existing tag.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      PUT /tags/1 HTTP/1.1
+      Host: 127.0.0.1
+      Content-Type: application/json
+
+      {
+        "value": "from_address",
+      }
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Content-Type: application/json
+
+      {
+        "id": 1,
+        "value": "from_address"
+      }
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :resheader Content-Type: application/json
+    :status 200: Tag updated
+    :status 400: JSON does not match the schema
+    :status 401: Invalid role to perform this action
+    :status 404: Tag ID not found
+    :status 409: Tag already exists
+    """
 
     data = request.get_json()
 
@@ -121,7 +236,29 @@ DELETE
 @bp.route('/tags/<int:tag_id>', methods=['DELETE'])
 @check_if_token_required
 def delete_tag(tag_id):
-    """ Deletes a tag. """
+    """ Deletes a tag.
+    
+    .. :quickref: Tag; Deletes a tag.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      DELETE /tags/1 HTTP/1.1
+      Host: 127.0.0.1
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 204 No Content
+
+    :reqheader Authorization: Optional JWT Bearer token
+    :status 204: Tag deleted
+    :status 401: Invalid role to perform this action
+    :status 404: Tag ID not found
+    :status 409: Unable to delete tag due to foreign key constraints
+    """
 
     tag = Tag.query.get(tag_id)
     if not tag:
