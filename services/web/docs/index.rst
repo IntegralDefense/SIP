@@ -6,8 +6,11 @@
 .. include:: ../../../README.rst
 
 .. toctree::
+   :hidden:
    :maxdepth: 2
    :caption: Contents:
 
    Overview <self>
    API <api>
+   Running SIP <running>
+   Setup <setup>
