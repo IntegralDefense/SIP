@@ -1,5 +1,11 @@
+.. _api:
+
 API
 ***
+
+**DEV**: :code:`https://127.0.0.1:4443/api`
+
+**PRODUCTION**: :code:`https://127.0.0.1/api`
 
 .. toctree::
    :maxdepth: 1

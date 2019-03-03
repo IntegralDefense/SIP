@@ -6,8 +6,12 @@
 .. include:: ../../../README.rst
 
 .. toctree::
+   :hidden:
    :maxdepth: 2
    :caption: Contents:
 
    Overview <self>
    API <api>
+   GUI <gui>
+   Scripts <scripts>
+   Setup <setup>
