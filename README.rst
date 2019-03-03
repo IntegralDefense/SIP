@@ -24,7 +24,7 @@ SIP is the product of years worth of hands-on experience and insight from some o
 Getting Started
 ---------------
 
-1. :ref:`setup` SIP
-2. Use the included :ref:`scripts` to start and stop SIP
-3. Access the SIP :ref:`api`
-4. Access the SIP :ref:`gui`
+1. `Setup <https://simple-intel-platform.readthedocs.io/en/latest/setup.html>`_ SIP
+2. Use the included `scripts <https://simple-intel-platform.readthedocs.io/en/latest/scripts.html>`_ to start and stop SIP
+3. Access the SIP `API <https://simple-intel-platform.readthedocs.io/en/latest/api.html>`_
+4. Access the SIP `GUI <https://simple-intel-platform.readthedocs.io/en/latest/gui.html>`_
