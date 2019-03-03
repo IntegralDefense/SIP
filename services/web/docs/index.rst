@@ -12,5 +12,6 @@
 
    Overview <self>
    API <api>
-   Running SIP <running>
+   GUI <gui>
+   Scripts <scripts>
    Setup <setup>

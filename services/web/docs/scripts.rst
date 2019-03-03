@@ -1,10 +1,26 @@
-Running SIP
-***********
+.. _scripts:
+
+Scripts
+*******
 
 .. contents::
   :backlinks: none
 
-After you have setup SIP with the included setup script, the following commands and scripts will help you to easily run and maintain SIP.
+After you have setup SIP, the included scripts will help you to easily run and maintain SIP.
+
+**Start**
+
+::
+   
+   $ bin/start-DEV.sh
+   $ bin/start-PROD.sh
+
+**Stop**
+
+::
+
+   $ bin/stop-DEV.sh
+   $ bin/stop-PROD.sh
 
 Integration Tests
 -----------------
