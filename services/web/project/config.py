@@ -17,6 +17,7 @@ class BaseConfig:
     # Flask-JWT-Extended
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
     JWT_ACCESS_TOKEN_EXPIRES = datetime.timedelta(days=1)
+    JWT_REFRESH_TOKEN_EXPIRES = datetime.timedelta(days=30)
 
     # Flask-Security
     SECURITY_PASSWORD_HASH = 'pbkdf2_sha512'
@@ -72,21 +73,7 @@ class BaseConfig:
     The default behavior will be to automatically create these supporting objects. 
     """
 
-    ALERT_AUTO_CREATE_ALERTTYPE = True
-
     CAMPAIGN_AUTO_CREATE_CAMPAIGNALIAS = True
-
-    EVENT_AUTO_CREATE_ALERT = True
-    EVENT_AUTO_CREATE_CAMPAIGN = True
-    EVENT_AUTO_CREATE_EVENTATTACKVECTOR = True
-    EVENT_AUTO_CREATE_EVENTDISPOSITION = True
-    EVENT_AUTO_CREATE_EVENTPREVENTIONTOOL = True
-    EVENT_AUTO_CREATE_EVENTREMEDIATION = True
-    EVENT_AUTO_CREATE_EVENTSTATUS = True
-    EVENT_AUTO_CREATE_EVENTTYPE = True
-    EVENT_AUTO_CREATE_INTELREFERENCE = True
-    EVENT_AUTO_CREATE_MALWARE = True
-    EVENT_AUTO_CREATE_TAG = True
 
     INDICATOR_AUTO_CREATE_CAMPAIGN = True
     INDICATOR_AUTO_CREATE_INDICATORCONFIDENCE = True
@@ -97,8 +84,6 @@ class BaseConfig:
     INDICATOR_AUTO_CREATE_TAG = True
 
     INTELREFERENCE_AUTO_CREATE_INTELSOURCE = True
-
-    MALWARE_AUTO_CREATE_MALWARETYPE = True
 
 
 class DevelopmentConfig(BaseConfig):

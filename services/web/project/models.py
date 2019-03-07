@@ -67,43 +67,6 @@ class PaginatedAPIMixin:
 ASSOCIATION TABLES
 """
 
-event_attack_vector_association = db.Table('event_attack_vector_mapping',
-                                           db.Column('event_id', db.Integer, db.ForeignKey('event.id')),
-                                           db.Column('event_attack_vector_id', db.Integer,
-                                                     db.ForeignKey('event_attack_vector.id'))
-                                           )
-
-event_malware_association = db.Table('event_malware_mapping',
-                                     db.Column('event_id', db.Integer, db.ForeignKey('event.id')),
-                                     db.Column('malware_id', db.Integer, db.ForeignKey('malware.id'))
-                                     )
-
-event_prevention_tool_association = db.Table('event_prevention_tool_mapping',
-                                             db.Column('event_id', db.Integer, db.ForeignKey('event.id')),
-                                             db.Column('event_prevention_tool_id', db.Integer,
-                                                       db.ForeignKey('event_prevention_tool.id'))
-                                             )
-
-event_reference_association = db.Table('event_reference_mapping',
-                                       db.Column('event_id', db.Integer, db.ForeignKey('event.id')),
-                                       db.Column('intel_reference_id', db.Integer, db.ForeignKey('intel_reference.id'))
-                                       )
-
-event_remediation_association = db.Table('event_remediation_mapping',
-                                         db.Column('event_id', db.Integer, db.ForeignKey('event.id')),
-                                         db.Column('event_remediation_id', db.Integer,
-                                                   db.ForeignKey('event_remediation.id'))
-                                         )
-
-event_tag_association = db.Table('event_tag_mapping',
-                                 db.Column('event_id', db.Integer, db.ForeignKey('event.id')),
-                                 db.Column('tag_id', db.Integer, db.ForeignKey('tag.id'))
-                                 )
-
-event_type_association = db.Table('event_type_mapping',
-                                  db.Column('event_id', db.Integer, db.ForeignKey('event.id')),
-                                  db.Column('event_type_id', db.Integer, db.ForeignKey('event_type.id'))
-                                  )
 
 indicator_campaign_association = db.Table('indicator_campaign_mapping',
                                           db.Column('indicator_id', db.Integer, db.ForeignKey('indicator.id')),
@@ -134,11 +97,6 @@ indicator_tag_association = db.Table('indicator_tag_mapping',
                                      db.Column('indicator_id', db.Integer, db.ForeignKey('indicator.id')),
                                      db.Column('tag_id', db.Integer, db.ForeignKey('tag.id'))
                                      )
-
-malware_type_association = db.Table('malware_type_mapping',
-                                    db.Column('malware_id', db.Integer, db.ForeignKey('malware.id')),
-                                    db.Column('malware_type_id', db.Integer, db.ForeignKey('malware_type.id'))
-                                    )
 
 roles_users_association = db.Table('role_user_mapping',
                                    db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
@@ -186,39 +144,6 @@ class User(UserMixin, db.Model):
                 'last_name': self.last_name,
                 'roles': sorted([r.name for r in self.roles]),
                 'username': self.username}
-    
-    
-class Alert(PaginatedAPIMixin, db.Model):
-    __tablename__ = 'alert'
-
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
-    type = db.relationship('AlertType')
-    type_id = db.Column(db.Integer, db.ForeignKey('alert_type.id'), nullable=False)
-    url = db.Column(db.String(512), unique=True, nullable=False)
-    event_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
-
-    def __str__(self):
-        return str(self.url)
-
-    def to_dict(self):
-        return {'id': self.id,
-                'event': self.event.name,
-                'type': self.type.value,
-                'url': self.url}
-
-
-class AlertType(db.Model):
-    __tablename__ = 'alert_type'
-
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
-    value = db.Column(db.String(255), unique=True, nullable=False)
-
-    def __str__(self):
-        return str(self.value)
-
-    def to_dict(self):
-        return {'id': self.id,
-                'value': self.value}
 
 
 class Campaign(db.Model):
@@ -256,140 +181,6 @@ class CampaignAlias(db.Model):
         return {'id': self.id,
                 'alias': self.alias,
                 'campaign': self.campaign.name}
-
-
-class Event(PaginatedAPIMixin, db.Model):
-    __tablename__ = 'event'
-
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
-
-    alerts = db.relationship('Alert', backref='event')
-
-    attack_vectors = db.relationship('EventAttackVector', secondary=event_attack_vector_association)
-    campaign = db.relationship('Campaign')
-    campaign_id = db.Column(db.Integer, db.ForeignKey('campaign.id'), nullable=True)
-    created_time = db.Column(db.DateTime, default=datetime.utcnow)
-    description = db.Column(db.UnicodeText)
-    disposition = db.relationship('EventDisposition')
-    disposition_id = db.Column(db.Integer, db.ForeignKey('event_disposition.id'), nullable=True)
-    malware = db.relationship('Malware', secondary=event_malware_association)
-    modified_time = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    name = db.Column(db.String(255), unique=True, nullable=False)
-    prevention_tools = db.relationship('EventPreventionTool', secondary=event_prevention_tool_association)
-    references = db.relationship('IntelReference', secondary=event_reference_association)
-    remediations = db.relationship('EventRemediation', secondary=event_remediation_association)
-    status = db.relationship('EventStatus')
-    status_id = db.Column(db.Integer, db.ForeignKey('event_status.id'), nullable=False)
-    tags = db.relationship('Tag', secondary=event_tag_association)
-    types = db.relationship('EventType', secondary=event_type_association)
-    user = db.relationship('User')
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
-    def __str__(self):
-        return str(self.name)
-
-    def to_dict(self):
-        return {'id': self.id,
-                'alerts': [a.to_dict() for a in self.alerts],
-                'attack_vectors': sorted([at.value for at in self.attack_vectors]),
-                'campaign': self.campaign.to_dict() if self.campaign else None,
-                'created_time': self.created_time,
-                'description': self.description,
-                'disposition': self.disposition.value if self.disposition else None,
-                'malware': [m.to_dict() for m in self.malware],
-                'modified_time': self.modified_time,
-                'name': self.name,
-                'prevention_tools': sorted([p.value for p in self.prevention_tools]),
-                'remediations': sorted([r.value for r in self.remediations]),
-                'references': [r.to_dict() for r in self.references],
-                'status': self.status.value if self.status else None,
-                'tags': sorted([t.value for t in self.tags]),
-                'types': sorted([t.value for t in self.types]),
-                'user': self.user.username}
-
-
-class EventAttackVector(db.Model):
-    __tablename__ = 'event_attack_vector'
-
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
-    value = db.Column(db.String(255), unique=True, nullable=False)
-
-    def __str__(self):
-        return str(self.value)
-
-    def to_dict(self):
-        return {'id': self.id,
-                'value': self.value}
-
-
-class EventDisposition(db.Model):
-    __tablename__ = 'event_disposition'
-
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
-    value = db.Column(db.String(255), unique=True, nullable=False)
-
-    def __str__(self):
-        return str(self.value)
-
-    def to_dict(self):
-        return {'id': self.id,
-                'value': self.value}
-
-
-class EventPreventionTool(db.Model):
-    __tablename__ = 'event_prevention_tool'
-
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
-    value = db.Column(db.String(255), unique=True, nullable=False)
-
-    def __str__(self):
-        return str(self.value)
-
-    def to_dict(self):
-        return {'id': self.id,
-                'value': self.value}
-
-
-class EventRemediation(db.Model):
-    __tablename__ = 'event_remediation'
-
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
-    value = db.Column(db.String(255), unique=True, nullable=False)
-
-    def __str__(self):
-        return str(self.value)
-
-    def to_dict(self):
-        return {'id': self.id,
-                'value': self.value}
-
-
-class EventStatus(db.Model):
-    __tablename__ = 'event_status'
-
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
-    value = db.Column(db.String(255), unique=True, nullable=False)
-
-    def __str__(self):
-        return str(self.value)
-
-    def to_dict(self):
-        return {'id': self.id,
-                'value': self.value}
-
-
-class EventType(db.Model):
-    __tablename__ = 'event_type'
-
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
-    value = db.Column(db.String(255), unique=True, nullable=False)
-
-    def __str__(self):
-        return str(self.value)
-
-    def to_dict(self):
-        return {'id': self.id,
-                'value': self.value}
 
 
 class Indicator(PaginatedAPIMixin, db.Model):
@@ -649,36 +440,6 @@ class IntelReference(PaginatedAPIMixin, db.Model):
 
 class IntelSource(db.Model):
     __tablename__ = 'intel_source'
-
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
-    value = db.Column(db.String(255), unique=True, nullable=False)
-
-    def __str__(self):
-        return str(self.value)
-
-    def to_dict(self):
-        return {'id': self.id,
-                'value': self.value}
-
-
-class Malware(db.Model):
-    __tablename__ = 'malware'
-
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
-    name = db.Column(db.String(255), unique=True, nullable=False)
-    types = db.relationship('MalwareType', secondary=malware_type_association)
-
-    def __str__(self):
-        return str(self.name)
-
-    def to_dict(self):
-        return {'id': self.id,
-                'name': self.name,
-                'types': sorted([mt.value for mt in self.types])}
-
-
-class MalwareType(db.Model):
-    __tablename__ = 'malware_type'
 
     id = db.Column(db.Integer, primary_key=True, nullable=False)
     value = db.Column(db.String(255), unique=True, nullable=False)

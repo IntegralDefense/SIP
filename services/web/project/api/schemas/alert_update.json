@@ -1,9 +1,0 @@
-{
-    "type": "object",
-    "properties": {
-        "event": {"type": "string", "minLength": 1, "maxLength": 255},
-        "type": {"type": "string", "minLength": 1, "maxLength": 255},
-        "url": {"type": "string", "minLength": 1, "maxLength": 512}
-    },
-    "additionalProperties": false
-}
