@@ -524,20 +524,6 @@ def test_delete_invalid_role(app, client):
     assert response['msg'] == 'user_does_not_have_this_role role required'
 
 
-def test_delete_foreign_key_event(client):
-    """ Ensure you cannot delete with foreign key constraints """
-
-    reference_request, reference_response = create_intel_reference(client, 'analyst', 'OSINT', 'http://blahblah.com')
-    event_request, event_response = create_event(client, 'test_event', 'analyst', intel_reference='http://blahblah.com', intel_source='OSINT')
-    assert reference_request.status_code == 201
-    assert event_request.status_code == 201
-
-    request = client.delete('/api/intel/reference/{}'.format(reference_response['id']))
-    response = json.loads(request.data.decode())
-    assert request.status_code == 409
-    assert response['msg'] == 'Unable to delete intel reference due to foreign key constraints'
-
-
 def test_delete_foreign_key_indicator(client):
     """ Ensure you cannot delete with foreign key constraints """
 

@@ -751,23 +751,6 @@ def test_delete_invalid_role(app, client):
     assert response['msg'] == 'admin role required'
 
 
-def test_delete_foreign_key_event(client):
-    """ Ensure you cannot delete with foreign key constraints """
-
-    access_token, refresh_token = obtain_token(client, 'admin', 'admin')
-    headers = create_auth_header(access_token)
-
-    user_request, user_response = create_user(client, 'asdf@asdf.com', 'asdf', 'asdf', 'asdf', ['analyst'], 'some_guy')
-    event_request, event_response = create_event(client, 'test_event', 'some_guy')
-    assert user_request.status_code == 201
-    assert event_request.status_code == 201
-
-    request = client.delete('/api/users/{}'.format(user_response['id']), headers=headers)
-    response = json.loads(request.data.decode())
-    assert request.status_code == 409
-    assert response['msg'] == 'Unable to delete user due to foreign key constraints'
-
-
 def test_delete_foreign_key_indicator(client):
     """ Ensure you cannot delete with foreign key constraints """
 

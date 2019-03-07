@@ -11,21 +11,6 @@ def obtain_token(client, username, password):
     return response['access_token'], response['refresh_token']
 
 
-def create_alert(client, event, type_, url):
-    data = {'event': event, 'type': type_, 'url': url}
-    create_alert_type(client, type_)
-    request = client.post('/api/alerts', json=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_alert_type(client, _type):
-    data = {'value': _type}
-    request = client.post('/api/alerts/type', json=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
 def create_campaign(client, campaign, aliases=[]):
     data = {'name': campaign}
     if aliases:
@@ -38,101 +23,6 @@ def create_campaign(client, campaign, aliases=[]):
 def create_campaign_alias(client, alias, campaign):
     data = {'alias': alias, 'campaign': campaign}
     request = client.post('/api/campaigns/alias', json=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_event(client, name, username, alerts=[], attack_vectors=[], campaign='', description='', disposition='', malware=[],
-                 prevention_tools=[], remediations=[], status='', tags=[], types=[], intel_reference='', intel_source=''):
-    if not disposition:
-        disposition = 'DELIVERY'
-    create_event_disposition(client, disposition)
-
-    if not status:
-        status = 'OPEN'
-    create_event_status(client, status)
-
-    data = {'name': name, 'username': username, 'disposition': disposition, 'status': status}
-    if alerts:
-        for alert in alerts:
-            create_alert(client, name, alert['type'], alert['url'])
-        data['alerts'] = alerts
-    if attack_vectors:
-        for attack_vector in attack_vectors:
-            create_event_attack_vector(client, attack_vector)
-        data['attack_vectors'] = attack_vectors
-    if campaign:
-        create_campaign(client, campaign)
-        data['campaign'] = campaign
-    if description:
-        data['description'] = description
-    if malware:
-        for m in malware:
-            create_malware(client, m['name'], types=m['types'])
-        data['malware'] = malware
-    if prevention_tools:
-        for prevention_tool in prevention_tools:
-            create_event_prevention_tool(client, prevention_tool)
-        data['prevention_tools'] = prevention_tools
-    if remediations:
-        for remediation in remediations:
-            create_event_remediation(client, remediation)
-        data['remediations'] = remediations
-    if tags:
-        for tag in tags:
-            create_tag(client, tag)
-        data['tags'] = tags
-    if types:
-        for t in types:
-            create_event_type(client, t)
-        data['types'] = types
-    if intel_reference and intel_source:
-        create_intel_reference(client, username, intel_source, intel_reference)
-        data['references'] = [{'source': intel_source, 'reference': intel_reference}]
-
-    request = client.post('/api/events', json=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_event_attack_vector(client, attack_vector):
-    data = {'value': attack_vector}
-    request = client.post('/api/events/attackvector', json=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_event_disposition(client, disposition):
-    data = {'value': disposition}
-    request = client.post('/api/events/disposition', json=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_event_prevention_tool(client, prevention_tool):
-    data = {'value': prevention_tool}
-    request = client.post('/api/events/preventiontool', json=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_event_remediation(client, remediation):
-    data = {'value': remediation}
-    request = client.post('/api/events/remediation', json=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_event_status(client, status):
-    data = {'value': status}
-    request = client.post('/api/events/status', json=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_event_type(client, _type):
-    data = {'value': _type}
-    request = client.post('/api/events/type', json=data)
     response = json.loads(request.data.decode())
     return request, response
 
@@ -212,22 +102,6 @@ def create_intel_reference(client, username, source, reference):
 def create_intel_source(client, source):
     data = {'value': source}
     request = client.post('/api/intel/source', json=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_malware(client, malware, types=[]):
-    data = {'name': malware}
-    if types:
-        data['types'] = types
-    request = client.post('/api/malware', json=data)
-    response = json.loads(request.data.decode())
-    return request, response
-
-
-def create_malware_type(client, _type):
-    data = {'value': _type}
-    request = client.post('/api/malware/type', json=data)
     response = json.loads(request.data.decode())
     return request, response
 

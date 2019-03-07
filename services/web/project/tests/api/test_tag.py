@@ -332,20 +332,6 @@ def test_delete_invalid_role(app, client):
     assert response['msg'] == 'user_does_not_have_this_role role required'
 
 
-def test_delete_foreign_key_event(client):
-    """ Ensure you cannot delete with foreign key constraints """
-
-    tag_request, tag_response = create_tag(client, 'phish')
-    event_request, event_response = create_event(client, 'test_event', 'analyst', tags=['phish'])
-    assert tag_request.status_code == 201
-    assert event_request.status_code == 201
-
-    request = client.delete('/api/tags/{}'.format(tag_response['id']))
-    response = json.loads(request.data.decode())
-    assert request.status_code == 409
-    assert response['msg'] == 'Unable to delete tag due to foreign key constraints'
-
-
 def test_delete_foreign_key_indicator(client):
     """ Ensure you cannot delete with foreign key constraints """
 
