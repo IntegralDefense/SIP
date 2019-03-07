@@ -19,18 +19,11 @@ This file contains a list of initial values that will be added to the database d
 
 The values include:
 
-- Event attack vectors
-- Event dispositions (first value will be used as the default)
-- Event prevention tools
-- Event remediations
-- Event statuses (first value will be used as the default)
-- Event types
 - Indicator confidences (first value will be used as the default)
 - Indicator impacts (first value will be used as the default)
 - Indicator statuses (first value will be used as the default)
 - Indicator types
 - Intel sources
-- Malware types
 
 Setup Script
 ------------
@@ -123,12 +116,12 @@ Example output from the setup script is shown below:
     ---> Using cache
     ---> 18ad61b7f770
    Step 7/8 : COPY . /usr/src/app
-    ---> adf5d5cee3b1
+    ---> 74a7f1ef420e
    Step 8/8 : CMD ["/usr/src/app/entrypoint-DEV.sh"]
-    ---> Running in 5e35098b74e0
-   Removing intermediate container 5e35098b74e0
-    ---> 85357ee46ca2
-   Successfully built 85357ee46ca2
+    ---> Running in 3751f57a9945
+   Removing intermediate container 3751f57a9945
+    ---> adb4c05e4380
+   Successfully built adb4c05e4380
    Successfully tagged sip_web-dev:latest
    Building nginx-dev
    Step 1/4 : FROM nginx:1.15.6-alpine
@@ -140,8 +133,9 @@ Example output from the setup script is shown below:
     ---> Using cache
     ---> 9711b1acf628
    Step 4/4 : ADD certs/ /etc/nginx/certs
-    ---> 39be5399dbd1
-   Successfully built 39be5399dbd1
+    ---> Using cache
+    ---> a7d1430078a5
+   Successfully built a7d1430078a5
    Successfully tagged sip_nginx-dev:latest
    Building db-test
    Step 1/3 : FROM mysql:8.0
@@ -173,12 +167,12 @@ Example output from the setup script is shown below:
     ---> Using cache
     ---> b8e995a98fb7
    Step 7/8 : COPY . /usr/src/app
-    ---> 3b1298a3f8f4
+    ---> 0fe5d3d26f63
    Step 8/8 : CMD ["/usr/src/app/entrypoint-TEST.sh"]
-    ---> Running in da5963ccd374
-   Removing intermediate container da5963ccd374
-    ---> 70ffc212cf88
-   Successfully built 70ffc212cf88
+    ---> Running in b0d24537eb35
+   Removing intermediate container b0d24537eb35
+    ---> 2fd2f016e9ee
+   Successfully built 2fd2f016e9ee
    Successfully tagged sip_web-test:latest
    Building nginx-test
    Step 1/4 : FROM nginx:1.15.6-alpine
@@ -190,8 +184,9 @@ Example output from the setup script is shown below:
     ---> Using cache
     ---> aababc77bff6
    Step 4/4 : ADD certs/ /etc/nginx/certs
-    ---> 783fe60f3cb5
-   Successfully built 783fe60f3cb5
+    ---> Using cache
+    ---> 19b43be1c9b2
+   Successfully built 19b43be1c9b2
    Successfully tagged sip_nginx-test:latest
 
 
@@ -208,11 +203,28 @@ Example output from the setup script is shown below:
    WEB: Review the TEST environment variables: /home/dev/SIP/services/web/docker-TEST.env
 
    ===  FINISH DEV SETUP  ===
-   sip_db-dev_1 is up-to-date
+   Creating network "sip_dev" with driver "bridge"
+   Creating volume "sip_mysql-dev" with local driver
+   Creating sip_db-dev_1 ...
+   Creating sip_db-dev_1 ... done
    Creating sip_web-dev_1 ...
    Creating sip_web-dev_1 ... done
    Creating sip_nginx-dev_1 ...
    Creating sip_nginx-dev_1 ... done
+   Waiting for SIP (DEV) to start...
+   Waiting for SIP (DEV) to start...
+   Waiting for SIP (DEV) to start...
+   Waiting for SIP (DEV) to start...
+   Waiting for SIP (DEV) to start...
+   Waiting for SIP (DEV) to start...
+   Waiting for SIP (DEV) to start...
+   Waiting for SIP (DEV) to start...
+   Waiting for SIP (DEV) to start...
+   Waiting for SIP (DEV) to start...
+   Waiting for SIP (DEV) to start...
+   Waiting for SIP (DEV) to start...
+   Waiting for SIP (DEV) to start...
+   Waiting for SIP (DEV) to start...
    Waiting for SIP (DEV) to start...
    Stopping sip_nginx-dev_1 ... done
    Stopping sip_web-dev_1   ... done
@@ -225,84 +237,31 @@ Example output from the setup script is shown below:
    Creating sip_db-dev_1 ...
    Creating sip_db-dev_1 ... done
    Starting sip_db-dev_1 ... done
-   [2019-03-01 23:15:46,027] INFO in __init__: SIP starting
-   [2019-03-01 23:15:46,496] INFO in __init__: SIP starting
-   [2019-03-01 23:15:46,652] INFO in manage: SETUP: Created user role: admin
-   [2019-03-01 23:15:46,682] INFO in manage: SETUP: Created user role: analyst
-   [2019-03-01 23:15:46,716] INFO in manage: SETUP: Created event attack vector: UNKNOWN
-   [2019-03-01 23:15:46,735] INFO in manage: SETUP: Created event attack vector: CORPORATE EMAIL
-   [2019-03-01 23:15:46,753] INFO in manage: SETUP: Created event attack vector: USB
-   [2019-03-01 23:15:46,772] INFO in manage: SETUP: Created event attack vector: WEB BROWSING
-   [2019-03-01 23:15:46,790] INFO in manage: SETUP: Created event attack vector: WEBMAIL
-   [2019-03-01 23:15:46,808] INFO in manage: SETUP: Created event disposition: UNKNOWN
-   [2019-03-01 23:15:46,826] INFO in manage: SETUP: Created event disposition: FALSE POSITIVE
-   [2019-03-01 23:15:46,843] INFO in manage: SETUP: Created event disposition: IGNORE
-   [2019-03-01 23:15:46,861] INFO in manage: SETUP: Created event disposition: REVIEWED
-   [2019-03-01 23:15:46,878] INFO in manage: SETUP: Created event disposition: GRAYWARE
-   [2019-03-01 23:15:46,896] INFO in manage: SETUP: Created event disposition: POLICY VIOLATION
-   [2019-03-01 23:15:46,913] INFO in manage: SETUP: Created event disposition: RECONNAISSANCE
-   [2019-03-01 23:15:46,931] INFO in manage: SETUP: Created event disposition: WEAPONIZATION
-   [2019-03-01 23:15:46,949] INFO in manage: SETUP: Created event disposition: DELIVERY
-   [2019-03-01 23:15:46,966] INFO in manage: SETUP: Created event disposition: EXPLOITATION
-   [2019-03-01 23:15:46,984] INFO in manage: SETUP: Created event disposition: INSTALLATION
-   [2019-03-01 23:15:47,002] INFO in manage: SETUP: Created event disposition: COMMAND AND CONTROL
-   [2019-03-01 23:15:47,020] INFO in manage: SETUP: Created event disposition: EXFIL
-   [2019-03-01 23:15:47,038] INFO in manage: SETUP: Created event disposition: DAMAGE
-   [2019-03-01 23:15:47,055] INFO in manage: SETUP: Created event prevention tool: RESPONSE TEAM
-   [2019-03-01 23:15:47,073] INFO in manage: SETUP: Created event prevention tool: IPS
-   [2019-03-01 23:15:47,090] INFO in manage: SETUP: Created event prevention tool: FIREWALL
-   [2019-03-01 23:15:47,108] INFO in manage: SETUP: Created event prevention tool: PROXY
-   [2019-03-01 23:15:47,125] INFO in manage: SETUP: Created event prevention tool: ANTIVIRUS
-   [2019-03-01 23:15:47,142] INFO in manage: SETUP: Created event prevention tool: EMAIL FILTER
-   [2019-03-01 23:15:47,160] INFO in manage: SETUP: Created event prevention tool: APPLICATION WHITELIST
-   [2019-03-01 23:15:47,177] INFO in manage: SETUP: Created event prevention tool: USER
-   [2019-03-01 23:15:47,195] INFO in manage: SETUP: Created event remediation: NOT REMEDIATED
-   [2019-03-01 23:15:47,212] INFO in manage: SETUP: Created event remediation: REMOVED FROM MAILBOX
-   [2019-03-01 23:15:47,230] INFO in manage: SETUP: Created event remediation: CLEANED WITH ANTIVIRUS
-   [2019-03-01 23:15:47,248] INFO in manage: SETUP: Created event remediation: CLEANED MANUALLY
-   [2019-03-01 23:15:47,266] INFO in manage: SETUP: Created event remediation: REIMAGED
-   [2019-03-01 23:15:47,284] INFO in manage: SETUP: Created event remediation: CREDENTIALS RESET
-   [2019-03-01 23:15:47,302] INFO in manage: SETUP: Created event remediation: NOT APPLICABLE
-   [2019-03-01 23:15:47,319] INFO in manage: SETUP: Created event status: OPEN
-   [2019-03-01 23:15:47,336] INFO in manage: SETUP: Created event status: CLOSED
-   [2019-03-01 23:15:47,354] INFO in manage: SETUP: Created event status: IGNORE
-   [2019-03-01 23:15:47,371] INFO in manage: SETUP: Created event type: PHISH
-   [2019-03-01 23:15:47,389] INFO in manage: SETUP: Created event type: RECONNAISSANSE
-   [2019-03-01 23:15:47,407] INFO in manage: SETUP: Created event type: HOST COMPROMISE
-   [2019-03-01 23:15:47,424] INFO in manage: SETUP: Created event type: CREDENTIAL COMPROMISE
-   [2019-03-01 23:15:47,441] INFO in manage: SETUP: Created event type: WEB BROWSING
-   [2019-03-01 23:15:47,460] INFO in manage: SETUP: Created indicator confidence: LOW
-   [2019-03-01 23:15:47,477] INFO in manage: SETUP: Created indicator confidence: MEDIUM
-   [2019-03-01 23:15:47,495] INFO in manage: SETUP: Created indicator confidence: HIGH
-   [2019-03-01 23:15:47,525] INFO in manage: SETUP: Created indicator impact: LOW
-   [2019-03-01 23:15:47,555] INFO in manage: SETUP: Created indicator impact: MEDIUM
-   [2019-03-01 23:15:47,573] INFO in manage: SETUP: Created indicator impact: HIGH
-   [2019-03-01 23:15:47,591] INFO in manage: SETUP: Created indicator status: NEW
-   [2019-03-01 23:15:47,609] INFO in manage: SETUP: Created indicator status: FA
-   [2019-03-01 23:15:47,626] INFO in manage: SETUP: Created indicator status: IN PROGRESS
-   [2019-03-01 23:15:47,643] INFO in manage: SETUP: Created indicator status: ANALYZED
-   [2019-03-01 23:15:47,661] INFO in manage: SETUP: Created indicator status: INFORMATIONAL
-   [2019-03-01 23:15:47,679] INFO in manage: SETUP: Created indicator status: DEPRECATED
-   [2019-03-01 23:15:47,696] INFO in manage: SETUP: Created indicator type: Address - ipv4-addr
-   [2019-03-01 23:15:47,714] INFO in manage: SETUP: Created indicator type: Email - Address
-   [2019-03-01 23:15:47,732] INFO in manage: SETUP: Created indicator type: Email - Content
-   [2019-03-01 23:15:47,750] INFO in manage: SETUP: Created indicator type: Email - Subject
-   [2019-03-01 23:15:47,768] INFO in manage: SETUP: Created indicator type: Hash - MD5
-   [2019-03-01 23:15:47,786] INFO in manage: SETUP: Created indicator type: Hash - SHA1
-   [2019-03-01 23:15:47,804] INFO in manage: SETUP: Created indicator type: Hash - SHA256
-   [2019-03-01 23:15:47,822] INFO in manage: SETUP: Created indicator type: URI - Domain Name
-   [2019-03-01 23:15:47,840] INFO in manage: SETUP: Created indicator type: URI - Path
-   [2019-03-01 23:15:47,858] INFO in manage: SETUP: Created indicator type: URI - URL
-   [2019-03-01 23:15:47,875] INFO in manage: SETUP: Created intel source: OSINT
-   [2019-03-01 23:15:47,893] INFO in manage: SETUP: Created malware type: UNKNOWN
-   [2019-03-01 23:15:47,911] INFO in manage: SETUP: Created malware type: CREDENTIAL HARVESTING
-   [2019-03-01 23:15:47,929] INFO in manage: SETUP: Created malware type: BOTNET
-   [2019-03-01 23:15:47,946] INFO in manage: SETUP: Created malware type: CLICK FRAUD
-   [2019-03-01 23:15:47,964] INFO in manage: SETUP: Created malware type: DOWNLOADER
-   [2019-03-01 23:15:47,982] INFO in manage: SETUP: Created malware type: INFOSTEALER
-   [2019-03-01 23:15:47,999] INFO in manage: SETUP: Created malware type: KEYLOGGER
-   [2019-03-01 23:15:48,018] INFO in manage: SETUP: Created malware type: MALVERTISING
-   [2019-03-01 23:15:48,036] INFO in manage: SETUP: Created malware type: RANSOMWARE
-   [2019-03-01 23:15:48,053] INFO in manage: SETUP: Created malware type: RAT
-   [2019-03-01 23:15:48,071] INFO in manage: SETUP: Created malware type: ROOTKIT
-   [2019-03-01 23:15:48,123] INFO in manage: SETUP: Created admin user with password: -7eg"kH20Ug%O{5AZ)p1
+   [2019-03-07 15:53:22,746] INFO in __init__: SIP starting
+   [2019-03-07 15:53:23,102] INFO in __init__: SIP starting
+   [2019-03-07 15:53:23,191] INFO in manage: SETUP: Created user role: admin
+   [2019-03-07 15:53:23,209] INFO in manage: SETUP: Created user role: analyst
+   [2019-03-07 15:53:23,227] INFO in manage: SETUP: Created indicator confidence: LOW
+   [2019-03-07 15:53:23,244] INFO in manage: SETUP: Created indicator confidence: MEDIUM
+   [2019-03-07 15:53:23,262] INFO in manage: SETUP: Created indicator confidence: HIGH
+   [2019-03-07 15:53:23,280] INFO in manage: SETUP: Created indicator impact: LOW
+   [2019-03-07 15:53:23,297] INFO in manage: SETUP: Created indicator impact: MEDIUM
+   [2019-03-07 15:53:23,315] INFO in manage: SETUP: Created indicator impact: HIGH
+   [2019-03-07 15:53:23,332] INFO in manage: SETUP: Created indicator status: NEW
+   [2019-03-07 15:53:23,350] INFO in manage: SETUP: Created indicator status: FA
+   [2019-03-07 15:53:23,368] INFO in manage: SETUP: Created indicator status: IN PROGRESS
+   [2019-03-07 15:53:23,386] INFO in manage: SETUP: Created indicator status: ANALYZED
+   [2019-03-07 15:53:23,404] INFO in manage: SETUP: Created indicator status: INFORMATIONAL
+   [2019-03-07 15:53:23,423] INFO in manage: SETUP: Created indicator status: DEPRECATED
+   [2019-03-07 15:53:23,440] INFO in manage: SETUP: Created indicator type: Address - ipv4-addr
+   [2019-03-07 15:53:23,458] INFO in manage: SETUP: Created indicator type: Email - Address
+   [2019-03-07 15:53:23,476] INFO in manage: SETUP: Created indicator type: Email - Content
+   [2019-03-07 15:53:23,494] INFO in manage: SETUP: Created indicator type: Email - Subject
+   [2019-03-07 15:53:23,511] INFO in manage: SETUP: Created indicator type: Hash - MD5
+   [2019-03-07 15:53:23,529] INFO in manage: SETUP: Created indicator type: Hash - SHA1
+   [2019-03-07 15:53:23,547] INFO in manage: SETUP: Created indicator type: Hash - SHA256
+   [2019-03-07 15:53:23,566] INFO in manage: SETUP: Created indicator type: URI - Domain Name
+   [2019-03-07 15:53:23,584] INFO in manage: SETUP: Created indicator type: URI - Path
+   [2019-03-07 15:53:23,601] INFO in manage: SETUP: Created indicator type: URI - URL
+   [2019-03-07 15:53:23,619] INFO in manage: SETUP: Created intel source: OSINT
+   [2019-03-07 15:53:23,679] INFO in manage: SETUP: Created admin user with password: o@eV5x=oU{W][4T>o?_m
