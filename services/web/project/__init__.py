@@ -108,6 +108,10 @@ def create_app():
     from project.docs import bp as docs_bp
     app.register_blueprint(docs_bp)
 
+    # Errors Blueprint
+    from project.errors import bp as errors_bp
+    app.register_blueprint(errors_bp)
+
     # Inject Flask-Security into Flask-Admin so things like current_user and roles
     # work inside the custom view models.
     @security_ctx.context_processor

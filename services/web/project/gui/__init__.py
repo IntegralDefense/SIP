@@ -26,5 +26,4 @@ admin.add_view(AdminUserView(models.User, db.session, category='Admin'))
 admin.add_link(LoginMenuLink(name='Login', url='/login'))
 admin.add_link(LogoutMenuLink(name='Logout', url='/logout'))
 
-from project.gui import handlers
 from project.gui import routes
