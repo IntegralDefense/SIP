@@ -1,6 +1,5 @@
 import click
 import configparser
-import csv
 import json
 import jsonschema
 import os
