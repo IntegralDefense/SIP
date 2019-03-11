@@ -1,5 +1,4 @@
 Flask==1.0.2
-Flask-JWT-Extended==3.17.0
 flask-admin==1.5.3
 flask-migrate==2.3.1
 flask-security==3.0.0
@@ -12,3 +11,4 @@ python-dateutil==2.7.5
 sphinx==1.8.4
 sphinxcontrib-httpdomain==1.7.0
 sphinx-jsonschema==1.8
+SQLAlchemy==1.2.18
