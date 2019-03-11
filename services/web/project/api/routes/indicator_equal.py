@@ -1,6 +1,6 @@
 from project import db
 from project.api import bp
-from project.api.decorators import check_if_token_required, validate_schema
+from project.api.decorators import check_apikey, validate_schema
 from project.api.errors import error_response
 from project.api.schemas import null_create
 from project.models import Indicator
@@ -11,7 +11,7 @@ CREATE
 
 
 @bp.route('/indicators/<int:a_id>/<int:b_id>/equal', methods=['POST'])
-@check_if_token_required
+@check_apikey
 @validate_schema(null_create)
 def create_indicator_equal(a_id, b_id):
     """ Creates an equal to relationship between two indicators.
@@ -31,7 +31,7 @@ def create_indicator_equal(a_id, b_id):
 
       HTTP/1.1 204 No Content
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 204: Relationship created
     :status 400: Cannot make indicator equal to itself
@@ -71,7 +71,7 @@ DELETE
 
 
 @bp.route('/indicators/<int:a_id>/<int:b_id>/equal', methods=['DELETE'])
-@check_if_token_required
+@check_apikey
 def delete_indicator_equal(a_id, b_id):
     """ Deletes an equal to relationship between two indicators.
 
@@ -90,7 +90,7 @@ def delete_indicator_equal(a_id, b_id):
 
       HTTP/1.1 204 No Content
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :status 204: Relationship deleted
     :status 400: Indicator IDs must be different
     :status 401: Invalid role to perform this action

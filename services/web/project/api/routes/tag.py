@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_if_token_required, validate_json, validate_schema
+from project.api.decorators import check_apikey, validate_json, validate_schema
 from project.api.errors import error_response
 from project.api.schemas import value_create, value_update
 from project.models import Tag
@@ -14,7 +14,7 @@ CREATE
 
 
 @bp.route('/tags', methods=['POST'])
-@check_if_token_required
+@check_apikey
 @validate_json
 @validate_schema(value_create)
 def create_tag():
@@ -46,7 +46,7 @@ def create_tag():
         "value": "phish"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 201: Tag created
     :status 400: JSON does not match the schema
@@ -78,7 +78,7 @@ READ
 
 
 @bp.route('/tags/<int:tag_id>', methods=['GET'])
-@check_if_token_required
+@check_apikey
 def read_tag(tag_id):
     """ Gets a single tag given its ID.
     
@@ -104,7 +104,7 @@ def read_tag(tag_id):
         "value": "phish"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: Tag found
     :status 401: Invalid role to perform this action
@@ -119,7 +119,7 @@ def read_tag(tag_id):
 
 
 @bp.route('/tags', methods=['GET'])
-@check_if_token_required
+@check_apikey
 def read_tags():
     """ Gets a list of all the tags.
     
@@ -151,7 +151,7 @@ def read_tags():
         }
       ]
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: Tags found
     :status 401: Invalid role to perform this action
@@ -167,7 +167,7 @@ UPDATE
 
 
 @bp.route('/tags/<int:tag_id>', methods=['PUT'])
-@check_if_token_required
+@check_apikey
 @validate_json
 @validate_schema(value_update)
 def update_tag(tag_id):
@@ -199,7 +199,7 @@ def update_tag(tag_id):
         "value": "from_address"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: Tag updated
     :status 400: JSON does not match the schema
@@ -234,7 +234,7 @@ DELETE
 
 
 @bp.route('/tags/<int:tag_id>', methods=['DELETE'])
-@check_if_token_required
+@check_apikey
 def delete_tag(tag_id):
     """ Deletes a tag.
     
@@ -253,7 +253,7 @@ def delete_tag(tag_id):
 
       HTTP/1.1 204 No Content
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :status 204: Tag deleted
     :status 401: Invalid role to perform this action
     :status 404: Tag ID not found

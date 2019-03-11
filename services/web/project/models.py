@@ -1,10 +1,15 @@
 import logging
+import uuid
 
 from project import db
 from datetime import datetime
 from flask import url_for
 from flask_security import UserMixin, RoleMixin
 logger = logging.getLogger(__name__)
+
+
+def generate_apikey():
+    return str(uuid.uuid4())
 
 
 """
@@ -126,6 +131,7 @@ class User(UserMixin, db.Model):
 
     id = db.Column(db.Integer, primary_key=True, nullable=False)
     active = db.Column(db.Boolean(), nullable=False, default=True)
+    apikey = db.Column(db.String(36), index=True, unique=True, nullable=False, default=generate_apikey)
     email = db.Column(db.String(255), nullable=False, unique=True)
     first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(50), nullable=False)

@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import admin_required, check_if_token_required, validate_json, validate_schema
+from project.api.decorators import check_apikey, validate_json, validate_schema, verify_admin
 from project.api.errors import error_response
 from project.api.schemas import role_create, role_update
 from project.models import Role
@@ -14,7 +14,7 @@ CREATE
 
 
 @bp.route('/roles', methods=['POST'])
-@admin_required
+@verify_admin
 @validate_json
 @validate_schema(role_create)
 def create_role():
@@ -48,7 +48,7 @@ def create_role():
         "description": "Users that create and process intel"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 201: Role created
     :status 400: JSON does not match the schema
@@ -85,7 +85,7 @@ READ
 
 
 @bp.route('/roles/<int:role_id>', methods=['GET'])
-@check_if_token_required
+@check_apikey
 def read_role(role_id):
     """ Gets a single role given its ID.
 
@@ -112,7 +112,7 @@ def read_role(role_id):
         "description": "Users that create and process intel"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: Role found
     :status 401: Invalid role to perform this action
@@ -127,7 +127,7 @@ def read_role(role_id):
 
 
 @bp.route('/roles', methods=['GET'])
-@check_if_token_required
+@check_apikey
 def read_roles():
     """ Gets a list of all the roles.
 
@@ -161,7 +161,7 @@ def read_roles():
         }
       ]
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: Roles found
     :status 401: Invalid role to perform this action
@@ -177,7 +177,7 @@ UPDATE
 
 
 @bp.route('/roles/<int:role_id>', methods=['PUT'])
-@admin_required
+@verify_admin
 @validate_json
 @validate_schema(role_update)
 def update_role(role_id):
@@ -210,7 +210,7 @@ def update_role(role_id):
         "description": "Users that create and process intel"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: Role updated
     :status 400: JSON does not match the schema
@@ -251,7 +251,7 @@ DELETE
 
 
 @bp.route('/roles/<int:role_id>', methods=['DELETE'])
-@admin_required
+@verify_admin
 def delete_role(role_id):
     """ Deletes a role. Requires the admin role.
 
@@ -270,7 +270,7 @@ def delete_role(role_id):
 
       HTTP/1.1 204 No Content
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :status 204: Role deleted
     :status 401: Invalid role to perform this action
     :status 404: Role ID not found

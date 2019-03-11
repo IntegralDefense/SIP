@@ -3,7 +3,7 @@ from sqlalchemy import and_, exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_if_token_required, validate_json, validate_schema
+from project.api.decorators import check_apikey, validate_json, validate_schema
 from project.api.errors import error_response
 from project.api.schemas import intel_reference_create, intel_reference_update
 from project.models import IntelReference, IntelSource, User
@@ -15,7 +15,7 @@ CREATE
 
 
 @bp.route('/intel/reference', methods=['POST'])
-@check_if_token_required
+@check_apikey
 @validate_json
 @validate_schema(intel_reference_create)
 def create_intel_reference():
@@ -51,7 +51,7 @@ def create_intel_reference():
         "username": "your_SIP_username"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 201: Intel reference created
     :status 400: JSON does not match the schema
@@ -105,7 +105,7 @@ READ
 
 
 @bp.route('/intel/reference/<int:intel_reference_id>', methods=['GET'])
-@check_if_token_required
+@check_apikey
 def read_intel_reference(intel_reference_id):
     """ Gets a single intel reference given its ID.
 
@@ -133,7 +133,7 @@ def read_intel_reference(intel_reference_id):
         "username": "your_SIP_username"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: Intel source found
     :status 401: Invalid role to perform this action
@@ -148,7 +148,7 @@ def read_intel_reference(intel_reference_id):
 
 
 @bp.route('/intel/reference', methods=['GET'])
-@check_if_token_required
+@check_apikey
 def read_intel_references():
     """ Gets a paginated list of all the intel references.
 
@@ -203,7 +203,7 @@ def read_intel_references():
         ]
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: Intel references found
     :status 401: Invalid role to perform this action
@@ -215,7 +215,7 @@ def read_intel_references():
 
 
 @bp.route('/intel/reference/<int:intel_reference_id>/indicators', methods=['GET'])
-@check_if_token_required
+@check_apikey
 def read_intel_reference_indicators(intel_reference_id):
     """ Gets a paginated list of the indicators associated with the intel reference.
 
@@ -301,7 +301,7 @@ def read_intel_reference_indicators(intel_reference_id):
         ]
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: Indicators found
     :status 401: Invalid role to perform this action
@@ -326,7 +326,7 @@ UPDATE
 
 
 @bp.route('/intel/reference/<int:intel_reference_id>', methods=['PUT'])
-@check_if_token_required
+@check_apikey
 @validate_json
 @validate_schema(intel_reference_update)
 def update_intel_reference(intel_reference_id):
@@ -360,7 +360,7 @@ def update_intel_reference(intel_reference_id):
         "username": "your_SIP_username"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: Intel reference updated
     :status 400: JSON does not match the schema
@@ -424,7 +424,7 @@ DELETE
 
 
 @bp.route('/intel/reference/<int:intel_reference_id>', methods=['DELETE'])
-@check_if_token_required
+@check_apikey
 def delete_intel_reference(intel_reference_id):
     """ Deletes an intel reference.
 
@@ -443,7 +443,7 @@ def delete_intel_reference(intel_reference_id):
 
       HTTP/1.1 204 No Content
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :status 204: Intel reference deleted
     :status 401: Invalid role to perform this action
     :status 404: Intel reference ID not found

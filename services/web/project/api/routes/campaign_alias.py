@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_if_token_required, validate_json, validate_schema
+from project.api.decorators import check_apikey, validate_json, validate_schema
 from project.api.errors import error_response
 from project.api.schemas import campaign_alias_create, campaign_alias_update
 from project.models import Campaign, CampaignAlias
@@ -14,7 +14,7 @@ CREATE
 
 
 @bp.route('/campaigns/alias', methods=['POST'])
-@check_if_token_required
+@check_apikey
 @validate_json
 @validate_schema(campaign_alias_create)
 def create_campaign_alias():
@@ -48,7 +48,7 @@ def create_campaign_alias():
         "campaign": "LOLcats"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 201: Campaign alias created
     :status 400: JSON does not match the schema
@@ -91,7 +91,7 @@ READ
 
 
 @bp.route('/campaigns/alias/<int:campaign_alias_id>', methods=['GET'])
-@check_if_token_required
+@check_apikey
 def read_campaign_alias(campaign_alias_id):
     """ Gets a single campaign alias given its ID.
     
@@ -118,7 +118,7 @@ def read_campaign_alias(campaign_alias_id):
         "campaign": "LOLcats"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: Campaign alias found
     :status 401: Invalid role to perform this action
@@ -133,7 +133,7 @@ def read_campaign_alias(campaign_alias_id):
 
 
 @bp.route('/campaigns/alias', methods=['GET'])
-@check_if_token_required
+@check_apikey
 def read_campaign_aliases():
     """ Gets a list of all the campaign aliases.
     
@@ -167,7 +167,7 @@ def read_campaign_aliases():
         }
       ]
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: Campaign aliases found
     :status 401: Invalid role to perform this action
@@ -183,7 +183,7 @@ UPDATE
 
 
 @bp.route('/campaigns/alias/<int:campaign_alias_id>', methods=['PUT'])
-@check_if_token_required
+@check_apikey
 @validate_json
 @validate_schema(campaign_alias_update)
 def update_campaign_alias(campaign_alias_id):
@@ -217,7 +217,7 @@ def update_campaign_alias(campaign_alias_id):
         "campaign": "Riders"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: Campaign alias updated
     :status 400: JSON does not match the schema
@@ -273,7 +273,7 @@ DELETE
 
 
 @bp.route('/campaigns/alias/<int:campaign_alias_id>', methods=['DELETE'])
-@check_if_token_required
+@check_apikey
 def delete_campaign_alias(campaign_alias_id):
     """ Deletes a campaign alias.
     
@@ -292,7 +292,7 @@ def delete_campaign_alias(campaign_alias_id):
 
       HTTP/1.1 204 No Content
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :status 204: Campaign alias deleted
     :status 401: Invalid role to perform this action
     :status 404: Campaign alias ID not found

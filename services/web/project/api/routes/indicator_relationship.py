@@ -1,6 +1,6 @@
 from project import db
 from project.api import bp
-from project.api.decorators import check_if_token_required, validate_schema
+from project.api.decorators import check_apikey, validate_schema
 from project.api.errors import error_response
 from project.api.schemas import null_create
 from project.models import Indicator
@@ -11,7 +11,7 @@ CREATE
 
 
 @bp.route('/indicators/<int:parent_id>/<int:child_id>/relationship', methods=['POST'])
-@check_if_token_required
+@check_apikey
 @validate_schema(null_create)
 def create_indicator_relationship(parent_id, child_id):
     """ Creates a parent/child relationship between two indicators.
@@ -31,7 +31,7 @@ def create_indicator_relationship(parent_id, child_id):
 
       HTTP/1.1 204 No Content
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 204: Relationship created
     :status 400: Cannot add an indicator to its own children
@@ -71,7 +71,7 @@ DELETE
 
 
 @bp.route('/indicators/<int:parent_id>/<int:child_id>/relationship', methods=['DELETE'])
-@check_if_token_required
+@check_apikey
 def delete_indicator_relationship(parent_id, child_id):
     """ Deletes an indicator parent/child relationship.
 
@@ -90,7 +90,7 @@ def delete_indicator_relationship(parent_id, child_id):
 
       HTTP/1.1 204 No Content
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :status 204: Relationship deleted
     :status 400: Parent and child indicators must be different
     :status 401: Invalid role to perform this action

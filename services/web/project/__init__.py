@@ -5,7 +5,6 @@ import os
 from flask import Flask, url_for
 from flask_admin import Admin
 from flask_admin import helpers as admin_helpers
-from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
 from flask_security import Security, SQLAlchemyUserDatastore
 from flask_sqlalchemy import SQLAlchemy
@@ -14,7 +13,6 @@ from project.forms import ExtendedLoginForm
 
 admin = Admin(name='SIP', url='/SIP')
 db = SQLAlchemy()
-jwt = JWTManager()
 migrate = Migrate()
 security = Security()
 
@@ -82,19 +80,12 @@ def create_app():
     # Flask-Migrate
     migrate.init_app(app, db)
 
-    # Flask-JWT-Extended
-    jwt.init_app(app)
-
     # Flask-Security
     user_datastore = SQLAlchemyUserDatastore(db, models.User, models.Role)
     security_ctx = security.init_app(app, datastore=user_datastore, login_form=ExtendedLoginForm)
 
     # Flask-Admin
     admin.init_app(app)
-
-    # Auth Blueprint
-    from project.auth import bp as auth_bp
-    app.register_blueprint(auth_bp)
 
     # GUI/Admin Blueprint
     from project.gui import bp as gui_bp

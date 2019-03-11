@@ -6,7 +6,7 @@ from sqlalchemy import and_, exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_if_token_required, validate_json, validate_schema
+from project.api.decorators import check_apikey, validate_json, validate_schema
 from project.api.errors import error_response
 from project.api.helpers import parse_boolean
 from project.api.schemas import indicator_create, indicator_update
@@ -19,7 +19,7 @@ CREATE
 
 
 @bp.route('/indicators', methods=['POST'])
-@check_if_token_required
+@check_apikey
 @validate_json
 @validate_schema(indicator_create)
 def create_indicator():
@@ -115,7 +115,7 @@ def create_indicator():
         "value": "badguy@evil.com"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 201: Indicator created
     :status 400: Confidence not given and no default to select
@@ -285,7 +285,7 @@ READ
 
 
 @bp.route('/indicators/<int:indicator_id>', methods=['GET'])
-@check_if_token_required
+@check_apikey
 def read_indicator(indicator_id):
     """ Gets a single indicator given its ID.
 
@@ -356,7 +356,7 @@ def read_indicator(indicator_id):
         "value": "badguy@evil.com"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: Indicator found
     :status 401: Invalid role to perform this action
@@ -371,7 +371,7 @@ def read_indicator(indicator_id):
 
 
 @bp.route('/indicators', methods=['GET'])
-@check_if_token_required
+@check_apikey
 def read_indicators():
     """ Gets a paginated list of indicators based on various filter criteria.
 
@@ -459,7 +459,7 @@ def read_indicators():
         ]
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :query case_sensitive: True/False
     :query confidence: Confidence value
@@ -569,7 +569,7 @@ UPDATE
 
 
 @bp.route('/indicators/<indicator_id>', methods=['PUT'])
-@check_if_token_required
+@check_apikey
 @validate_json
 @validate_schema(indicator_update)
 def update_indicator(indicator_id):
@@ -647,7 +647,7 @@ def update_indicator(indicator_id):
         "value": "badguy@evil.com"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: Indicator updated
     :status 400: JSON does not match the schema
@@ -761,7 +761,7 @@ DELETE
 
 
 @bp.route('/indicators/<indicator_id>', methods=['DELETE'])
-@check_if_token_required
+@check_apikey
 def delete_indicator(indicator_id):
     """ Deletes an indicator.
 
@@ -780,7 +780,7 @@ def delete_indicator(indicator_id):
 
       HTTP/1.1 204 No Content
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :status 204: Indicator deleted
     :status 401: Invalid role to perform this action
     :status 404: Indicator ID not found

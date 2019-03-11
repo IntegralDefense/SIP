@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_if_token_required, validate_json, validate_schema
+from project.api.decorators import check_apikey, validate_json, validate_schema
 from project.api.errors import error_response
 from project.api.schemas import campaign_create, campaign_update
 from project.models import Campaign, CampaignAlias
@@ -14,7 +14,7 @@ CREATE
 
 
 @bp.route('/campaigns', methods=['POST'])
-@check_if_token_required
+@check_apikey
 @validate_json
 @validate_schema(campaign_create)
 def create_campaign():
@@ -50,7 +50,7 @@ def create_campaign():
         "name": "LOLcats"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 201: Campaign created
     :status 400: JSON does not match the schema
@@ -97,7 +97,7 @@ READ
 
 
 @bp.route('/campaigns/<int:campaign_id>', methods=['GET'])
-@check_if_token_required
+@check_apikey
 def read_campaign(campaign_id):
     """ Gets a single campaign given its ID.
     
@@ -126,7 +126,7 @@ def read_campaign(campaign_id):
         "name": "LOLcats"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: Campaign found
     :status 401: Invalid role to perform this action
@@ -141,7 +141,7 @@ def read_campaign(campaign_id):
 
 
 @bp.route('/campaigns', methods=['GET'])
-@check_if_token_required
+@check_apikey
 def read_campaigns():
     """ Gets a list of all the campaigns.
     
@@ -179,7 +179,7 @@ def read_campaigns():
         }
       ]
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: Campaigns found
     :status 401: Invalid role to perform this action
@@ -195,7 +195,7 @@ UPDATE
 
 
 @bp.route('/campaigns/<int:campaign_id>', methods=['PUT'])
-@check_if_token_required
+@check_apikey
 @validate_json
 @validate_schema(campaign_update)
 def update_campaign(campaign_id):
@@ -230,7 +230,7 @@ def update_campaign(campaign_id):
         "name": "Derpsters"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: Campaign updated
     :status 400: JSON does not match the schema
@@ -266,7 +266,7 @@ DELETE
 
 
 @bp.route('/campaigns/<int:campaign_id>', methods=['DELETE'])
-@check_if_token_required
+@check_apikey
 def delete_campaign(campaign_id):
     """ Deletes a campaign.
     
@@ -285,7 +285,7 @@ def delete_campaign(campaign_id):
 
       HTTP/1.1 204 No Content
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :status 204: Campaign deleted
     :status 401: Invalid role to perform this action
     :status 404: Campaign ID not found

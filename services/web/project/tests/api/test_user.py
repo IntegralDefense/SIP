@@ -1,3 +1,4 @@
+from project.tests.conftest import TEST_ADMIN_APIKEY, TEST_ANALYST_APIKEY, TEST_INACTIVE_APIKEY, TEST_INVALID_APIKEY
 from project.tests.helpers import *
 
 """
@@ -8,8 +9,7 @@ CREATE TESTS
 def test_create_schema(client):
     """ Ensure POST requests conform to the required JSON schema """
 
-    access_token, refresh_token = obtain_token(client, 'admin', 'admin')
-    headers = create_auth_header(access_token)
+    headers = create_auth_header(TEST_ADMIN_APIKEY)
 
     # Invalid JSON
     data = {}
@@ -226,8 +226,7 @@ def test_create_duplicate(app, client):
 
     app.config['MINIMUM_PASSWORD_LENGTH'] = 4
 
-    access_token, refresh_token = obtain_token(client, 'admin', 'admin')
-    headers = create_auth_header(access_token)
+    headers = create_auth_header(TEST_ADMIN_APIKEY)
 
     data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf',
             'password': 'asdf', 'roles': ['analyst'], 'username': 'asdf'}
@@ -251,28 +250,51 @@ def test_create_duplicate(app, client):
     assert response['msg'] == 'User username already exists'
 
 
-def test_create_missing_token(app, client):
-    """ Ensure a token is given if the config requires it """
+def test_create_missing_api_key(app, client):
+    """ Ensure an API key is given if the config requires it """
 
-    app.config['POST'] = 'admin'
+    app.config['POST'] = 'analyst'
 
     request = client.post('/api/users')
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['msg'] == 'Missing Authorization Header'
+    assert response['msg'] == 'Bad or missing API key'
 
 
-def test_create_invalid_role(app, client):
-    """ Ensure the given token has the proper role access """
+def test_create_invalid_api_key(app, client):
+    """ Ensure an API key not found in the database does not work """
 
-    app.config['POST'] = 'admin'
+    app.config['POST'] = 'analyst'
 
-    access_token, refresh_token = obtain_token(client, 'analyst', 'analyst')
-    headers = create_auth_header(access_token)
+    headers = {'Authorization': 'Apikey ' + TEST_INVALID_APIKEY}
     request = client.post('/api/users', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['msg'] == 'admin role required'
+    assert response['msg'] == 'API user does not exist'
+
+
+def test_create_inactive_api_key(app, client):
+    """ Ensure an inactive API key does not work """
+
+    app.config['POST'] = 'analyst'
+
+    headers = {'Authorization': 'Apikey ' + TEST_INACTIVE_APIKEY}
+    request = client.post('/api/users', headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['msg'] == 'API user is not active'
+
+
+def test_create_invalid_role(app, client):
+    """ Ensure the given API key has the proper role access """
+
+    app.config['POST'] = 'user_does_not_have_this_role'
+
+    headers = {'Authorization': 'Apikey ' + TEST_ANALYST_APIKEY}
+    request = client.post('/api/users', headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['msg'] == 'Insufficient privileges'
 
 
 def test_create_password_length(app, client):
@@ -280,8 +302,7 @@ def test_create_password_length(app, client):
 
     app.config['MINIMUM_PASSWORD_LENGTH'] = 4
 
-    access_token, refresh_token = obtain_token(client, 'admin', 'admin')
-    headers = create_auth_header(access_token)
+    headers = create_auth_header(TEST_ADMIN_APIKEY)
 
     data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf',
             'password': 'asd', 'roles': ['analyst', 'admin'], 'username': 'asdf'}
@@ -301,8 +322,7 @@ def test_create(app, client):
 
     app.config['MINIMUM_PASSWORD_LENGTH'] = 4
 
-    access_token, refresh_token = obtain_token(client, 'admin', 'admin')
-    headers = create_auth_header(access_token)
+    headers = create_auth_header(TEST_ADMIN_APIKEY)
 
     # Try with a roles list
     data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf',
@@ -328,28 +348,51 @@ def test_read_nonexistent_id(client):
     assert response['msg'] == 'User ID not found'
 
 
-def test_read_missing_token(app, client):
-    """ Ensure a token is given if the config requires it """
+def test_read_missing_api_key(app, client):
+    """ Ensure an API key is given if the config requires it """
 
-    app.config['GET'] = 'admin'
+    app.config['GET'] = 'analyst'
 
     request = client.get('/api/users/1')
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['msg'] == 'Missing Authorization Header'
+    assert response['msg'] == 'Bad or missing API key'
 
 
-def test_read_invalid_role(app, client):
-    """ Ensure the given token has the proper role access """
+def test_read_invalid_api_key(app, client):
+    """ Ensure an API key not found in the database does not work """
 
-    app.config['GET'] = 'admin'
+    app.config['GET'] = 'analyst'
 
-    access_token, refresh_token = obtain_token(client, 'analyst', 'analyst')
-    headers = create_auth_header(access_token)
+    headers = {'Authorization': 'Apikey ' + TEST_INVALID_APIKEY}
     request = client.get('/api/users/1', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['msg'] == 'admin role required'
+    assert response['msg'] == 'API user does not exist'
+
+
+def test_read_inactive_api_key(app, client):
+    """ Ensure an inactive API key does not work """
+
+    app.config['GET'] = 'analyst'
+
+    headers = {'Authorization': 'Apikey ' + TEST_INACTIVE_APIKEY}
+    request = client.get('/api/users/1', headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['msg'] == 'API user is not active'
+
+
+def test_read_invalid_role(app, client):
+    """ Ensure the given API key has the proper role access """
+
+    app.config['GET'] = 'user_does_not_have_this_role'
+
+    headers = {'Authorization': 'Apikey ' + TEST_ANALYST_APIKEY}
+    request = client.get('/api/users/1', headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['msg'] == 'Insufficient privileges'
 
 
 def test_read_all_values(client):
@@ -379,8 +422,7 @@ UPDATE TESTS
 def test_update_schema(client):
     """ Ensure PUT requests conform to the required JSON schema """
 
-    access_token, refresh_token = obtain_token(client, 'admin', 'admin')
-    headers = create_auth_header(access_token)
+    headers = create_auth_header(TEST_ADMIN_APIKEY)
 
     # Invalid JSON
     data = {}
@@ -553,8 +595,7 @@ def test_update_schema(client):
 def test_update_nonexistent_id(client):
     """ Ensure a nonexistent ID does not work """
 
-    access_token, refresh_token = obtain_token(client, 'admin', 'admin')
-    headers = create_auth_header(access_token)
+    headers = create_auth_header(TEST_ADMIN_APIKEY)
 
     data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf',
             'password': 'asdf', 'roles': ['analyst', 'admin'], 'username': 'asdf'}
@@ -567,8 +608,7 @@ def test_update_nonexistent_id(client):
 def test_update_duplicate(client):
     """ Ensure duplicate records cannot be updated """
 
-    access_token, refresh_token = obtain_token(client, 'admin', 'admin')
-    headers = create_auth_header(access_token)
+    headers = create_auth_header(TEST_ADMIN_APIKEY)
 
     data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf',
             'password': 'asdf', 'roles': ['analyst'], 'username': 'asdf'}
@@ -594,28 +634,51 @@ def test_update_duplicate(client):
     assert response['msg'] == 'User username already exists'
 
 
-def test_update_missing_token(app, client):
-    """ Ensure a token is given if the config requires it """
+def test_update_missing_api_key(app, client):
+    """ Ensure an API key is given if the config requires it """
 
-    app.config['PUT'] = 'admin'
+    app.config['PUT'] = 'analyst'
 
     request = client.put('/api/users/1')
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['msg'] == 'Missing Authorization Header'
+    assert response['msg'] == 'Bad or missing API key'
 
 
-def test_update_invalid_role(app, client):
-    """ Ensure the given token has the proper role access """
+def test_update_invalid_api_key(app, client):
+    """ Ensure an API key not found in the database does not work """
 
-    app.config['PUT'] = 'admin'
+    app.config['PUT'] = 'analyst'
 
-    access_token, refresh_token = obtain_token(client, 'analyst', 'analyst')
-    headers = create_auth_header(access_token)
+    headers = {'Authorization': 'Apikey ' + TEST_INVALID_APIKEY}
     request = client.put('/api/users/1', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['msg'] == 'admin role required'
+    assert response['msg'] == 'API user does not exist'
+
+
+def test_update_inactive_api_key(app, client):
+    """ Ensure an inactive API key does not work """
+
+    app.config['PUT'] = 'analyst'
+
+    headers = {'Authorization': 'Apikey ' + TEST_INACTIVE_APIKEY}
+    request = client.put('/api/users/1', headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['msg'] == 'API user is not active'
+
+
+def test_update_invalid_role(app, client):
+    """ Ensure the given API key has the proper role access """
+
+    app.config['PUT'] = 'user_does_not_have_this_role'
+
+    headers = {'Authorization': 'Apikey ' + TEST_ANALYST_APIKEY}
+    request = client.put('/api/users/1', headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['msg'] == 'Insufficient privileges'
 
 
 def test_update_password_length(app, client):
@@ -623,8 +686,7 @@ def test_update_password_length(app, client):
 
     app.config['MINIMUM_PASSWORD_LENGTH'] = 4
 
-    access_token, refresh_token = obtain_token(client, 'admin', 'admin')
-    headers = create_auth_header(access_token)
+    headers = create_auth_header(TEST_ADMIN_APIKEY)
     data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf',
             'password': 'asdf', 'roles': ['analyst', 'admin'], 'username': 'asdf'}
     request = client.post('/api/users', json=data, headers=headers)
@@ -644,8 +706,7 @@ def test_update(app, client):
 
     app.config['MINIMUM_PASSWORD_LENGTH'] = 4
 
-    access_token, refresh_token = obtain_token(client, 'admin', 'admin')
-    headers = create_auth_header(access_token)
+    headers = create_auth_header(TEST_ADMIN_APIKEY)
     data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf',
             'password': 'asdf', 'roles': ['analyst', 'admin'], 'username': 'asdf'}
     request = client.post('/api/users', json=data, headers=headers)
@@ -719,45 +780,66 @@ DELETE TESTS
 def test_delete_nonexistent_id(client):
     """ Ensure a nonexistent ID does not work """
 
-    access_token, refresh_token = obtain_token(client, 'admin', 'admin')
-    headers = create_auth_header(access_token)
+    headers = create_auth_header(TEST_ADMIN_APIKEY)
     request = client.delete('/api/users/100000', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 404
     assert response['msg'] == 'User ID not found'
 
 
-def test_delete_missing_token(app, client):
-    """ Ensure a token is given if the config requires it """
+def test_delete_missing_api_key(app, client):
+    """ Ensure an API key is given if the config requires it """
 
     app.config['DELETE'] = 'admin'
 
     request = client.delete('/api/users/1')
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['msg'] == 'Missing Authorization Header'
+    assert response['msg'] == 'Bad or missing API key'
 
 
-def test_delete_invalid_role(app, client):
-    """ Ensure the given token has the proper role access """
+def test_delete_invalid_api_key(app, client):
+    """ Ensure an API key not found in the database does not work """
 
     app.config['DELETE'] = 'admin'
 
-    access_token, refresh_token = obtain_token(client, 'analyst', 'analyst')
-    headers = create_auth_header(access_token)
+    headers = {'Authorization': 'Apikey ' + TEST_INVALID_APIKEY}
     request = client.delete('/api/users/1', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['msg'] == 'admin role required'
+    assert response['msg'] == 'API user does not exist'
+
+
+def test_delete_inactive_api_key(app, client):
+    """ Ensure an inactive API key does not work """
+
+    app.config['DELETE'] = 'admin'
+
+    headers = {'Authorization': 'Apikey ' + TEST_INACTIVE_APIKEY}
+    request = client.delete('/api/users/1', headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['msg'] == 'API user is not active'
+
+
+def test_delete_invalid_role(app, client):
+    """ Ensure the given API key has the proper role access """
+
+    app.config['DELETE'] = 'user_does_not_have_this_role'
+
+    headers = {'Authorization': 'Apikey ' + TEST_ANALYST_APIKEY}
+    request = client.delete('/api/users/1', headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['msg'] == 'Insufficient privileges'
 
 
 def test_delete_foreign_key_indicator(client):
     """ Ensure you cannot delete with foreign key constraints """
 
-    access_token, refresh_token = obtain_token(client, 'admin', 'admin')
-    headers = create_auth_header(access_token)
+    headers = create_auth_header(TEST_ADMIN_APIKEY)
 
-    user_request, user_response = create_user(client, 'asdf@asdf.com', 'asdf', 'asdf', 'asdf', ['analyst'], 'some_guy')
+    user_request, user_response = create_user(client, TEST_ADMIN_APIKEY, 'asdf@asdf.com', 'asdf', 'asdf', 'asdf', ['analyst'], 'some_guy')
     indicator_request, indicator_response = create_indicator(client, 'IP', '127.0.0.1', 'some_guy')
     assert user_request.status_code == 201
     assert indicator_request.status_code == 201
@@ -771,10 +853,9 @@ def test_delete_foreign_key_indicator(client):
 def test_delete_foreign_key_reference(client):
     """ Ensure you cannot delete with foreign key constraints """
 
-    access_token, refresh_token = obtain_token(client, 'admin', 'admin')
-    headers = create_auth_header(access_token)
+    headers = create_auth_header(TEST_ADMIN_APIKEY)
 
-    user_request, user_response = create_user(client, 'asdf@asdf.com', 'asdf', 'asdf', 'asdf', ['analyst'], 'some_guy')
+    user_request, user_response = create_user(client, TEST_ADMIN_APIKEY, 'asdf@asdf.com', 'asdf', 'asdf', 'asdf', ['analyst'], 'some_guy')
     reference_request, reference_response = create_intel_reference(client, 'some_guy', 'OSINT', 'http://blahblah.com')
     assert user_request.status_code == 201
     assert reference_request.status_code == 201
@@ -788,8 +869,7 @@ def test_delete_foreign_key_reference(client):
 def test_delete(client):
     """ Ensure a proper request actually works """
 
-    access_token, refresh_token = obtain_token(client, 'admin', 'admin')
-    headers = create_auth_header(access_token)
+    headers = create_auth_header(TEST_ADMIN_APIKEY)
 
     data = {'email': 'asdf', 'first_name': 'asdf', 'last_name': 'asdf',
             'password': 'asdf', 'roles': ['analyst', 'admin'], 'username': 'asdf'}

@@ -1,3 +1,4 @@
+from project.tests.conftest import TEST_ANALYST_APIKEY, TEST_INACTIVE_APIKEY, TEST_INVALID_APIKEY
 from project.tests.helpers import *
 
 
@@ -87,6 +88,53 @@ def test_create_schema(client):
     assert 'too long' in response['msg']
 
 
+def test_create_missing_api_key(app, client):
+    """ Ensure an API key is given if the config requires it """
+
+    app.config['POST'] = 'analyst'
+
+    request = client.post('/api/campaigns')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['msg'] == 'Bad or missing API key'
+
+
+def test_create_invalid_api_key(app, client):
+    """ Ensure an API key not found in the database does not work """
+
+    app.config['POST'] = 'analyst'
+
+    headers = {'Authorization': 'Apikey ' + TEST_INVALID_APIKEY}
+    request = client.post('/api/campaigns', headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['msg'] == 'API user does not exist'
+
+
+def test_create_inactive_api_key(app, client):
+    """ Ensure an inactive API key does not work """
+
+    app.config['POST'] = 'analyst'
+
+    headers = {'Authorization': 'Apikey ' + TEST_INACTIVE_APIKEY}
+    request = client.post('/api/campaigns', headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['msg'] == 'API user is not active'
+
+
+def test_create_invalid_role(app, client):
+    """ Ensure the given API key has the proper role access """
+
+    app.config['POST'] = 'user_does_not_have_this_role'
+
+    headers = {'Authorization': 'Apikey ' + TEST_ANALYST_APIKEY}
+    request = client.post('/api/campaigns', headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['msg'] == 'Insufficient privileges'
+
+
 def test_create_duplicate(client):
     """ Ensure a duplicate record cannot be created """
 
@@ -99,30 +147,6 @@ def test_create_duplicate(client):
     response = json.loads(request.data.decode())
     assert request.status_code == 409
     assert response['msg'] == 'Campaign already exists'
-
-
-def test_create_missing_token(app, client):
-    """ Ensure a token is given if the config requires it """
-
-    app.config['POST'] = 'analyst'
-
-    request = client.post('/api/campaigns')
-    response = json.loads(request.data.decode())
-    assert request.status_code == 401
-    assert response['msg'] == 'Missing Authorization Header'
-
-
-def test_create_invalid_role(app, client):
-    """ Ensure the given token has the proper role access """
-
-    app.config['POST'] = 'user_does_not_have_this_role'
-
-    access_token, refresh_token = obtain_token(client, 'analyst', 'analyst')
-    headers = create_auth_header(access_token)
-    request = client.post('/api/campaigns', headers=headers)
-    response = json.loads(request.data.decode())
-    assert request.status_code == 401
-    assert response['msg'] == 'user_does_not_have_this_role role required'
 
 
 def test_create(client):
@@ -147,28 +171,51 @@ def test_read_nonexistent_id(client):
     assert response['msg'] == 'Campaign ID not found'
 
 
-def test_read_missing_token(app, client):
-    """ Ensure a token is given if the config requires it """
+def test_read_missing_api_key(app, client):
+    """ Ensure an API key is given if the config requires it """
 
     app.config['GET'] = 'analyst'
 
     request = client.get('/api/campaigns/1')
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['msg'] == 'Missing Authorization Header'
+    assert response['msg'] == 'Bad or missing API key'
 
 
-def test_read_invalid_role(app, client):
-    """ Ensure the given token has the proper role access """
+def test_read_invalid_api_key(app, client):
+    """ Ensure an API key not found in the database does not work """
 
-    app.config['GET'] = 'user_does_not_have_this_role'
+    app.config['GET'] = 'analyst'
 
-    access_token, refresh_token = obtain_token(client, 'analyst', 'analyst')
-    headers = create_auth_header(access_token)
+    headers = {'Authorization': 'Apikey ' + TEST_INVALID_APIKEY}
     request = client.get('/api/campaigns/1', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['msg'] == 'user_does_not_have_this_role role required'
+    assert response['msg'] == 'API user does not exist'
+
+
+def test_read_inactive_api_key(app, client):
+    """ Ensure an inactive API key does not work """
+
+    app.config['GET'] = 'analyst'
+
+    headers = {'Authorization': 'Apikey ' + TEST_INACTIVE_APIKEY}
+    request = client.get('/api/campaigns/1', headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['msg'] == 'API user is not active'
+
+
+def test_read_invalid_role(app, client):
+    """ Ensure the given API key has the proper role access """
+
+    app.config['GET'] = 'user_does_not_have_this_role'
+
+    headers = {'Authorization': 'Apikey ' + TEST_ANALYST_APIKEY}
+    request = client.get('/api/campaigns/1', headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['msg'] == 'Insufficient privileges'
 
 
 def test_read_all_values(client):
@@ -285,29 +332,51 @@ def test_update_duplicate(client):
     assert response['msg'] == 'Campaign already exists'
 
 
-def test_update_missing_token(app, client):
-    """ Ensure a token is given if the config requires it """
+def test_update_missing_api_key(app, client):
+    """ Ensure an API key is given if the config requires it """
 
     app.config['PUT'] = 'analyst'
 
     request = client.put('/api/campaigns/1')
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['msg'] == 'Missing Authorization Header'
+    assert response['msg'] == 'Bad or missing API key'
+
+
+def test_update_invalid_api_key(app, client):
+    """ Ensure an API key not found in the database does not work """
+
+    app.config['PUT'] = 'analyst'
+
+    headers = {'Authorization': 'Apikey ' + TEST_INVALID_APIKEY}
+    request = client.put('/api/campaigns/1', headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['msg'] == 'API user does not exist'
+
+
+def test_update_inactive_api_key(app, client):
+    """ Ensure an inactive API key does not work """
+
+    app.config['PUT'] = 'analyst'
+
+    headers = {'Authorization': 'Apikey ' + TEST_INACTIVE_APIKEY}
+    request = client.put('/api/campaigns/1', headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['msg'] == 'API user is not active'
 
 
 def test_update_invalid_role(app, client):
-    """ Ensure the given token has the proper role access """
+    """ Ensure the given API key has the proper role access """
 
     app.config['PUT'] = 'user_does_not_have_this_role'
 
-    access_token, refresh_token = obtain_token(client, 'analyst', 'analyst')
-    headers = create_auth_header(access_token)
+    headers = {'Authorization': 'Apikey ' + TEST_ANALYST_APIKEY}
     request = client.put('/api/campaigns/1', headers=headers)
     response = json.loads(request.data.decode())
-    print(response)
     assert request.status_code == 401
-    assert response['msg'] == 'user_does_not_have_this_role role required'
+    assert response['msg'] == 'Insufficient privileges'
 
 
 def test_update(client):
@@ -346,28 +415,51 @@ def test_delete_nonexistent_id(client):
     assert response['msg'] == 'Campaign ID not found'
 
 
-def test_delete_missing_token(app, client):
-    """ Ensure a token is given if the config requires it """
+def test_delete_missing_api_key(app, client):
+    """ Ensure an API key is given if the config requires it """
 
     app.config['DELETE'] = 'admin'
 
     request = client.delete('/api/campaigns/1')
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['msg'] == 'Missing Authorization Header'
+    assert response['msg'] == 'Bad or missing API key'
 
 
-def test_delete_invalid_role(app, client):
-    """ Ensure the given token has the proper role access """
+def test_delete_invalid_api_key(app, client):
+    """ Ensure an API key not found in the database does not work """
 
-    app.config['DELETE'] = 'user_does_not_have_this_role'
+    app.config['DELETE'] = 'admin'
 
-    access_token, refresh_token = obtain_token(client, 'analyst', 'analyst')
-    headers = create_auth_header(access_token)
+    headers = {'Authorization': 'Apikey ' + TEST_INVALID_APIKEY}
     request = client.delete('/api/campaigns/1', headers=headers)
     response = json.loads(request.data.decode())
     assert request.status_code == 401
-    assert response['msg'] == 'user_does_not_have_this_role role required'
+    assert response['msg'] == 'API user does not exist'
+
+
+def test_delete_inactive_api_key(app, client):
+    """ Ensure an inactive API key does not work """
+
+    app.config['DELETE'] = 'admin'
+
+    headers = {'Authorization': 'Apikey ' + TEST_INACTIVE_APIKEY}
+    request = client.delete('/api/campaigns/1', headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['msg'] == 'API user is not active'
+
+
+def test_delete_invalid_role(app, client):
+    """ Ensure the given API key has the proper role access """
+
+    app.config['DELETE'] = 'user_does_not_have_this_role'
+
+    headers = {'Authorization': 'Apikey ' + TEST_ANALYST_APIKEY}
+    request = client.delete('/api/campaigns/1', headers=headers)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['msg'] == 'Insufficient privileges'
 
 
 def test_delete_foreign_key_indicator(client):

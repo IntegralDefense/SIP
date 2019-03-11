@@ -8,6 +8,12 @@ from project import db as _db
 from project.models import Role, User
 
 
+TEST_INACTIVE_APIKEY = '11111111-1111-1111-1111-111111111111'
+TEST_ADMIN_APIKEY = '22222222-2222-2222-2222-222222222222'
+TEST_ANALYST_APIKEY = '33333333-3333-3333-3333-333333333333'
+TEST_INVALID_APIKEY = '99999999-9999-9999-9999-999999999999'
+
+
 @pytest.fixture(scope='session')
 def app():
 
@@ -50,6 +56,7 @@ def db(app):
                                    first_name='Inactive', last_name='Inactive', roles=[analyst_role])
         inactive_user = User.query.filter_by(username='inactive').first()
         inactive_user.active = False
+        inactive_user.apikey = TEST_INACTIVE_APIKEY
 
     # Admin user
     if not User.query.filter_by(username='admin').first():
@@ -57,6 +64,8 @@ def db(app):
         admin_role = Role.query.filter_by(name='admin').first()
         user_datastore.create_user(email='admin@localhost', password=hash_password('admin'), username='admin',
                                    first_name='Admin', last_name='Admin', roles=[admin_role])
+        admin_user = User.query.filter_by(username='admin').first()
+        admin_user.apikey = TEST_ADMIN_APIKEY
 
     # Analyst user
     if not User.query.filter_by(username='analyst').first():
@@ -64,6 +73,8 @@ def db(app):
         analyst_role = Role.query.filter_by(name='analyst').first()
         user_datastore.create_user(email='analyst@localhost', password=hash_password('analyst'), username='analyst',
                                    first_name='Analyst', last_name='Analyst', roles=[analyst_role])
+        analyst_user = User.query.filter_by(username='analyst').first()
+        analyst_user.apikey = TEST_ANALYST_APIKEY
 
     _db.session.commit()
 

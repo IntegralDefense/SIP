@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_if_token_required, validate_json, validate_schema
+from project.api.decorators import check_apikey, validate_json, validate_schema
 from project.api.errors import error_response
 from project.api.schemas import value_create, value_update
 from project.models import IndicatorType
@@ -14,7 +14,7 @@ CREATE
 
 
 @bp.route('/indicators/type', methods=['POST'])
-@check_if_token_required
+@check_apikey
 @validate_json
 @validate_schema(value_create)
 def create_indicator_type():
@@ -46,7 +46,7 @@ def create_indicator_type():
         "value": "Email - Address"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 201: Indicator type created
     :status 400: JSON does not match the schema
@@ -79,7 +79,7 @@ READ
 
 
 @bp.route('/indicators/type/<int:indicator_type_id>', methods=['GET'])
-@check_if_token_required
+@check_apikey
 def read_indicator_type(indicator_type_id):
     """ Gets a single indicator type given its ID.
     
@@ -105,7 +105,7 @@ def read_indicator_type(indicator_type_id):
         "value": "Email - Address"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: Indicator type found
     :status 401: Invalid role to perform this action
@@ -120,7 +120,7 @@ def read_indicator_type(indicator_type_id):
 
 
 @bp.route('/indicators/type', methods=['GET'])
-@check_if_token_required
+@check_apikey
 def read_indicator_types():
     """ Gets a list of all the indicator types.
     
@@ -152,7 +152,7 @@ def read_indicator_types():
         }
       ]
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: Indicator types found
     :status 401: Invalid role to perform this action
@@ -168,7 +168,7 @@ UPDATE
 
 
 @bp.route('/indicators/type/<int:indicator_type_id>', methods=['PUT'])
-@check_if_token_required
+@check_apikey
 @validate_json
 @validate_schema(value_update)
 def update_indicator_type(indicator_type_id):
@@ -200,7 +200,7 @@ def update_indicator_type(indicator_type_id):
         "value": "URI - Domain Name"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: Indicator type updated
     :status 400: JSON does not match the schema
@@ -235,7 +235,7 @@ DELETE
 
 
 @bp.route('/indicators/type/<int:indicator_type_id>', methods=['DELETE'])
-@check_if_token_required
+@check_apikey
 def delete_indicator_type(indicator_type_id):
     """ Deletes an indicator type.
     
@@ -254,7 +254,7 @@ def delete_indicator_type(indicator_type_id):
 
       HTTP/1.1 204 No Content
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :status 204: Indicator type deleted
     :status 401: Invalid role to perform this action
     :status 404: Indicator type ID not found

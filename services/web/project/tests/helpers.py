@@ -1,14 +1,8 @@
 import json
 
 
-def create_auth_header(token):
-    return {'Authorization': 'Bearer {}'.format(token)}
-
-
-def obtain_token(client, username, password):
-    request = client.post('/auth', data={'username': username, 'password': password})
-    response = json.loads(request.data.decode())
-    return response['access_token'], response['refresh_token']
+def create_auth_header(apikey):
+    return {'Authorization': 'Apikey {}'.format(apikey)}
 
 
 def create_campaign(client, campaign, aliases=[]):
@@ -106,9 +100,8 @@ def create_intel_source(client, source):
     return request, response
 
 
-def create_role(client, role):
-    access_token, refresh_token = obtain_token(client, 'admin', 'admin')
-    headers = create_auth_header(access_token)
+def create_role(client, apikey, role):
+    headers = create_auth_header(apikey)
 
     data = {'name': role}
     request = client.post('/api/roles', json=data, headers=headers)
@@ -123,9 +116,8 @@ def create_tag(client, tag):
     return request, response
 
 
-def create_user(client, email, first_name, last_name, password, roles, username):
-    access_token, refresh_token = obtain_token(client, 'admin', 'admin')
-    headers = create_auth_header(access_token)
+def create_user(client, apikey, email, first_name, last_name, password, roles, username):
+    headers = create_auth_header(apikey)
 
     data = {'email': email, 'first_name': first_name, 'last_name': last_name,
             'password': password, 'roles': roles, 'username': username}
