@@ -3,7 +3,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import check_if_token_required, validate_json, validate_schema
+from project.api.decorators import check_apikey, validate_json, validate_schema
 from project.api.errors import error_response
 from project.api.schemas import value_create, value_update
 from project.models import IntelSource
@@ -14,7 +14,7 @@ CREATE
 
 
 @bp.route('/intel/source', methods=['POST'])
-@check_if_token_required
+@check_apikey
 @validate_json
 @validate_schema(value_create)
 def create_intel_source():
@@ -46,7 +46,7 @@ def create_intel_source():
         "value": "OSINT"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 201: Intel source created
     :status 400: JSON does not match the schema
@@ -79,7 +79,7 @@ READ
 
 
 @bp.route('/intel/source/<int:intel_source_id>', methods=['GET'])
-@check_if_token_required
+@check_apikey
 def read_intel_source(intel_source_id):
     """ Gets a single intel source given its ID.
     
@@ -105,7 +105,7 @@ def read_intel_source(intel_source_id):
         "value": "OSINT"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: Intel source found
     :status 401: Invalid role to perform this action
@@ -120,7 +120,7 @@ def read_intel_source(intel_source_id):
 
 
 @bp.route('/intel/source', methods=['GET'])
-@check_if_token_required
+@check_apikey
 def read_intel_sources():
     """ Gets a list of all the intel sources.
     
@@ -152,7 +152,7 @@ def read_intel_sources():
         }
       ]
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: Intel sources found
     :status 401: Invalid role to perform this action
@@ -168,7 +168,7 @@ UPDATE
 
 
 @bp.route('/intel/source/<int:intel_source_id>', methods=['PUT'])
-@check_if_token_required
+@check_apikey
 @validate_json
 @validate_schema(value_update)
 def update_intel_source(intel_source_id):
@@ -200,7 +200,7 @@ def update_intel_source(intel_source_id):
         "value": "VirusTotal"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: Intel source updated
     :status 400: JSON does not match the schema
@@ -235,7 +235,7 @@ DELETE
 
 
 @bp.route('/intel/source/<int:intel_source_id>', methods=['DELETE'])
-@check_if_token_required
+@check_apikey
 def delete_intel_source(intel_source_id):
     """ Deletes an intel source.
     
@@ -254,7 +254,7 @@ def delete_intel_source(intel_source_id):
 
       HTTP/1.1 204 No Content
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :status 204: Intel source deleted
     :status 401: Invalid role to perform this action
     :status 404: Intel source ID not found

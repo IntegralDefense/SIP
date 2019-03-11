@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 5f6949ea172b
+Revision ID: fc9854dd0bc0
 Revises: 
-Create Date: 2019-03-07 10:20:12.729381
+Create Date: 2019-03-11 16:37:10.472196
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '5f6949ea172b'
+revision = 'fc9854dd0bc0'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -71,6 +71,7 @@ def upgrade():
     op.create_table('user',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('active', sa.Boolean(), nullable=False),
+    sa.Column('apikey', sa.String(length=36), nullable=False),
     sa.Column('email', sa.String(length=255), nullable=False),
     sa.Column('first_name', sa.String(length=50), nullable=False),
     sa.Column('last_name', sa.String(length=50), nullable=False),
@@ -80,6 +81,7 @@ def upgrade():
     sa.UniqueConstraint('email'),
     sa.UniqueConstraint('username')
     )
+    op.create_index(op.f('ix_user_apikey'), 'user', ['apikey'], unique=True)
     op.create_table('campaign_alias',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('alias', sa.String(length=255), nullable=False),
@@ -171,6 +173,7 @@ def downgrade():
     op.drop_table('intel_reference')
     op.drop_table('indicator')
     op.drop_table('campaign_alias')
+    op.drop_index(op.f('ix_user_apikey'), table_name='user')
     op.drop_table('user')
     op.drop_table('tag')
     op.drop_table('role')

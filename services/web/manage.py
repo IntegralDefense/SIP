@@ -492,7 +492,9 @@ def seeddb():
         admin_role = models.Role.query.filter_by(name='admin').first()
         user_datastore.create_user(email='admin@localhost', password=hash_password(password), username='admin', first_name='Admin', last_name='Admin', roles=[admin_role, analyst_role])
         db.session.commit()
+        admin = models.User.query.filter_by(username='admin').first()
         app.logger.info('SETUP: Created admin user with password: {}'.format(password))
+        app.logger.info('SETUP: Created admin user with API key: {}'.format(admin.apikey))
 
 
 if __name__ == '__main__':

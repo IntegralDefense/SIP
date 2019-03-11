@@ -5,7 +5,7 @@ from sqlalchemy import exc
 
 from project import db
 from project.api import bp
-from project.api.decorators import admin_required, check_if_token_required, validate_json, validate_schema
+from project.api.decorators import check_apikey, validate_json, validate_schema, verify_admin
 from project.api.errors import error_response
 from project.api.schemas import user_create, user_update
 from project.models import Role, User
@@ -17,7 +17,7 @@ CREATE
 
 
 @bp.route('/users', methods=['POST'])
-@admin_required
+@verify_admin
 @validate_json
 @validate_schema(user_create)
 def create_user():
@@ -51,6 +51,7 @@ def create_user():
 
       {
         "active": true,
+        "apikey": "11111111-1111-1111-1111-111111111111",
         "email": "johndoe@company.com",
         "first_name": "John",
         "id": 2,
@@ -59,7 +60,7 @@ def create_user():
         "username": "johndoe"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 201: User created
     :status 400: Password does not meet length requirement
@@ -119,7 +120,10 @@ def create_user():
     db.session.add(user)
     db.session.commit()
 
-    response = jsonify(user.to_dict())
+    # Add the user's API key to the response.
+    user_dict = user.to_dict()
+    user_dict['apikey'] = user.apikey
+    response = jsonify(user_dict)
     response.status_code = 201
     response.headers['Location'] = url_for('api.read_user', user_id=user.id)
     return response
@@ -131,7 +135,7 @@ READ
 
 
 @bp.route('/users/<int:user_id>', methods=['GET'])
-@check_if_token_required
+@check_apikey
 def read_user(user_id):
     """ Gets a single user given its ID.
 
@@ -162,7 +166,7 @@ def read_user(user_id):
         "username": "johndoe"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: User found
     :status 401: Invalid role to perform this action
@@ -177,7 +181,7 @@ def read_user(user_id):
 
 
 @bp.route('/users', methods=['GET'])
-@check_if_token_required
+@check_apikey
 def read_users():
     """ Gets a list of all the users.
 
@@ -219,7 +223,7 @@ def read_users():
         }
       ]
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: Users found
     :status 401: Invalid role to perform this action
@@ -235,7 +239,7 @@ UPDATE
 
 
 @bp.route('/users/<int:user_id>', methods=['PUT'])
-@admin_required
+@verify_admin
 @validate_json
 @validate_schema(user_update)
 def update_user(user_id):
@@ -272,7 +276,7 @@ def update_user(user_id):
         "username": "johndoe"
       }
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
     :status 200: User updated
     :status 400: Password does not meet length requirement
@@ -358,7 +362,7 @@ DELETE
 
 
 @bp.route('/users/<int:user_id>', methods=['DELETE'])
-@admin_required
+@verify_admin
 def delete_user(user_id):
     """ Deletes a user. Requires the admin role.
 
@@ -377,7 +381,7 @@ def delete_user(user_id):
 
       HTTP/1.1 204 No Content
 
-    :reqheader Authorization: Optional JWT Bearer token
+    :reqheader Authorization: Optional Apikey value
     :status 204: User deleted
     :status 401: Invalid role to perform this action
     :status 404: User ID not found
