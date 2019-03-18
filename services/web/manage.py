@@ -30,97 +30,77 @@ def import_crits_indicators():
         current_app.logger.error('Could not locate indicators.json for CRITS import')
         return
 
-    start = time.time()
-    with open('./import/indicators.json') as f:
-        indicators = json.load(f)
-    current_app.logger.info('CRITS IMPORT: Loaded indicators.json in {}'.format(time.time() - start))
-
     # Validate the indicators JSON.
     crits_create_schema = {
-        'type': 'array',
-        'items': {
-            'type': 'object',
-            'properties': {
-                'bucket_list': {
-                    'type': 'array',
-                    'items': {'type': 'string', 'maxLength': 255}
-                },
-                'campaign': {
-                    'type': 'array',
-                    'items': {
-                        'type': 'object',
-                        'properties': {
-                            'name': {'type': 'string', 'maxLength': 255}
-                        }
-                    }
-                },
-                'confidence': {
-                    'type': 'object',
-                    'properties': {
-                        'rating': {'type': 'string', 'minLength': 1, 'maxLength': 255}
-                    }
-                },
-                'created': {
-                    'type': 'object',
-                    'properties': {
-                        '$date': {'type': 'string', 'minLength': 24, 'maxLength': 24}
-                    }
-                },
-                'impact': {
-                    'type': 'object',
-                    'properties': {
-                        'rating': {'type': 'string', 'minLength': 1, 'maxLength': 255}
-                    }
-                },
-                'modified': {
-                    'type': 'object',
-                    'properties': {
-                        '$date': {'type': 'string', 'minLength': 24, 'maxLength': 24}
-                    }
-                },
-                'source': {
-                    'type': 'array',
-                    'items': {
-                        'type': 'object',
-                        'properties': {
-                            'instances': {
-                                'type': 'array',
-                                'items': {
-                                    'type': 'object',
-                                    'properties': {
-                                        'analyst': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-                                        'reference': {'type': 'string', 'maxLength': 512}
-                                    }
-                                }
-                            },
-                            'name': {'type': 'string', 'minLength': 1, 'maxLength': 255}
-                        }
-                    }
-                },
-                'status': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-                'type': {'type': 'string', 'minLength': 1, 'maxLength': 255},
-                'value': {'type': 'string', 'minLength': 1}
+        'type': 'object',
+        'properties': {
+            'bucket_list': {
+                'type': 'array',
+                'items': {'type': 'string', 'maxLength': 255}
             },
-            'required': ['confidence', 'created', 'impact', 'modified', 'source', 'status', 'type', 'value']
-        }
+            'campaign': {
+                'type': 'array',
+                'items': {
+                    'type': 'object',
+                    'properties': {
+                        'name': {'type': 'string', 'maxLength': 255}
+                    }
+                }
+            },
+            'confidence': {
+                'type': 'object',
+                'properties': {
+                    'rating': {'type': 'string', 'minLength': 1, 'maxLength': 255}
+                }
+            },
+            'created': {
+                'type': 'object',
+                'properties': {
+                    '$date': {'type': 'string', 'minLength': 24, 'maxLength': 24}
+                }
+            },
+            'impact': {
+                'type': 'object',
+                'properties': {
+                    'rating': {'type': 'string', 'minLength': 1, 'maxLength': 255}
+                }
+            },
+            'modified': {
+                'type': 'object',
+                'properties': {
+                    '$date': {'type': 'string', 'minLength': 24, 'maxLength': 24}
+                }
+            },
+            'source': {
+                'type': 'array',
+                'items': {
+                    'type': 'object',
+                    'properties': {
+                        'instances': {
+                            'type': 'array',
+                            'items': {
+                                'type': 'object',
+                                'properties': {
+                                    'analyst': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+                                    'reference': {'type': 'string', 'maxLength': 512}
+                                }
+                            }
+                        },
+                        'name': {'type': 'string', 'minLength': 1, 'maxLength': 255}
+                    }
+                }
+            },
+            'status': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+            'type': {'type': 'string', 'minLength': 1, 'maxLength': 255},
+            'value': {'type': 'string', 'minLength': 1}
+        },
+        'required': ['confidence', 'created', 'impact', 'modified', 'source', 'status', 'type', 'value']
     }
+
     start = time.time()
-    jsonschema.validate(indicators, crits_create_schema)
-    current_app.logger.info('CRITS IMPORT: Validated indicators.json in {}'.format(time.time() - start))
 
     # Connect to the database engine to issue faster select statements.
     with db.engine.connect() as conn:
-
-        # Get the existing indicators from the database.
-        start = time.time()
-        j = models.Indicator.__table__.join(models.IndicatorType,
-                                            models.Indicator.type_id == models.IndicatorType.id)
-        results = conn.execute(db.select([models.IndicatorType.value, models.Indicator.value]).select_from(j)).fetchall()
-        existing_indicators = dict()  # type: value
-        for result in results:
-            if result[0] not in existing_indicators:
-                existing_indicators[result[0]] = []
-            existing_indicators[result[0]].append(result[1])
 
         # Get the existing values from the database that indicators depend upon.
         existing_campaigns = dict()
@@ -163,145 +143,159 @@ def import_crits_indicators():
 
         num_new_indicators = 0
         unique_indicators = dict()  # type: value
-        for indicator in indicators:
 
-            # Skip this indicator if it is already in the database.
-            if indicator['type'] in existing_indicators and indicator['value'] in existing_indicators[indicator['type']]:
-                continue
+        line_count = 0
 
-            # Skip this indicator if it is a duplicate.
-            if indicator['type'] not in unique_indicators:
-                unique_indicators[indicator['type']] = []
-            if indicator['value'] in unique_indicators[indicator['type']]:
-                current_app.logger.warning('CRITS IMPORT: Skipping duplicate indicator: {}'.format(indicator['_id']['$oid']))
-                continue
-            else:
-                unique_indicators[indicator['type']].append(indicator['value'])
+        with open('./import/indicators.json') as f:
+            for line in f:
+                indicator = json.loads(line)
+                jsonschema.validate(indicator, crits_create_schema)
 
-            # Check if the indicator confidence must be created.
-            if indicator['confidence']['rating'] in existing_indicator_confidence:
-                indicator_confidence = existing_indicator_confidence[indicator['confidence']['rating']]
-            else:
-                new_indicator_confidence = models.IndicatorConfidence(value=indicator['confidence']['rating'])
-                existing_indicator_confidence[new_indicator_confidence.value] = new_indicator_confidence
-                indicator_confidence = new_indicator_confidence
-                db.session.add(new_indicator_confidence)
+                line_count += 1
 
-            # Check if the indicator impact must be created.
-            if indicator['impact']['rating'] in existing_indicator_impact:
-                indicator_impact = existing_indicator_impact[indicator['impact']['rating']]
-            else:
-                new_indicator_impact = models.IndicatorImpact(value=indicator['impact']['rating'])
-                existing_indicator_impact[new_indicator_impact.value] = new_indicator_impact
-                indicator_impact = new_indicator_impact
-                db.session.add(new_indicator_impact)
-
-            # Check if the indicator status must be created.
-            if indicator['status'] in existing_indicator_status:
-                indicator_status = existing_indicator_status[indicator['status']]
-            else:
-                new_indicator_status = models.IndicatorStatus(value=indicator['status'])
-                existing_indicator_status[new_indicator_status.value] = new_indicator_status
-                indicator_status = new_indicator_status
-                db.session.add(new_indicator_status)
-
-            # Check if the indicator type must be created.
-            if indicator['type'] in existing_indicator_type:
-                indicator_type = existing_indicator_type[indicator['type']]
-            else:
-                new_indicator_type = models.IndicatorType(value=indicator['type'])
-                existing_indicator_type[new_indicator_type.value] = new_indicator_type
-                indicator_type = new_indicator_type
-                db.session.add(new_indicator_type)
-
-            # Check if the user must be created.
-            username = indicator['source'][0]['instances'][0]['analyst']
-            if username in existing_users:
-                user = existing_users[username]
-            else:
-                password = ''.join(random.choice(string.ascii_letters + string.punctuation + string.digits) for x in range(20))
-                new_user = models.User(active=False,
-                                       email='{}@unknown'.format(username),
-                                       first_name=username,
-                                       last_name='Unknown',
-                                       password=hash_password(password),
-                                       roles=[],
-                                       username=username)
-                existing_users[username] = new_user
-                user = new_user
-                db.session.add(new_user)
-
-            # Create the campaigns list.
-            campaigns = []
-            if 'campaign' in indicator and indicator['campaign']:
-                for campaign in indicator['campaign']:
-                    campaigns.append(existing_campaigns[campaign['name']])
-
-            # Create the intel references list.
-            references = []
-            for s in indicator['source']:
-
-                # Check if the source must be created.
-                if s['name'] in existing_intel_source:
-                    source = existing_intel_source[s['name']]
+                # Skip this indicator if it is a duplicate.
+                if indicator['type'] not in unique_indicators:
+                    unique_indicators[indicator['type']] = []
+                if indicator['value'] in unique_indicators[indicator['type']]:
+                    current_app.logger.warning('CRITS IMPORT: Skipping duplicate indicator: {}'.format(indicator['_id']['$oid']))
+                    continue
                 else:
-                    source = models.IntelSource(value=s['name'])
-                    existing_intel_source[s['name']] = source
-                    db.session.add(source)
+                    unique_indicators[indicator['type']].append(indicator['value'])
 
-                # Make sure the source exists in the intel reference dictionary.
-                if source.value not in existing_intel_reference:
-                    existing_intel_reference[source.value] = dict()
+                # Check if the indicator confidence must be created.
+                if indicator['confidence']['rating'] in existing_indicator_confidence:
+                    indicator_confidence = existing_indicator_confidence[indicator['confidence']['rating']]
+                else:
+                    new_indicator_confidence = models.IndicatorConfidence(value=indicator['confidence']['rating'])
+                    existing_indicator_confidence[new_indicator_confidence.value] = new_indicator_confidence
+                    indicator_confidence = new_indicator_confidence
+                    db.session.add(new_indicator_confidence)
+                    db.session.flush()
 
-                for instance in s['instances']:
+                # Check if the indicator impact must be created.
+                if indicator['impact']['rating'] in existing_indicator_impact:
+                    indicator_impact = existing_indicator_impact[indicator['impact']['rating']]
+                else:
+                    new_indicator_impact = models.IndicatorImpact(value=indicator['impact']['rating'])
+                    existing_indicator_impact[new_indicator_impact.value] = new_indicator_impact
+                    indicator_impact = new_indicator_impact
+                    db.session.add(new_indicator_impact)
+                    db.session.flush()
 
-                    # Check if the reference must be created.
-                    if 'reference' in instance and source.value in existing_intel_reference and instance['reference'] in existing_intel_reference[source.value]:
-                        references.append(existing_intel_reference[source.value][instance['reference']])
-                    elif 'reference' in instance and instance['reference']:
-                        new_reference = models.IntelReference(reference=instance['reference'],
-                                                              source=source,
-                                                              user=user)
-                        existing_intel_reference[source.value][instance['reference']] = new_reference
-                        references.append(new_reference)
-                        db.session.add(new_reference)
+                # Check if the indicator status must be created.
+                if indicator['status'] in existing_indicator_status:
+                    indicator_status = existing_indicator_status[indicator['status']]
+                else:
+                    new_indicator_status = models.IndicatorStatus(value=indicator['status'])
+                    existing_indicator_status[new_indicator_status.value] = new_indicator_status
+                    indicator_status = new_indicator_status
+                    db.session.add(new_indicator_status)
+                    db.session.flush()
 
-            # Create the tags list.
-            tags = []
-            if 'bucket_list' in indicator and indicator['bucket_list']:
-                for tag in indicator['bucket_list']:
+                # Check if the indicator type must be created.
+                if indicator['type'] in existing_indicator_type:
+                    indicator_type = existing_indicator_type[indicator['type']]
+                else:
+                    new_indicator_type = models.IndicatorType(value=indicator['type'])
+                    existing_indicator_type[new_indicator_type.value] = new_indicator_type
+                    indicator_type = new_indicator_type
+                    db.session.add(new_indicator_type)
+                    db.session.flush()
 
-                    # Check if the tag must be created.
-                    if tag in existing_tags:
-                        tags.append(existing_tags[tag])
+                # Check if the user must be created.
+                username = indicator['source'][0]['instances'][0]['analyst']
+                if username in existing_users:
+                    user = existing_users[username]
+                else:
+                    password = ''.join(random.choice(string.ascii_letters + string.punctuation + string.digits) for x in range(20))
+                    new_user = models.User(active=False,
+                                           email='{}@unknown'.format(username),
+                                           first_name=username,
+                                           last_name='Unknown',
+                                           password=hash_password(password),
+                                           roles=[],
+                                           username=username)
+                    existing_users[username] = new_user
+                    user = new_user
+                    db.session.add(new_user)
+                    db.session.flush()
+
+                # Create the campaigns list.
+                campaigns = set()
+                if 'campaign' in indicator and indicator['campaign']:
+                    for campaign in indicator['campaign']:
+                        campaigns.add(existing_campaigns[campaign['name']])
+
+                # Create the intel references list.
+                references = set()
+                for s in indicator['source']:
+
+                    # Check if the source must be created.
+                    if s['name'] in existing_intel_source:
+                        source = existing_intel_source[s['name']]
                     else:
-                        new_tag = models.Tag(value=tag)
-                        existing_tags[tag] = new_tag
-                        tags.append(new_tag)
-                        db.session.add(new_tag)
+                        source = models.IntelSource(value=s['name'])
+                        existing_intel_source[s['name']] = source
+                        db.session.add(source)
+                        db.session.flush()
 
-            # Create the new indicator.
-            new_indicator = models.Indicator(campaigns=campaigns,
-                                             case_sensitive=False,
-                                             confidence=indicator_confidence,
-                                             created_time=parse(indicator['created']['$date']),
-                                             impact=indicator_impact,
-                                             modified_time=parse(indicator['modified']['$date']),
-                                             references=references,
-                                             status=indicator_status,
-                                             substring=False,
-                                             tags=tags,
-                                             type=indicator_type,
-                                             user=user,
-                                             value=indicator['value'])
-            db.session.add(new_indicator)
-            num_new_indicators += 1
+                    # Make sure the source exists in the intel reference dictionary.
+                    if source.value not in existing_intel_reference:
+                        existing_intel_reference[source.value] = dict()
+
+                    for instance in s['instances']:
+
+                        # Check if the reference must be created.
+                        if 'reference' in instance and source.value in existing_intel_reference and instance['reference'] in existing_intel_reference[source.value]:
+                            references.add(existing_intel_reference[source.value][instance['reference']])
+                        elif 'reference' in instance and instance['reference']:
+                            new_reference = models.IntelReference(reference=instance['reference'],
+                                                                  source=source,
+                                                                  user=user)
+                            existing_intel_reference[source.value][instance['reference']] = new_reference
+                            references.add(new_reference)
+                            db.session.add(new_reference)
+                            db.session.flush()
+
+                # Create the tags list.
+                tags = []
+                if 'bucket_list' in indicator and indicator['bucket_list']:
+                    for tag in indicator['bucket_list']:
+
+                        # Check if the tag must be created.
+                        if tag in existing_tags:
+                            tags.append(existing_tags[tag])
+                        else:
+                            new_tag = models.Tag(value=tag)
+                            existing_tags[tag] = new_tag
+                            tags.append(new_tag)
+                            db.session.add(new_tag)
+                            db.session.flush()
+
+                # Create the new indicator.
+                try:
+                    new_indicator = models.Indicator(campaigns=list(campaigns),
+                                                     case_sensitive=False,
+                                                     confidence=indicator_confidence,
+                                                     created_time=parse(indicator['created']['$date']),
+                                                     impact=indicator_impact,
+                                                     modified_time=parse(indicator['modified']['$date']),
+                                                     references=list(references),
+                                                     status=indicator_status,
+                                                     substring=False,
+                                                     tags=tags,
+                                                     type=indicator_type,
+                                                     user=user,
+                                                     value=indicator['value'])
+                    db.session.add(new_indicator)
+                    num_new_indicators += 1
+                except Exception as e:
+                    current_app.logger.exception("CRITS IMPORT: unable to import indicator {}: {}".format(indicator, e))
+                    #db.session.rollback()
 
     # Save any database changes.
     db.session.commit()
-
-    current_app.logger.info('CRITS IMPORT: Imported {}/{} indicators in {}'.format(num_new_indicators, len(indicators), time.time() - start))
-
+    current_app.logger.info('CRITS IMPORT: Imported {}/{} indicators in {}'.format(num_new_indicators, line_count, time.time() - start))
 
 @cli.command()
 def import_crits_campaigns():
