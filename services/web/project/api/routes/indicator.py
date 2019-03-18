@@ -463,6 +463,7 @@ def read_indicators():
 
     :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
+    :query bulk: True/False to enable "bulk" mode and received a gzipped response of all indicators, but only id+type+value
     :query case_sensitive: True/False
     :query confidence: Confidence value
     :query created_after: Parsable date or datetime in GMT. Ex: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
@@ -470,6 +471,7 @@ def read_indicators():
     :query impact: Impact value
     :query modified_after: Parsable date or datetime in GMT. Ex: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
     :query modified_before: Parsable date or datetime in GMT. Ex: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
+    :query not_sources: Comma-separated list of intel sources to EXCLUDE
     :query sources: Comma-separated list of intel sources
     :query status: Status value
     :query substring: True/False
