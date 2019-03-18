@@ -1,7 +1,9 @@
 import datetime
+import gzip
+import json
 
 from dateutil.parser import parse
-from flask import current_app, jsonify, request, url_for
+from flask import current_app, jsonify, request, Response, url_for
 from sqlalchemy import and_, exc
 
 from project import db
@@ -558,6 +560,18 @@ def read_indicators():
     # Value filter
     if 'value' in request.args:
         filters.add(Indicator.value.like('%{}%'.format(request.args.get('value'))))
+
+    # If bulk is enabled, get all of the results and compress them.
+    if 'bulk' in request.args:
+        if parse_boolean(request.args.get('bulk')):
+            data = [indicator.to_dict(bulk=True) for indicator in Indicator.query.filter(*filters)]
+            data = json.dumps(data).encode('utf-8')
+
+            response = Response(status=200, mimetype='application/json')
+            response.data = gzip.compress(data)
+            response.headers['Content-Encoding'] = 'gzip'
+            response.headers['Content-Length'] = len(response.data)
+            return response
 
     data = Indicator.to_collection_dict(Indicator.query.filter(*filters), 'api.read_indicators', **request.args)
     return jsonify(data)

@@ -1,4 +1,5 @@
 import datetime
+import gzip
 import time
 
 from project.tests.conftest import TEST_ANALYST_APIKEY, TEST_INACTIVE_APIKEY, TEST_INVALID_APIKEY
@@ -786,6 +787,13 @@ def test_read_with_filters(client):
     assert indicator2_request.status_code == 201
 
     time.sleep(1)
+
+    # Filter with bulk mode enabled.
+    request = client.get('/api/indicators?bulk=true')
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
+    assert request.status_code == 200
+    assert len(response) == 2
 
     # Filter by case_sensitive
     request = client.get('/api/indicators?case_sensitive=true')

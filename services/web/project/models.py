@@ -31,9 +31,9 @@ class PaginatedAPIMixin:
         else:
             page = 1
         if 'per_page' in args:
-            per_page = min(int(args['per_page'][0]), 100)
+            per_page = min(int(args['per_page'][0]), 1000)
         else:
-            per_page = 10
+            per_page = 100
 
         # Now that we have the page and per_page values, remove them
         # from the arguments so that the url_for function does not
@@ -74,38 +74,28 @@ ASSOCIATION TABLES
 
 
 indicator_campaign_association = db.Table('indicator_campaign_mapping',
-                                          db.Column('indicator_id', db.Integer, db.ForeignKey('indicator.id')),
-                                          db.Column('campaign_id', db.Integer, db.ForeignKey('campaign.id'))
-                                          )
+                                          db.Column('indicator_id', db.Integer, db.ForeignKey('indicator.id'), primary_key=True),
+                                          db.Column('campaign_id', db.Integer, db.ForeignKey('campaign.id'), primary_key=True))
 
 indicator_equal_association = db.Table('indicator_equal_mapping',
-                                       db.Column('left_id', db.Integer, db.ForeignKey('indicator.id'),
-                                                 primary_key=True),
-                                       db.Column('right_id', db.Integer, db.ForeignKey('indicator.id'),
-                                                 primary_key=True)
-                                       )
+                                       db.Column('left_id', db.Integer, db.ForeignKey('indicator.id'), primary_key=True),
+                                       db.Column('right_id', db.Integer, db.ForeignKey('indicator.id'), primary_key=True))
 
 indicator_reference_association = db.Table('indicator_reference_mapping',
-                                           db.Column('indicator_id', db.Integer, db.ForeignKey('indicator.id')),
-                                           db.Column('intel_reference_id', db.Integer,
-                                                     db.ForeignKey('intel_reference.id'))
-                                           )
+                                           db.Column('indicator_id', db.Integer, db.ForeignKey('indicator.id'), primary_key=True),
+                                           db.Column('intel_reference_id', db.Integer, db.ForeignKey('intel_reference.id'), primary_key=True))
 
 indicator_relationship_association = db.Table('indicator_relationship_mapping',
-                                              db.Column('parent_id', db.Integer, db.ForeignKey('indicator.id'),
-                                                        primary_key=True),
-                                              db.Column('child_id', db.Integer, db.ForeignKey('indicator.id'),
-                                                        primary_key=True)
-                                              )
+                                              db.Column('parent_id', db.Integer, db.ForeignKey('indicator.id'), primary_key=True),
+                                              db.Column('child_id', db.Integer, db.ForeignKey('indicator.id'),primary_key=True))
 
 indicator_tag_association = db.Table('indicator_tag_mapping',
-                                     db.Column('indicator_id', db.Integer, db.ForeignKey('indicator.id')),
-                                     db.Column('tag_id', db.Integer, db.ForeignKey('tag.id'))
-                                     )
+                                     db.Column('indicator_id', db.Integer, db.ForeignKey('indicator.id'), primary_key=True),
+                                     db.Column('tag_id', db.Integer, db.ForeignKey('tag.id'), primary_key=True))
 
 roles_users_association = db.Table('role_user_mapping',
-                                   db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
-                                   db.Column('role_id', db.Integer(), db.ForeignKey('role.id')))
+                                   db.Column('user_id', db.Integer(), db.ForeignKey('user.id'), primary_key=True),
+                                   db.Column('role_id', db.Integer(), db.ForeignKey('role.id'), primary_key=True))
 
 """
 TABLE CLASS DEFINITIONS
@@ -206,12 +196,12 @@ class Indicator(PaginatedAPIMixin, db.Model):
     children = db.relationship('Indicator', secondary=indicator_relationship_association,
                                primaryjoin=(indicator_relationship_association.c.parent_id == id),
                                secondaryjoin=(indicator_relationship_association.c.child_id == id),
-                               backref=db.backref('parent', lazy='select'), lazy='select')
+                               backref=db.backref('parent', lazy='joined'), lazy='joined')
 
     equal = db.relationship('Indicator', secondary=indicator_equal_association,
                             primaryjoin=(indicator_equal_association.c.left_id == id),
                             secondaryjoin=(indicator_equal_association.c.right_id == id),
-                            lazy='select')
+                            lazy='joined')
 
     status = db.relationship('IndicatorStatus')
     status_id = db.Column(db.Integer, db.ForeignKey('indicator_status.id'), nullable=False)
@@ -226,34 +216,37 @@ class Indicator(PaginatedAPIMixin, db.Model):
     def __str__(self):
         return str('{} : {}'.format(self.type, self.value))
 
-    def to_dict(self):
-        children = self.get_children(grandchildren=False)
-        all_children = self.get_children(grandchildren=True)
-
-        equal = self.get_equal(recursive=False)
-        all_equal = self.get_equal(recursive=True)
-
+    def to_dict(self, bulk=False):
         data = {
             'id': self.id,
-            'all_children': sorted([i.id for i in all_children]),
-            'all_equal': sorted([i.id for i in all_equal]),
-            'campaigns': [c.to_dict() for c in self.campaigns],
-            'case_sensitive': bool(self.case_sensitive),
-            'children': sorted([i.id for i in children]),
-            'confidence': self.confidence.value,
-            'created_time': self.created_time,
-            'equal': sorted([i.id for i in equal]),
-            'impact': self.impact.value,
-            'modified_time': self.modified_time,
-            'parent': self.get_parent().id if self.get_parent() else None,
-            'references': [r.to_dict() for r in self.references],
-            'status': self.status.value,
-            'substring': bool(self.substring),
-            'tags': sorted([t.value for t in self.tags]),
             'type': self.type.value,
-            'user': self.user.username,
             'value': self.value
         }
+
+        if not bulk:
+            children = self.get_children(grandchildren=False)
+            all_children = self.get_children(grandchildren=True)
+
+            equal = self.get_equal(recursive=False)
+            all_equal = self.get_equal(recursive=True)
+
+            data['all_children'] = sorted([i.id for i in all_children])
+            data['all_equal'] = sorted([i.id for i in all_equal])
+            data['campaigns'] = [c.to_dict() for c in self.campaigns]
+            data['case_sensitive'] = bool(self.case_sensitive)
+            data['children'] = sorted([i.id for i in children])
+            data['confidence'] = self.confidence.value
+            data['created_time'] = self.created_time
+            data['equal'] = sorted([i.id for i in equal])
+            data['impact'] = self.impact.value
+            data['modified_time'] = self.modified_time
+            data['parent'] = self.get_parent().id if self.get_parent() else None
+            data['references'] = [r.to_dict() for r in self.references]
+            data['status'] = self.status.value
+            data['substring'] = bool(self.substring)
+            data['tags'] = sorted([t.value for t in self.tags])
+            data['user'] = self.user.username
+
         return data
 
     def add_child(self, other):
@@ -462,7 +455,7 @@ class Tag(db.Model):
     __tablename__ = 'tag'
 
     id = db.Column(db.Integer, primary_key=True, nullable=False)
-    value = db.Column(db.String(255), nullable=False)
+    value = db.Column(db.String(255), nullable=False, index=True)
 
     def __str__(self):
         return str(self.value)
