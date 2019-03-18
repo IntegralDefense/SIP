@@ -788,12 +788,26 @@ def test_read_with_filters(client):
 
     time.sleep(1)
 
+    indicator3_request, indicator3_response = create_indicator(client, 'Email', 'abcd@abcd.com', 'admin',
+                                                               campaigns=['LOLcats'],
+                                                               case_sensitive=False,
+                                                               confidence='LOW',
+                                                               impact='LOW',
+                                                               intel_reference='http://blahblah2.com',
+                                                               intel_source='VirusTotal',
+                                                               status='New',
+                                                               substring=False,
+                                                               tags=['nanocore'])
+    assert indicator3_request.status_code == 201
+
+    time.sleep(1)
+
     # Filter with bulk mode enabled.
     request = client.get('/api/indicators?bulk=true')
     response = gzip.decompress(request.data)
     response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response) == 2
+    assert len(response) == 3
 
     # Filter by case_sensitive
     request = client.get('/api/indicators?case_sensitive=true')
@@ -806,7 +820,7 @@ def test_read_with_filters(client):
     request = client.get('/api/indicators?created_before={}'.format(datetime.datetime.now()))
     response = json.loads(request.data.decode())
     assert request.status_code == 200
-    assert len(response['items']) == 2
+    assert len(response['items']) == 3
     request = client.get('/api/indicators?created_before={}'.format(indicator2_response['created_time']))
     response = json.loads(request.data.decode())
     assert request.status_code == 200
@@ -817,11 +831,11 @@ def test_read_with_filters(client):
     request = client.get('/api/indicators?created_after={}'.format(datetime.datetime.min))
     response = json.loads(request.data.decode())
     assert request.status_code == 200
-    assert len(response['items']) == 2
+    assert len(response['items']) == 3
     request = client.get('/api/indicators?created_after={}'.format(indicator1_response['created_time']))
     response = json.loads(request.data.decode())
     assert request.status_code == 200
-    assert len(response['items']) == 1
+    assert len(response['items']) == 2
     assert response['items'][0]['value'] == 'asdf@asdf.com'
 
     # Filter by confidence
@@ -842,7 +856,7 @@ def test_read_with_filters(client):
     request = client.get('/api/indicators?modified_before={}'.format(datetime.datetime.now()))
     response = json.loads(request.data.decode())
     assert request.status_code == 200
-    assert len(response['items']) == 2
+    assert len(response['items']) == 3
     request = client.get('/api/indicators?modified_before={}'.format(indicator2_response['modified_time']))
     response = json.loads(request.data.decode())
     assert request.status_code == 200
@@ -853,11 +867,11 @@ def test_read_with_filters(client):
     request = client.get('/api/indicators?modified_after={}'.format(datetime.datetime.min))
     response = json.loads(request.data.decode())
     assert request.status_code == 200
-    assert len(response['items']) == 2
+    assert len(response['items']) == 3
     request = client.get('/api/indicators?modified_after={}'.format(indicator1_response['modified_time']))
     response = json.loads(request.data.decode())
     assert request.status_code == 200
-    assert len(response['items']) == 1
+    assert len(response['items']) == 2
     assert response['items'][0]['value'] == 'asdf@asdf.com'
 
     # Filter by status
@@ -901,6 +915,14 @@ def test_read_with_filters(client):
     assert request.status_code == 200
     assert len(response['items']) == 1
     assert response['items'][0]['value'] == '1.1.1.1'
+
+    # Filter by NOT intel source
+    request = client.get('/api/indicators?not_sources=OSINT')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 2
+    assert response['items'][0]['value'] == 'asdf@asdf.com'
+    assert response['items'][1]['value'] == 'abcd@abcd.com'
 
     # Filter by multiple
     request = client.get('/api/indicators?tags=phish&type=IP')

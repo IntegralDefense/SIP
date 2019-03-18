@@ -528,6 +528,12 @@ def read_indicators():
             modified_before = datetime.date.min
         filters.add(Indicator.modified_time < modified_before)
 
+    # NOT Source filter (IntelReference)
+    if 'not_sources' in request.args:
+        not_sources = request.args.get('not_sources').split(',')
+        for ns in not_sources:
+            filters.add(~Indicator.references.any(IntelReference.source.has(IntelSource.value == ns)))
+
     # Source filter (IntelReference)
     if 'sources' in request.args:
         sources = request.args.get('sources').split(',')
