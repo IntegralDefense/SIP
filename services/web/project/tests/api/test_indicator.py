@@ -317,7 +317,11 @@ def test_create_duplicate(client):
 
     request, response = create_indicator(client, 'asdf', 'asdf', 'analyst')
     assert request.status_code == 409
-    assert response['msg'] == 'Indicator already exists'
+    assert response['msg'] == 'Case-insensitive indicator already exists'
+
+    request, response = create_indicator(client, 'asdf', 'ASDF', 'analyst')
+    assert request.status_code == 409
+    assert response['msg'] == 'Case-insensitive indicator already exists'
 
 
 def test_create_nonexistent_username(client):
@@ -633,6 +637,51 @@ def test_create_autocreate_tag(app, client):
     response = json.loads(request.data.decode())
     assert request.status_code == 201
     assert response['tags'] == ['from_address', 'phish']
+
+
+def test_create_case_sensitivity(client):
+    """ Ensure the database case-sensitivity is working """
+
+    request, response = create_indicator(client, 'asdf', 'asdf', 'analyst',
+                                         campaigns=['LOLcats', 'Derpsters'],
+                                         case_sensitive=False,
+                                         confidence='HIGH',
+                                         impact='HIGH',
+                                         intel_reference='http://blahblah.com',
+                                         intel_source='OSINT',
+                                         status='Analyzed',
+                                         substring=False,
+                                         tags=['phish', 'nanocore'])
+    assert request.status_code == 201
+    assert response['type'] == 'asdf'
+    assert response['value'] == 'asdf'
+
+    request, response = create_indicator(client, 'asdf', 'ASDF', 'analyst',
+                                         campaigns=['LOLcats', 'Derpsters'],
+                                         case_sensitive=False,
+                                         confidence='HIGH',
+                                         impact='HIGH',
+                                         intel_reference='http://blahblah.com',
+                                         intel_source='OSINT',
+                                         status='Analyzed',
+                                         substring=False,
+                                         tags=['phish', 'nanocore'])
+    assert request.status_code == 409
+    assert response['msg'] == 'Case-insensitive indicator already exists'
+
+    request, response = create_indicator(client, 'asdf', 'ASDF', 'analyst',
+                                         campaigns=['LOLcats', 'Derpsters'],
+                                         case_sensitive=True,
+                                         confidence='HIGH',
+                                         impact='HIGH',
+                                         intel_reference='http://blahblah.com',
+                                         intel_source='OSINT',
+                                         status='Analyzed',
+                                         substring=False,
+                                         tags=['phish', 'nanocore'])
+    assert request.status_code == 201
+    assert response['type'] == 'asdf'
+    assert response['value'] == 'ASDF'
 
 
 def test_create(client):
