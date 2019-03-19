@@ -4,7 +4,7 @@ import json
 
 from dateutil.parser import parse
 from flask import current_app, jsonify, request, Response, url_for
-from sqlalchemy import and_, exc
+from sqlalchemy import and_, exc, func
 
 from project import db
 from project.api import bp
@@ -157,16 +157,21 @@ def create_indicator():
         else:
             return error_response(404, 'Indicator type not found: {}'.format(data['type']))
 
-    # Verify this type+value does not already exist.
-    existing = Indicator.query.filter_by(type=indicator_type, value=data['value']).first()
-    if existing:
-        return error_response(409, 'Indicator already exists')
-
     # Verify the case-sensitive value (defaults to False).
     if 'case_sensitive' in data:
         case_sensitive = data['case_sensitive']
     else:
         case_sensitive = False
+
+    # Verify this type+value does not already exist based off of case_sensitive.
+    if case_sensitive:
+        existing = Indicator.query.filter(Indicator.type == indicator_type, func.binary(Indicator.value) == func.binary(data['value'])).first()
+        if existing:
+            return error_response(409, 'Case-sensitive indicator already exists')
+    else:
+        existing = Indicator.query.filter(Indicator.type == indicator_type, func.lower(Indicator.value) == func.lower(data['value'])).first()
+        if existing:
+            return error_response(409, 'Case-insensitive indicator already exists')
 
     # Verify the confidence (has default).
     if 'confidence' not in data:
