@@ -31,13 +31,6 @@ def test_create_schema(client):
     assert request.status_code == 400
     assert response['msg'] == "Request JSON does not match schema: 'source' is a required property"
 
-    # Missing required username parameter
-    data = {'source': 'asdf', 'reference': 'asdf'}
-    request = client.post('/api/intel/reference', json=data)
-    response = json.loads(request.data.decode())
-    assert request.status_code == 400
-    assert response['msg'] == "Request JSON does not match schema: 'username' is a required property"
-
     # Additional parameter
     data = {'reference': 'asdf', 'source': 'asdf', 'username': 'asdf', 'asdf': 'asdf'}
     request = client.post('/api/intel/reference', json=data)
@@ -184,6 +177,47 @@ def test_create_invalid_role(app, client):
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['msg'] == 'Insufficient privileges'
+
+
+def test_create_api_key_instead_of_username(app, client):
+    """ Ensure that supplying an API key instead of username value works """
+
+    app.config['INTELREFERENCE_AUTO_CREATE_INTELSOURCE'] = True
+
+    # Try a missing API key.
+    data = {'reference': 'http://blahblah.com',
+            'source': 'OSINT'}
+    request = client.post('/api/intel/reference', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['msg'] == 'You must supply either username or API key'
+
+    # Try an invalid API key.
+    headers = {'Authorization': 'Apikey ' + 'this-api-key-does-not-exist'}
+    data = {'reference': 'http://blahblah.com',
+            'source': 'OSINT'}
+    request = client.post('/api/intel/reference', headers=headers, json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 404
+    assert response['msg'] == 'User not found by API key'
+
+    # Try an inactive API key.
+    headers = {'Authorization': 'Apikey ' + TEST_INACTIVE_APIKEY}
+    data = {'reference': 'http://blahblah.com',
+            'source': 'OSINT'}
+    request = client.post('/api/intel/reference', headers=headers, json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['msg'] == 'Cannot create an intel reference with an inactive user'
+
+    # Try a valid API key.
+    headers = {'Authorization': 'Apikey ' + TEST_ANALYST_APIKEY}
+    data = {'reference': 'http://blahblah.com',
+            'source': 'OSINT'}
+    request = client.post('/api/intel/reference', headers=headers, json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 201
+    assert response['user'] == 'analyst'
 
 
 def test_create_autocreate_intel_source(app, client):

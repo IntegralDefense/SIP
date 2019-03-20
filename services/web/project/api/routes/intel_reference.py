@@ -5,6 +5,7 @@ from project import db
 from project.api import bp
 from project.api.decorators import check_apikey, validate_json, validate_schema
 from project.api.errors import error_response
+from project.api.helpers import get_apikey
 from project.api.schemas import intel_reference_create, intel_reference_update
 from project.models import IntelReference, IntelSource, User
 
@@ -57,17 +58,29 @@ def create_intel_reference():
     :status 400: JSON does not match the schema
     :status 401: Invalid role to perform this action
     :status 401: Username is inactive
+    :status 401: You must supply either username or API key
     :status 404: Source not found
+    :status 404: User not found by API key
     :status 404: Username not found
     :status 409: Intel reference already exists
     """
 
     data = request.get_json()
 
-    # Verify the username exists.
-    user = User.query.filter_by(username=data['username']).first()
-    if not user:
-        return error_response(404, 'User username not found: {}'.format(data['username']))
+    # Verify the user exists.
+    user = None
+    if 'username' in data:
+        user = User.query.filter_by(username=data['username']).first()
+        if not user:
+            return error_response(404, 'User not found by username')
+    else:
+        apikey = get_apikey(request)
+        if apikey:
+            user = User.query.filter_by(apikey=apikey).first()
+            if not user:
+                return error_response(404, 'User not found by API key')
+        else:
+            return error_response(401, 'You must supply either username or API key')
 
     # Verify the user is active.
     if not user.active:
