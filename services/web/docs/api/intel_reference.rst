@@ -18,6 +18,11 @@ Create
 
 Required parameters are in **bold**.
 
+*NOTE*: While only **reference** and **source** are listed as required parameters,
+there is a requirement not listed in the schema. You must either supply the **username**
+parameter OR your API key in the Authorization header. This is what is used to link
+the intel reference to the user who created it.
+
 .. jsonschema:: ../../project/api/schemas/intel_reference_create.json
 
 |
