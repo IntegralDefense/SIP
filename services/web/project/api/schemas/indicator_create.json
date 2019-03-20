@@ -33,6 +33,6 @@
         "username": {"type": "string", "minLength": 1, "maxLength": 255},
         "value": {"type": "string", "minLength": 1, "maxLength": 512}
     },
-    "required": ["username", "type", "value"],
+    "required": ["type", "value"],
     "additionalProperties": false
 }

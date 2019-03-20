@@ -28,13 +28,6 @@ def test_create_schema(client):
     assert request.status_code == 400
     assert response['msg'] == "Request JSON does not match schema: 'type' is a required property"
 
-    # Missing required username parameter
-    data = {'type': 'asdf', 'value': 'asdf'}
-    request = client.post('/api/indicators', json=data)
-    response = json.loads(request.data.decode())
-    assert request.status_code == 400
-    assert response['msg'] == "Request JSON does not match schema: 'username' is a required property"
-
     # Missing required value parameter
     data = {'type': 'asdf', 'username': 'asdf'}
     request = client.post('/api/indicators', json=data)
@@ -329,7 +322,7 @@ def test_create_nonexistent_username(client):
 
     request, response = create_indicator(client, 'asdf', 'asdf', 'this_user_does_not_exist')
     assert request.status_code == 404
-    assert 'User username not found:' in response['msg']
+    assert response['msg'] == 'User not found by username'
 
 
 def test_create_inactive_username(client):
@@ -385,6 +378,66 @@ def test_create_invalid_role(app, client):
     response = json.loads(request.data.decode())
     assert request.status_code == 401
     assert response['msg'] == 'Insufficient privileges'
+
+
+def test_create_api_key_instead_of_username(app, client):
+    """ Ensure that supplying an API key instead of username value works """
+
+    app.config['INDICATOR_AUTO_CREATE_INDICATORCONFIDENCE'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORIMPACT'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORSTATUS'] = True
+    app.config['INDICATOR_AUTO_CREATE_INDICATORTYPE'] = True
+
+    # Try a missing API key.
+    data = {'confidence': 'LOW',
+            'impact': 'LOW',
+            'status': 'New',
+            'substring': False,
+            'type': 'Email - Address',
+            'value': 'badguy@evil.com'}
+    request = client.post('/api/indicators', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['msg'] == 'You must supply either username or API key'
+
+    # Try an invalid API key.
+    headers = {'Authorization': 'Apikey ' + 'this-api-key-does-not-exist'}
+    data = {'confidence': 'LOW',
+            'impact': 'LOW',
+            'status': 'New',
+            'substring': False,
+            'type': 'Email - Address',
+            'value': 'badguy@evil.com'}
+    request = client.post('/api/indicators', headers=headers, json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 404
+    assert response['msg'] == 'User not found by API key'
+
+    # Try an inactive API key.
+    headers = {'Authorization': 'Apikey ' + TEST_INACTIVE_APIKEY}
+    data = {'confidence': 'LOW',
+            'impact': 'LOW',
+            'status': 'New',
+            'substring': False,
+            'type': 'Email - Address',
+            'value': 'badguy@evil.com'}
+    request = client.post('/api/indicators', headers=headers, json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 401
+    assert response['msg'] == 'Cannot create an indicator with an inactive user'
+
+    # Try a valid API key.
+    headers = {'Authorization': 'Apikey ' + TEST_ANALYST_APIKEY}
+    data = {'confidence': 'LOW',
+            'impact': 'LOW',
+            'status': 'New',
+            'substring': False,
+            'type': 'Email - Address',
+            'value': 'badguy@evil.com'}
+    request = client.post('/api/indicators', headers=headers, json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 201
+    assert response['user'] == 'analyst'
 
 
 def test_create_autocreate_campaign(app, client):
