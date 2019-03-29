@@ -1011,13 +1011,6 @@ def test_read_with_filters(client):
     assert len(response['items']) == 1
     assert response['items'][0]['value'] == '1.1.1.1'
 
-    # Filter by intel reference
-    request = client.get('/api/indicators?reference=http://blahblah.com')
-    response = json.loads(request.data.decode())
-    assert request.status_code == 200
-    assert len(response['items']) == 1
-    assert response['items'][0]['value'] == '1.1.1.1'
-
     # Filter by intel source
     request = client.get('/api/indicators?sources=OSINT')
     response = json.loads(request.data.decode())
