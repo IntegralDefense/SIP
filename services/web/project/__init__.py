@@ -1,5 +1,4 @@
 import logging
-from logging.handlers import TimedRotatingFileHandler
 import os
 
 from flask import Flask, url_for
@@ -64,13 +63,7 @@ def create_app():
     app_settings = os.getenv('APP_SETTINGS')
     app.config.from_object(app_settings)
 
-    # Start logging
-    if not os.path.exists('logs'):
-        os.mkdir('logs')
-    file_handler = TimedRotatingFileHandler('logs/SIP.log',  when='midnight', interval=1, backupCount=6)
-    file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(filename)s:%(lineno)d - %(message)s'))
-    file_handler.setLevel(logging.INFO)
-    app.logger.addHandler(file_handler)
+    # Set the logging level
     app.logger.setLevel(logging.INFO)
     app.logger.info('SIP starting')
 
