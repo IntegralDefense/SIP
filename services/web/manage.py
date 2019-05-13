@@ -306,94 +306,91 @@ def import_crits_campaigns():
         current_app.logger.error('Could not locate campaigns.json for CRITS import')
         return
 
-    start = time.time()
-    with open('./import/campaigns.json') as f:
-        campaigns = json.load(f)
-    current_app.logger.info('CRITS IMPORT: Loaded campaigns.json in {}'.format(time.time() - start))
-
     # Validate the campaigns JSON.
     crits_create_schema = {
-        'type': 'array',
-        'items': {
-            'type': 'object',
-            'properties': {
-                'aliases': {
-                    'type': 'array',
-                    'items': {'type': 'string', 'maxLength': 255}
-                },
-                'created': {
-                    'type': 'object',
-                    'properties': {
-                        '$date': {'type': 'string', 'minLength': 24, 'maxLength': 24}
-                    }
-                },
-                'modified': {
-                    'type': 'object',
-                    'properties': {
-                        '$date': {'type': 'string', 'minLength': 24, 'maxLength': 24}
-                    }
-                },
-                'name': {'type': 'string', 'minLength': 1, 'maxLength': 255}
+        'type': 'object',
+        'properties': {
+            'aliases': {
+                'type': 'array',
+                'items': {'type': 'string', 'maxLength': 255}
             },
-            'required': ['aliases', 'created', 'modified', 'name']
-        }
+            'created': {
+                'type': 'object',
+                'properties': {
+                    '$date': {'type': 'string', 'minLength': 24, 'maxLength': 24}
+                }
+            },
+            'modified': {
+                'type': 'object',
+                'properties': {
+                    '$date': {'type': 'string', 'minLength': 24, 'maxLength': 24}
+                }
+            },
+            'name': {'type': 'string', 'minLength': 1, 'maxLength': 255}
+        },
+        'required': ['aliases', 'created', 'modified', 'name']
     }
+
     start = time.time()
-    jsonschema.validate(campaigns, crits_create_schema)
-    current_app.logger.info('CRITS IMPORT: Validated campaigns.json in {}'.format(time.time() - start))
 
     # Connect to the database engine to issue faster select statements.
     with db.engine.connect() as conn:
 
         # Get the existing campaigns and campaign aliases from the database.
-        start = time.time()
         existing_campaigns = [x[0] for x in conn.execute(db.select([models.Campaign.name])).fetchall()]
         existing_campaign_aliases = [x[0] for x in conn.execute(db.select([models.CampaignAlias.alias])).fetchall()]
 
         num_new_campaigns = 0
         unique_campaigns = []
         unique_campaign_aliases = []
-        for campaign in campaigns:
+        line_count = 0
 
-            # Skip this campaign if it is already in the database.
-            if campaign['name'] in existing_campaigns:
-                continue
+        with open('./import/campaigns.json') as f:
+            for line in f:
+                campaign = json.loads(line)
+                jsonschema.validate(campaign, crits_create_schema)
 
-            # Skip this campaign if it is a duplicate.
-            if campaign['name'] in unique_campaigns:
-                current_app.logger.warning('CRITS IMPORT: Skipping duplicate campaign: {}'.format(campaign['name']))
-                continue
-            else:
-                unique_campaigns.append(campaign['name'])
+                line_count += 1
 
-            # Create and add the new campaign.
-            new_campaign = models.Campaign(name=campaign['name'],
-                                           created_time=parse(campaign['created']['$date']),
-                                           modified_time=parse(campaign['modified']['$date']))
-            db.session.add(new_campaign)
-            num_new_campaigns += 1
+                # Skip this campaign if it is already in the database.
+                if campaign['name'] in existing_campaigns:
+                    continue
 
-            if 'aliases' in campaign and campaign['aliases']:
-                for alias in campaign['aliases']:
+                # Skip this campaign if it is a duplicate.
+                if campaign['name'] in unique_campaigns:
+                    current_app.logger.warning('CRITS IMPORT: Skipping duplicate campaign: {}'.format(campaign['name']))
+                    continue
+                else:
+                    unique_campaigns.append(campaign['name'])
 
-                    # Skip this campaign alias if it is already in the database.
-                    if alias in existing_campaign_aliases:
-                        continue
+                # Create and add the new campaign.
+                new_campaign = models.Campaign(name=campaign['name'],
+                                               created_time=parse(campaign['created']['$date']),
+                                               modified_time=parse(campaign['modified']['$date']))
+                db.session.add(new_campaign)
+                num_new_campaigns += 1
 
-                    # Skip this campaign alias if it is a duplicate.
-                    if alias in unique_campaign_aliases:
-                        continue
-                    else:
-                        unique_campaign_aliases.append(alias)
+                if 'aliases' in campaign and campaign['aliases']:
+                    for alias in campaign['aliases']:
 
-                    # Create and add the new campaign alias.
-                    new_campaign_alias = models.CampaignAlias(alias=alias, campaign=new_campaign)
-                    db.session.add(new_campaign_alias)
+                        # Skip this campaign alias if it is already in the database.
+                        if alias in existing_campaign_aliases:
+                            continue
+
+                        # Skip this campaign alias if it is a duplicate.
+                        if alias in unique_campaign_aliases:
+                            continue
+                        else:
+                            unique_campaign_aliases.append(alias)
+
+                        # Create and add the new campaign alias.
+                        new_campaign_alias = models.CampaignAlias(alias=alias, campaign=new_campaign)
+                        db.session.add(new_campaign_alias)
 
     # Save any database changes.
     db.session.commit()
 
-    current_app.logger.info('CRITS IMPORT: Imported {}/{} campaigns in {}'.format(num_new_campaigns, len(campaigns), time.time() - start))
+    current_app.logger.info('CRITS IMPORT: Imported {}/{} campaigns in {}'.format(num_new_campaigns, line_count, time.time() - start))
 
 
 @cli.command()
