@@ -28,7 +28,7 @@ services:
             - mysql-prod:/var/lib/mysql
         env_file:
             - ./services/db/docker-PROD.env
-        command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --explicit_defaults_for_timestamp
+        command: --explicit_defaults_for_timestamp
 
     nginx-prod:
         build:
