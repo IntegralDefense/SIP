@@ -66,14 +66,12 @@ MYSQL_PASSWORD={password}
 
 FLASK_SECRET_KEY = os.urandom(48).hex()
 FLASK_SECURITY_PASSWORD_SALT = os.urandom(48).hex()
-JWT_SECRET_KEY = os.urandom(48).hex()
 WEB_DOCKER_ENV = """FLASK_APP=project
 FLASK_ENV={environment}
 APP_SETTINGS={config}
 DATABASE_URL=mysql+pymysql://{user}:{password}@db:3306/SIP?charset=utf8mb4
 SECRET_KEY={secret_key}
 SECURITY_PASSWORD_SALT={salt}
-JWT_SECRET_KEY={jwt_key}
 """
 
 
@@ -208,8 +206,7 @@ if BUILD_DEV:
                                        user=MYSQL_USER,
                                        password=MYSQL_PASS,
                                        secret_key=FLASK_SECRET_KEY,
-                                       salt=FLASK_SECURITY_PASSWORD_SALT,
-                                       jwt_key=JWT_SECRET_KEY)
+                                       salt=FLASK_SECURITY_PASSWORD_SALT)
         with open(WEB_DOCKER_ENV_DEV, 'w') as f:
             f.write(output)
 
@@ -220,8 +217,7 @@ if BUILD_TEST:
                                        user=MYSQL_USER,
                                        password=MYSQL_PASS,
                                        secret_key=FLASK_SECRET_KEY,
-                                       salt=FLASK_SECURITY_PASSWORD_SALT,
-                                       jwt_key=JWT_SECRET_KEY)
+                                       salt=FLASK_SECURITY_PASSWORD_SALT)
         with open(WEB_DOCKER_ENV_TEST, 'w') as f:
             f.write(output)
 
@@ -232,8 +228,7 @@ if BUILD_PROD:
                                        user=MYSQL_USER,
                                        password=MYSQL_PASS,
                                        secret_key=FLASK_SECRET_KEY,
-                                       salt=FLASK_SECURITY_PASSWORD_SALT,
-                                       jwt_key=JWT_SECRET_KEY)
+                                       salt=FLASK_SECURITY_PASSWORD_SALT)
         with open(WEB_DOCKER_ENV_PROD, 'w') as f:
             f.write(output)
 
