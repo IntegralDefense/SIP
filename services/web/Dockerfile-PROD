@@ -1,5 +1,8 @@
 FROM pypy:3
 
+ARG http_proxy
+ARG https_proxy
+
 RUN apt-get update && apt-get install -y mysql-client
 
 WORKDIR /usr/src/app

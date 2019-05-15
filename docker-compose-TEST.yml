@@ -5,6 +5,9 @@ services:
         build:
             context: ./services/web
             dockerfile: Dockerfile-TEST
+            args:
+                - http_proxy
+                - https_proxy
         networks:
             - test
         restart: on-failure
@@ -19,6 +22,9 @@ services:
         build:
             context: ./services/db
             dockerfile: Dockerfile-TEST
+            args:
+                - http_proxy
+                - https_proxy
         networks:
             - test
         restart: on-failure
@@ -32,6 +38,9 @@ services:
         build:
             context: ./services/nginx
             dockerfile: Dockerfile-TEST
+            args:
+                - http_proxy
+                - https_proxy
         networks:
             - test
         restart: on-failure

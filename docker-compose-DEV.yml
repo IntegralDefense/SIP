@@ -5,6 +5,9 @@ services:
         build:
             context: ./services/web
             dockerfile: Dockerfile-DEV
+            args:
+                - http_proxy
+                - https_proxy
         networks:
             - dev
         restart: on-failure
@@ -21,6 +24,9 @@ services:
         build:
             context: ./services/db
             dockerfile: Dockerfile-DEV
+            args:
+                - http_proxy
+                - https_proxy
         networks:
             - dev
         restart: on-failure
@@ -36,6 +42,9 @@ services:
         build:
             context: ./services/nginx
             dockerfile: Dockerfile-DEV
+            args:
+                - http_proxy
+                - https_proxy
         networks:
             - dev
         restart: on-failure
