@@ -5,6 +5,9 @@ services:
         build:
             context: ./services/web
             dockerfile: Dockerfile-TEST
+            args:
+                - http_proxy
+                - https_proxy
         networks:
             - test
         restart: on-failure
@@ -19,6 +22,9 @@ services:
         build:
             context: ./services/db
             dockerfile: Dockerfile-TEST
+            args:
+                - http_proxy
+                - https_proxy
         networks:
             - test
         restart: on-failure
@@ -26,12 +32,15 @@ services:
             - mysql-test:/var/lib/mysql
         env_file:
             - ./services/db/docker-TEST.env
-        command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --explicit_defaults_for_timestamp
+        command: --explicit_defaults_for_timestamp
 
     nginx-test:
         build:
             context: ./services/nginx
             dockerfile: Dockerfile-TEST
+            args:
+                - http_proxy
+                - https_proxy
         networks:
             - test
         restart: on-failure

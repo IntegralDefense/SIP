@@ -1020,11 +1020,23 @@ def test_read_with_filters(client):
     assert response['items'][0]['user'] == 'analyst'
 
     # Filter by value
-    request = client.get('/api/indicators?value=1.1')
+    request = client.get('/api/indicators?value=abcd')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 2
+
+    # Filter by exact value (success)
+    request = client.get('/api/indicators?exact_value=abcd@abcd.com')
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert len(response['items']) == 1
-    assert response['items'][0]['value'] == '1.1.1.1'
+    assert response['items'][0]['value'] == 'abcd@abcd.com'
+
+    # Filter by exact value (failure)
+    request = client.get('/api/indicators?exact_value=abcd')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 0
 
     # Filter by intel reference
     request = client.get('/api/indicators?reference={}'.format(urllib.parse.quote('https://your.wiki/display/events/20190501+somebadsite.local+-+Bad+Guy')))

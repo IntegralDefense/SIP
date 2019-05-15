@@ -1,5 +1,8 @@
 FROM nginx:1.15.6-alpine
 
+ARG http_proxy
+ARG https_proxy
+
 RUN rm /etc/nginx/conf.d/default.conf
 COPY ./server-TEST.conf /etc/nginx/conf.d
 ADD certs/ /etc/nginx/certs

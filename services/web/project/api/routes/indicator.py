@@ -485,6 +485,7 @@ def read_indicators():
     :query confidence: Confidence value
     :query created_after: Parsable date or datetime in GMT. Ex: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
     :query created_before: Parsable date or datetime in GMT. Ex: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
+    :query exact_value: Exact indicator value to find. Does not use a wildcard search.
     :query impact: Impact value
     :query modified_after: Parsable date or datetime in GMT. Ex: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
     :query modified_before: Parsable date or datetime in GMT. Ex: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
@@ -527,6 +528,10 @@ def read_indicators():
         except (ValueError, OverflowError):
             created_before = datetime.date.min
         filters.add(Indicator.created_time < created_before)
+
+    # Exact value filter
+    if 'exact_value' in request.args:
+        filters.add(Indicator.value == request.args.get('exact_value'))
 
     # Impact filter
     if 'impact' in request.args:
