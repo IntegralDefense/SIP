@@ -518,6 +518,7 @@ def read_indicators():
     :query type: Type value
     :query types: Comma-separated list of types. Only supports OR logic since indicators only have one type.
     :query user: Username of person who created the associated reference
+    :query users: Comma-separated list of usernames of the associated references. Supports [OR].
     :query value: String found in value (uses wildcard search)
     :status 200: Indicators found
     :status 401: Invalid role to perform this action
@@ -649,9 +650,26 @@ def read_indicators():
         types = request.args.get('types').split(',')
         filters.add(Indicator.type.value.in_(types))
 
-    # Username filter
+    # User filter
     if 'user' in request.args:
         filters.add(Indicator.references.any(IntelReference.user.has(User.username == request.args.get('user'))))
+
+    # Users filter
+    if 'users' in request.args:
+
+        # Figure out AND or OR mode.
+        list_mode = 'and'
+        request_value = request.args.get('users')
+        if '[OR]' in request_value:
+            list_mode = 'or'
+            request_value = request_value.replace('[OR]', '')
+
+        search_users = request_value.split(',')
+        if list_mode == 'and':
+            for search_user in search_users:
+                filters.add(Indicator.references.any(IntelReference.user.has(User.username == search_user)))
+        elif list_mode == 'or':
+            filters.add(Indicator.references.any(IntelReference.user.has(User.username.in_(search_users))))
 
     # Value filter
     if 'value' in request.args:

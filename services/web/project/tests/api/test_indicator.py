@@ -1048,6 +1048,25 @@ def test_read_with_filters(client):
     assert len(response['items']) == 1
     assert response['items'][0]['user'] == 'analyst'
 
+    # Filter by users (single)
+    request = client.get('/api/indicators?users=analyst')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 1
+    assert response['items'][0]['user'] == 'analyst'
+
+    # Filter by users (AND)
+    request = client.get('/api/indicators?users=analyst,admin')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 0
+
+    # Filter by users (OR)
+    request = client.get('/api/indicators?users=[OR]analyst,admin')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 4
+
     # Filter by NOT user
     request = client.get('/api/indicators?not_users=admin')
     response = json.loads(request.data.decode())
