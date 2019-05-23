@@ -396,9 +396,27 @@ def read_indicators():
 
     .. :quickref: Indicator; Gets a paginated list of indicators based on various filter criteria.
 
-    **Example request**:
+    *NOTE*: Multiple query parameters can be used and will be applied with AND logic. The default logic for query
+    parameters that accept a comma-separated list of values is also AND. However, there are some parameters listed
+    below that support the use of OR logic instead. Simply include the string "[OR]" within the parameter's value.
 
-    *NOTE*: Multiple query parameters can be used and will be applied with AND logic.
+    **Get indicators that have both intel sources A *AND* B**:
+
+    .. sourcecode:: http
+
+      GET /indicators?sources=A,B HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Get indicators that have either intel source A *OR* B**:
+
+    .. sourcecode:: http
+
+      GET /indicators?sources=[OR]A,B HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Example request**:
 
     .. sourcecode:: http
 
@@ -490,13 +508,17 @@ def read_indicators():
     :query modified_after: Parsable date or datetime in GMT. Ex: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
     :query modified_before: Parsable date or datetime in GMT. Ex: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
     :query not_sources: Comma-separated list of intel sources to EXCLUDE
+    :query not_tags: Comma-separated list of tags to EXCLUDE
+    :query not_users: Comma-separated list of usernames to EXCLUDE
     :query reference: Intel reference value
-    :query sources: Comma-separated list of intel sources
+    :query sources: Comma-separated list of intel sources. Supports [OR].
     :query status: Status value
     :query substring: True/False
-    :query tags: Comma-separated list of tags
+    :query tags: Comma-separated list of tags. Supports [OR].
     :query type: Type value
+    :query types: Comma-separated list of types. Only supports OR logic since indicators only have one type.
     :query user: Username of person who created the associated reference
+    :query users: Comma-separated list of usernames of the associated references. Supports [OR].
     :query value: String found in value (uses wildcard search)
     :status 200: Indicators found
     :status 401: Invalid role to perform this action
@@ -559,6 +581,18 @@ def read_indicators():
         for ns in not_sources:
             filters.add(~Indicator.references.any(IntelReference.source.has(IntelSource.value == ns)))
 
+    # NOT Tags filter
+    if 'not_tags' in request.args:
+        not_tags = request.args.get('not_tags').split(',')
+        for nt in not_tags:
+            filters.add(~Indicator.tags.any(value=nt))
+
+    # NOT Username filter
+    if 'not_users' in request.args:
+        not_users = request.args.get('not_users').split(',')
+        for nu in not_users:
+            filters.add(~Indicator.references.any(IntelReference.user.has(User.username == nu)))
+
     # Reference filter (IntelReference)
     if 'reference' in request.args:
         reference = request.args.get('reference')
@@ -566,9 +600,20 @@ def read_indicators():
 
     # Source filter (IntelReference)
     if 'sources' in request.args:
-        sources = request.args.get('sources').split(',')
-        for s in sources:
-            filters.add(Indicator.references.any(IntelReference.source.has(IntelSource.value == s)))
+
+        # Figure out AND or OR mode.
+        list_mode = 'and'
+        request_value = request.args.get('sources')
+        if '[OR]' in request_value:
+            list_mode = 'or'
+            request_value = request_value.replace('[OR]', '')
+
+        sources = request_value.split(',')
+        if list_mode == 'and':
+            for s in sources:
+                filters.add(Indicator.references.any(IntelReference.source.has(IntelSource.value == s)))
+        elif list_mode == 'or':
+            filters.add(Indicator.references.any(IntelReference.source.has(IntelSource.value.in_(sources))))
 
     # Status filter
     if 'status' in request.args:
@@ -581,17 +626,50 @@ def read_indicators():
 
     # Tags filter
     if 'tags' in request.args:
-        search_tags = request.args.get('tags').split(',')
-        for search_tag in search_tags:
-            filters.add(Indicator.tags.any(value=search_tag))
+
+        # Figure out AND or OR mode.
+        list_mode = 'and'
+        request_value = request.args.get('tags')
+        if '[OR]' in request_value:
+            list_mode = 'or'
+            request_value = request_value.replace('[OR]', '')
+
+        search_tags = request_value.split(',')
+        if list_mode == 'and':
+            for search_tag in search_tags:
+                filters.add(Indicator.tags.any(value=search_tag))
+        elif list_mode == 'or':
+            filters.add(Indicator.tags.any(Tag.value.in_(search_tags)))
 
     # Type filter
     if 'type' in request.args:
         filters.add(Indicator.type.has(IndicatorType.value == request.args.get('type')))
 
-    # Username filter
+    # Types filter
+    if 'types' in request.args:
+        types = request.args.get('types').split(',')
+        filters.add(Indicator.type.value.in_(types))
+
+    # User filter
     if 'user' in request.args:
         filters.add(Indicator.references.any(IntelReference.user.has(User.username == request.args.get('user'))))
+
+    # Users filter
+    if 'users' in request.args:
+
+        # Figure out AND or OR mode.
+        list_mode = 'and'
+        request_value = request.args.get('users')
+        if '[OR]' in request_value:
+            list_mode = 'or'
+            request_value = request_value.replace('[OR]', '')
+
+        search_users = request_value.split(',')
+        if list_mode == 'and':
+            for search_user in search_users:
+                filters.add(Indicator.references.any(IntelReference.user.has(User.username == search_user)))
+        elif list_mode == 'or':
+            filters.add(Indicator.references.any(IntelReference.user.has(User.username.in_(search_users))))
 
     # Value filter
     if 'value' in request.args:

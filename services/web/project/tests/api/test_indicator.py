@@ -911,7 +911,7 @@ def test_read_with_filters(client):
                                                                confidence='LOW',
                                                                impact='LOW',
                                                                intel_reference='https://your.wiki/display/events/20190501+somebadsite.local+-+Bad+Guy',
-                                                               intel_source='VirusTotal',
+                                                               intel_source='AlienVault',
                                                                status='New',
                                                                substring=False,
                                                                tags=['nanocore'])
@@ -998,12 +998,35 @@ def test_read_with_filters(client):
     assert len(response['items']) == 1
     assert response['items'][0]['value'] == '1.1.1.1'
 
-    # Filter by tag
+    # Filter by tag (single)
     request = client.get('/api/indicators?tags=phish')
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert len(response['items']) == 1
     assert response['items'][0]['value'] == '1.1.1.1'
+
+    # Filter by tag (AND)
+    request = client.get('/api/indicators?tags=phish,nanocore')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 0
+
+    # Filter by tag (OR)
+    request = client.get('/api/indicators?tags=[OR]phish,nanocore')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 4
+
+    # Filter by NOT tag
+    request = client.get('/api/indicators?not_tags=nanocore')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 1
+    assert response['items'][0]['value'] == '1.1.1.1'
+    request = client.get('/api/indicators?not_tags=nanocore,phish')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 0
 
     # Filter by type
     request = client.get('/api/indicators?type=IP')
@@ -1012,8 +1035,40 @@ def test_read_with_filters(client):
     assert len(response['items']) == 1
     assert response['items'][0]['value'] == '1.1.1.1'
 
+    # Filter by types
+    request = client.get('/api/indicators?types=IP,Email')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 4
+
     # Filter by user
     request = client.get('/api/indicators?user=analyst')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 1
+    assert response['items'][0]['user'] == 'analyst'
+
+    # Filter by users (single)
+    request = client.get('/api/indicators?users=analyst')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 1
+    assert response['items'][0]['user'] == 'analyst'
+
+    # Filter by users (AND)
+    request = client.get('/api/indicators?users=analyst,admin')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 0
+
+    # Filter by users (OR)
+    request = client.get('/api/indicators?users=[OR]analyst,admin')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 4
+
+    # Filter by NOT user
+    request = client.get('/api/indicators?not_users=admin')
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert len(response['items']) == 1
@@ -1045,12 +1100,24 @@ def test_read_with_filters(client):
     assert len(response['items']) == 1
     assert response['items'][0]['value'] == 'abcd2@abcd.com'
 
-    # Filter by intel source
+    # Filter by intel source (single)
     request = client.get('/api/indicators?sources=OSINT')
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert len(response['items']) == 1
     assert response['items'][0]['value'] == '1.1.1.1'
+
+    # Filter by intel source (AND)
+    request = client.get('/api/indicators?sources=OSINT,VirusTotal')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 0
+
+    # Filter by intel source (OR)
+    request = client.get('/api/indicators?sources=[OR]OSINT,AlienVault')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 2
 
     # Filter by NOT intel source
     request = client.get('/api/indicators?not_sources=OSINT')
