@@ -513,7 +513,7 @@ def read_indicators():
     :query sources: Comma-separated list of intel sources. Supports [OR].
     :query status: Status value
     :query substring: True/False
-    :query tags: Comma-separated list of tags
+    :query tags: Comma-separated list of tags. Supports [OR].
     :query type: Type value
     :query user: Username of person who created the associated reference
     :query value: String found in value (uses wildcard search)
@@ -617,9 +617,20 @@ def read_indicators():
 
     # Tags filter
     if 'tags' in request.args:
-        search_tags = request.args.get('tags').split(',')
-        for search_tag in search_tags:
-            filters.add(Indicator.tags.any(value=search_tag))
+
+        # Figure out AND or OR mode.
+        list_mode = 'and'
+        request_value = request.args.get('tags')
+        if '[OR]' in request_value:
+            list_mode = 'or'
+            request_value = request_value.replace('[OR]', '')
+
+        search_tags = request_value.split(',')
+        if list_mode == 'and':
+            for search_tag in search_tags:
+                filters.add(Indicator.tags.any(value=search_tag))
+        elif list_mode == 'or':
+            filters.add(Indicator.tags.any(Tag.value.in_(search_tags)))
 
     # Type filter
     if 'type' in request.args:

@@ -998,12 +998,24 @@ def test_read_with_filters(client):
     assert len(response['items']) == 1
     assert response['items'][0]['value'] == '1.1.1.1'
 
-    # Filter by tag
+    # Filter by tag (single)
     request = client.get('/api/indicators?tags=phish')
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert len(response['items']) == 1
     assert response['items'][0]['value'] == '1.1.1.1'
+
+    # Filter by tag (AND)
+    request = client.get('/api/indicators?tags=phish,nanocore')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 0
+
+    # Filter by tag (OR)
+    request = client.get('/api/indicators?tags=[OR]phish,nanocore')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 4
 
     # Filter by NOT tag
     request = client.get('/api/indicators?not_tags=nanocore')
