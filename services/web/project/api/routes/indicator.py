@@ -515,6 +515,7 @@ def read_indicators():
     :query substring: True/False
     :query tags: Comma-separated list of tags. Supports [OR].
     :query type: Type value
+    :query types: Comma-separated list of types. Only supports OR logic since indicators only have one type.
     :query user: Username of person who created the associated reference
     :query value: String found in value (uses wildcard search)
     :status 200: Indicators found
@@ -635,6 +636,11 @@ def read_indicators():
     # Type filter
     if 'type' in request.args:
         filters.add(Indicator.type.has(IndicatorType.value == request.args.get('type')))
+
+    # Types filter
+    if 'types' in request.args:
+        types = request.args.get('types').split(',')
+        filters.add(Indicator.type.value.in_(types))
 
     # Username filter
     if 'user' in request.args:
