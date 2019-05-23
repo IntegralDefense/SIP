@@ -509,6 +509,7 @@ def read_indicators():
     :query modified_before: Parsable date or datetime in GMT. Ex: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
     :query not_sources: Comma-separated list of intel sources to EXCLUDE
     :query not_tags: Comma-separated list of tags to EXCLUDE
+    :query not_users: Comma-separated list of usernames to EXCLUDE
     :query reference: Intel reference value
     :query sources: Comma-separated list of intel sources. Supports [OR].
     :query status: Status value
@@ -584,6 +585,12 @@ def read_indicators():
         not_tags = request.args.get('not_tags').split(',')
         for nt in not_tags:
             filters.add(~Indicator.tags.any(value=nt))
+
+    # NOT Username filter
+    if 'not_users' in request.args:
+        not_users = request.args.get('not_users').split(',')
+        for nu in not_users:
+            filters.add(~Indicator.references.any(IntelReference.user.has(User.username == nu)))
 
     # Reference filter (IntelReference)
     if 'reference' in request.args:
