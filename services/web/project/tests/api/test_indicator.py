@@ -911,7 +911,7 @@ def test_read_with_filters(client):
                                                                confidence='LOW',
                                                                impact='LOW',
                                                                intel_reference='https://your.wiki/display/events/20190501+somebadsite.local+-+Bad+Guy',
-                                                               intel_source='VirusTotal',
+                                                               intel_source='AlienVault',
                                                                status='New',
                                                                substring=False,
                                                                tags=['nanocore'])
@@ -1056,12 +1056,24 @@ def test_read_with_filters(client):
     assert len(response['items']) == 1
     assert response['items'][0]['value'] == 'abcd2@abcd.com'
 
-    # Filter by intel source
+    # Filter by intel source (single)
     request = client.get('/api/indicators?sources=OSINT')
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert len(response['items']) == 1
     assert response['items'][0]['value'] == '1.1.1.1'
+
+    # Filter by intel source (AND)
+    request = client.get('/api/indicators?sources=OSINT,VirusTotal')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 0
+
+    # Filter by intel source (OR)
+    request = client.get('/api/indicators?sources=[OR]OSINT,AlienVault')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 2
 
     # Filter by NOT intel source
     request = client.get('/api/indicators?not_sources=OSINT')

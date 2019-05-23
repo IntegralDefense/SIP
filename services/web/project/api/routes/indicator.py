@@ -396,9 +396,27 @@ def read_indicators():
 
     .. :quickref: Indicator; Gets a paginated list of indicators based on various filter criteria.
 
-    **Example request**:
+    *NOTE*: Multiple query parameters can be used and will be applied with AND logic. The default logic for query
+    parameters that accept a comma-separated list of values is also AND. However, there are some parameters listed
+    below that support the use of OR logic instead. Simply include the string "[OR]" within the parameter's value.
 
-    *NOTE*: Multiple query parameters can be used and will be applied with AND logic.
+    **Get indicators that have both intel sources A *AND* B**:
+
+    .. sourcecode:: http
+
+      GET /indicators?sources=A,B HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Get indicators that have either intel source A *OR* B**:
+
+    .. sourcecode:: http
+
+      GET /indicators?sources=[OR]A,B HTTP/1.1
+      Host: 127.0.0.1
+      Accept: application/json
+
+    **Example request**:
 
     .. sourcecode:: http
 
@@ -492,7 +510,7 @@ def read_indicators():
     :query not_sources: Comma-separated list of intel sources to EXCLUDE
     :query not_tags: Comma-separated list of tags to EXCLUDE
     :query reference: Intel reference value
-    :query sources: Comma-separated list of intel sources
+    :query sources: Comma-separated list of intel sources. Supports [OR].
     :query status: Status value
     :query substring: True/False
     :query tags: Comma-separated list of tags
@@ -573,9 +591,20 @@ def read_indicators():
 
     # Source filter (IntelReference)
     if 'sources' in request.args:
-        sources = request.args.get('sources').split(',')
-        for s in sources:
-            filters.add(Indicator.references.any(IntelReference.source.has(IntelSource.value == s)))
+
+        # Figure out AND or OR mode.
+        list_mode = 'and'
+        request_value = request.args.get('sources')
+        if '[OR]' in request_value:
+            list_mode = 'or'
+            request_value = request_value.replace('[OR]', '')
+
+        sources = request_value.split(',')
+        if list_mode == 'and':
+            for s in sources:
+                filters.add(Indicator.references.any(IntelReference.source.has(IntelSource.value == s)))
+        elif list_mode == 'or':
+            filters.add(Indicator.references.any(IntelReference.source.has(IntelSource.value.in_(sources))))
 
     # Status filter
     if 'status' in request.args:
