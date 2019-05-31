@@ -648,7 +648,7 @@ def read_indicators():
     # Types filter
     if 'types' in request.args:
         types = request.args.get('types').split(',')
-        filters.add(Indicator.type.value.in_(types))
+        filters.add(Indicator.type.has(IndicatorType.value.in_(types)))
 
     # User filter
     if 'user' in request.args:
