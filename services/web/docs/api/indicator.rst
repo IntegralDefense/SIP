@@ -36,6 +36,21 @@ and status is "NEW".
 .. autoflask:: project:create_app()
   :endpoints: api.create_indicator
 
+Create Multiple
+---------------
+
+**JSON Schema**
+
+*NOTE*: This API route follows the same rules and logic as the standard Create route. The only
+difference in the JSON schema is that you specify a list of indicators under the **indicators** key.
+
+.. jsonschema:: ../../project/api/schemas/indicator_bulk_create.json
+
+|
+
+.. autoflask:: project:create_app()
+  :endpoints: api.create_indicators
+
 Create Equal To Relationship
 ----------------------------
 

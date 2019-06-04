@@ -1,0 +1,49 @@
+{
+    "type": "object",
+    "required": ["indicators"],
+    "additionalProperties": false,
+    "properties": {
+        "indicators": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "properties": {
+                    "campaigns": {
+                        "type": "array",
+                        "items": {"type": "string", "minLength": 1, "maxLength": 255},
+                        "minItems": 1
+                    },
+                    "case_sensitive": {"type": "boolean"},
+                    "confidence": {"type": "string", "minLength": 1, "maxLength": 255},
+                    "impact": {"type": "string", "minLength": 1, "maxLength": 255},
+                    "references": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "source": {"type": "string", "minLength": 1, "maxLength": 255},
+                                "reference": {"type": "string", "minLength": 1, "maxLength": 512}
+                            },
+                            "required": ["source", "reference"],
+                            "additionalProperties": false
+                        },
+                        "minItems": 1
+                    },
+                    "status": {"type": "string", "minLength": 1, "maxLength": 255},
+                    "substring": {"type": "boolean"},
+                    "tags": {
+                        "type": "array",
+                        "items": {"type": "string", "minLength": 1, "maxLength": 255},
+                        "minItems": 1
+                    },
+                    "type": {"type": "string", "minLength": 1, "maxLength": 255},
+                    "username": {"type": "string", "minLength": 1, "maxLength": 255},
+                    "value": {"type": "string", "minLength": 1, "maxLength": 512}
+                },
+                "required": ["type", "value"],
+                "additionalProperties": false
+            }
+        }
+    }
+}

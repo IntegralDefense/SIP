@@ -11,7 +11,7 @@ from project.api import bp
 from project.api.decorators import check_apikey, validate_json, validate_schema
 from project.api.errors import error_response
 from project.api.helpers import get_apikey, parse_boolean
-from project.api.schemas import indicator_create, indicator_update
+from project.api.schemas import indicator_create, indicator_update, indicator_bulk_create
 from project.models import Campaign, Indicator, IndicatorConfidence, IndicatorImpact, IndicatorStatus, IndicatorType, \
     IntelReference, IntelSource, Tag, User
 
@@ -296,6 +296,367 @@ def create_indicator():
     response.status_code = 201
     response.headers['Location'] = url_for('api.read_indicator', indicator_id=indicator.id)
     return response
+
+
+@bp.route('/indicators/bulk', methods=['POST'])
+@check_apikey
+@validate_json
+@validate_schema(indicator_bulk_create)
+def create_indicators():
+    """ Creates a list of new indicators.
+
+    .. :quickref: Indicator; Creates a list of new indicators.
+
+    **Example request**:
+
+    .. sourcecode:: http
+
+      POST /indicators/bulk HTTP/1.1
+      Host: 127.0.0.1
+      Content-Type: application/json
+
+      {
+        "indicators": [
+          {
+            "campaigns": ["LOLcats", "Derpsters"],
+            "case_sensitive": false,
+            "confidence": "LOW",
+            "impact": "LOW",
+            "references": [
+              {
+                "source": "Your company",
+                "reference": "http://yourwiki.com/page-for-the-event"
+              },
+              {
+                "source": "OSINT",
+                "reference": "http://somehelpfulblog.com/malware-analysis"
+              }
+            ],
+            "status": "NEW",
+            "substring": false,
+            "tags": ["phish", "from_address"],
+            "type": "Email - Address",
+            "username": "your_SIP_username",
+            "value": "badguy@evil.com"
+          },
+          {
+            "campaigns": ["LOLcats", "Derpsters"],
+            "case_sensitive": false,
+            "confidence": "LOW",
+            "impact": "LOW",
+            "references": [
+              {
+                "source": "Your company",
+                "reference": "http://yourwiki.com/page-for-the-event"
+              },
+              {
+                "source": "OSINT",
+                "reference": "http://somehelpfulblog.com/malware-analysis"
+              }
+            ],
+            "status": "NEW",
+            "substring": false,
+            "tags": ["phish", "reply_to_address"],
+            "type": "Email - Address",
+            "username": "your_SIP_username",
+            "value": "mastermind@evil.com"
+          }
+        ]
+      }
+
+    **Example response**:
+
+    .. sourcecode:: http
+
+      HTTP/1.1 204 No Content
+
+    :reqheader Authorization: Optional Apikey value
+    :resheader Content-Type: application/json
+    :status 204: Indicators created
+    :status 400: Confidence not given and no default to select
+    :status 400: Impact not given and no default to select
+    :status 400: Status not given and no default to select
+    :status 400: JSON does not match the schema
+    :status 401: Invalid role to perform this action
+    :status 401: Username is inactive
+    :status 401: You must supply either username or API key
+    :status 404: Campaign not found
+    :status 404: Confidence not found
+    :status 404: Impact not found
+    :status 404: Reference not found
+    :status 404: Status not found
+    :status 404: Tag not found
+    :status 404: Type not found
+    :status 404: User not found by API key
+    :status 404: Username not found
+    """
+
+    # Set up cache to limit the number of required database queries.
+    cache = {'usernames': {},
+             'apikeys': {},
+             'types': {},
+             'confidences': {},
+             'default_confidence': None,
+             'impacts': {},
+             'default_impact': None,
+             'statuses': {},
+             'default_status': None,
+             'campaigns': {},
+             'references': {},
+             'sources': {},
+             'tags': {}}
+
+    for data in request.get_json()['indicators']:
+
+        # Verify the user exists.
+        user = None
+        if 'username' in data:
+
+            # Check the cache for this username.
+            if data['username'] in cache['usernames']:
+                user = cache['usernames'][data['username']]
+            else:
+                user = User.query.filter_by(username=data['username']).first()
+                if not user:
+                    return error_response(404, 'User not found by username')
+
+                # Add the user to the cache.
+                cache['usernames'][data['username']] = user
+        else:
+            apikey = get_apikey(request)
+            if apikey:
+
+                # Check the cache for this apikey.
+                if apikey in cache['apikeys']:
+                    user = cache['apikeys'][apikey]
+                else:
+                    user = User.query.filter_by(apikey=apikey).first()
+                    if not user:
+                        return error_response(404, 'User not found by API key')
+
+                    # Add the user to the cache.
+                    cache['apikeys'][apikey] = user
+            else:
+                return error_response(401, 'You must supply either username or API key')
+
+        # Verify the user is active.
+        if not user.active:
+            return error_response(401, 'Cannot create an indicator with an inactive user')
+
+        # Check the cache for this indicator type.
+        if data['type'] in cache['types']:
+            indicator_type = cache['types'][data['type']]
+        else:
+            # Verify the indicator type.
+            indicator_type = IndicatorType.query.filter_by(value=data['type']).first()
+            if not indicator_type:
+                if current_app.config['INDICATOR_AUTO_CREATE_INDICATORTYPE']:
+                    indicator_type = IndicatorType(value=data['type'])
+                    db.session.add(indicator_type)
+                else:
+                    return error_response(404, 'Indicator type not found: {}'.format(data['type']))
+
+            # Add the indicator type to the cache.
+            cache['types'][data['type']] = indicator_type
+
+        # Verify the case-sensitive value (defaults to False).
+        if 'case_sensitive' in data:
+            case_sensitive = data['case_sensitive']
+        else:
+            case_sensitive = False
+
+        # Verify this type+value does not already exist based off of case_sensitive.
+        if case_sensitive:
+            existing = Indicator.query.filter(Indicator.type == indicator_type, func.binary(Indicator.value) == func.binary(data['value'])).first()
+            if existing:
+                continue
+        else:
+            existing = Indicator.query.filter(Indicator.type == indicator_type, func.lower(Indicator.value) == func.lower(data['value'])).first()
+            if existing:
+                continue
+
+        # Verify the confidence (has default).
+        if 'confidence' not in data:
+            # Check the cache for the default indicator confidence.
+            if cache['default_confidence']:
+                confidence = cache['default_confidence']
+            else:
+                confidence = IndicatorConfidence.query.order_by(IndicatorConfidence.id).limit(1).first()
+                if not confidence:
+                    return error_response(400, 'No indicator confidence values exist to use as default')
+
+                # Add the default confidence to the cache.
+                cache['default_confidence'] = confidence
+        else:
+            # Check the cache for this indicator confidence.
+            if data['confidence'] in cache['confidences']:
+                confidence = cache['confidences'][data['confidence']]
+            else:
+                confidence = IndicatorConfidence.query.filter_by(value=data['confidence']).first()
+                if not confidence:
+                    if current_app.config['INDICATOR_AUTO_CREATE_INDICATORCONFIDENCE']:
+                        confidence = IndicatorConfidence(value=data['confidence'])
+                        db.session.add(confidence)
+                    else:
+                        return error_response(404, 'Indicator confidence not found: {}'.format(data['confidence']))
+
+                # Add the indicator confidence to the cache.
+                cache['confidences'][data['confidence']] = confidence
+
+        # Verify the impact (has default).
+        if 'impact' not in data:
+            # Check the cache for the default indicator impact.
+            if cache['default_impact']:
+                impact = cache['default_impact']
+            else:
+                impact = IndicatorImpact.query.order_by(IndicatorImpact.id).limit(1).first()
+                if not impact:
+                    return error_response(400, 'No indicator impact values exist to use as default')
+
+                # Add the default impact to the cache.
+                cache['default_impact'] = impact
+        else:
+            # Check the cache for this indicator impact.
+            if data['impact'] in cache['impacts']:
+                impact = cache['impacts'][data['impact']]
+            else:
+                impact = IndicatorImpact.query.filter_by(value=data['impact']).first()
+                if not impact:
+                    if current_app.config['INDICATOR_AUTO_CREATE_INDICATORIMPACT']:
+                        impact = IndicatorImpact(value=data['impact'])
+                        db.session.add(impact)
+                    else:
+                        return error_response(404, 'Indicator impact not found: {}'.format(data['impact']))
+
+                # Add the indicator impact to the cache.
+                cache['impacts'][data['impact']] = impact
+
+        # Verify the status (has default).
+        if 'status' not in data:
+            # Check the cache for the default indicator status.
+            if cache['default_status']:
+                status = cache['default_status']
+            else:
+                status = IndicatorStatus.query.order_by(IndicatorStatus.id).limit(1).first()
+                if not status:
+                    return error_response(400, 'No indicator status values exist to use as default')
+
+                # Add the default status to the cache.
+                cache['default_status'] = status
+        else:
+            # Check the cache for this indicator status.
+            if data['status'] in cache['statuses']:
+                status = cache['statuses'][data['status']]
+            else:
+                status = IndicatorStatus.query.filter_by(value=data['status']).first()
+                if not status:
+                    if current_app.config['INDICATOR_AUTO_CREATE_INDICATORSTATUS']:
+                        status = IndicatorStatus(value=data['status'])
+                        db.session.add(status)
+                    else:
+                        return error_response(404, 'Indicator status not found: {}'.format(data['status']))
+
+                # Add the indicator status to the cache.
+                cache['statuses'][data['status']] = status
+
+        # Verify the substring value (defaults to False).
+        if 'substring' in data:
+            substring = data['substring']
+        else:
+            substring = False
+
+        # Create the indicator object.
+        indicator = Indicator(case_sensitive=case_sensitive,
+                              confidence=confidence,
+                              impact=impact,
+                              status=status,
+                              substring=substring,
+                              type=indicator_type,
+                              user=user,
+                              value=data['value'])
+
+        # Verify any campaign that was specified.
+        if 'campaigns' in data:
+            for value in data['campaigns']:
+                # Check the cache for this campaign.
+                if value in cache['campaigns']:
+                    campaign = cache['campaigns'][value]
+                else:
+                    campaign = Campaign.query.filter_by(name=value).first()
+                    if not campaign:
+                        if current_app.config['INDICATOR_AUTO_CREATE_CAMPAIGN']:
+                            campaign = Campaign(name=value)
+                            db.session.add(campaign)
+                        else:
+                            return error_response(404, 'Campaign not found: {}'.format(value))
+
+                    # Add this campaign to the cache.
+                    cache['campaigns'][value] = campaign
+
+                indicator.campaigns.append(campaign)
+
+        # Verify any references that were specified.
+        if 'references' in data:
+            for item in data['references']:
+
+                # Check the cache for this source+reference pair.
+                if '{}{}'.format(item['source'], item['reference']) in cache['references']:
+                    reference = cache['references']['{}{}'.format(item['source'], item['reference'])]
+                else:
+                    reference = IntelReference.query.filter(and_(IntelReference.reference == item['reference'],
+                                                                 IntelReference.source.has(
+                                                                     IntelSource.value == item['source']))).first()
+                    if not reference:
+                        if current_app.config['INDICATOR_AUTO_CREATE_INTELREFERENCE']:
+
+                            # Check the cache for this source.
+                            if item['source'] in cache['sources']:
+                                source = cache['sources'][item['source']]
+                            else:
+                                source = IntelSource.query.filter_by(value=item['source']).first()
+                                if not source:
+                                    source = IntelSource(value=item['source'])
+                                    db.session.add(source)
+
+                                # Add this source to the cache.
+                                cache['sources'][item['source']] = source
+
+                            reference = IntelReference(reference=item['reference'], source=source, user=user)
+                            db.session.add(reference)
+                        else:
+                            return error_response(404, 'Intel reference not found: {}'.format(item['reference']))
+
+                    # Add this reference to the cache.
+                    cache['references']['{}{}'.format(item['source'], item['reference'])] = reference
+
+                indicator.references.append(reference)
+
+        # Verify any tags that were specified.
+        if 'tags' in data:
+            for value in data['tags']:
+
+                # Check the cache for this tag.
+                if value in cache['tags']:
+                    tag = cache['tags'][value]
+                else:
+                    tag = Tag.query.filter_by(value=value).first()
+                    if not tag:
+                        if current_app.config['INDICATOR_AUTO_CREATE_TAG']:
+                            tag = Tag(value=value)
+                            db.session.add(tag)
+                        else:
+                            return error_response(404, 'Tag not found: {}'.format(value))
+
+                    # Add this tag to the cache.
+                    cache['tags'][value] = tag
+
+                indicator.tags.append(tag)
+
+        db.session.add(indicator)
+
+    db.session.commit()
+
+    return '', 204
 
 
 """

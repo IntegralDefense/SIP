@@ -303,6 +303,304 @@ def test_create_schema(client):
     assert 'too long' in response['msg']
 
 
+def test_create_bulk_schema(client):
+    """ Ensure POST requests conform to the required JSON schema """
+
+    # Invalid JSON
+    data = {}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert response['msg'] == 'Request must include valid JSON'
+
+    # Missing required indicators parameter
+    data = {'things': [{'username': 'asdf', 'value': 'asdf'}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert response['msg'] == "Request JSON does not match schema: 'indicators' is a required property"
+
+    # Missing required type parameter
+    data = {'indicators': [{'username': 'asdf', 'value': 'asdf'}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert response['msg'] == "Request JSON does not match schema: 'type' is a required property"
+
+    # Missing required value parameter
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf'}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert response['msg'] == "Request JSON does not match schema: 'value' is a required property"
+
+    # Additional parameter
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'asdf': 'asdf'}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'Additional properties are not allowed' in response['msg']
+
+    # Invalid type parameter type
+    data = {'indicators': [{'type': 1, 'username': 'asdf', 'value': 'asdf'}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # Invalid username parameter type
+    data = {'indicators': [{'type': 'asdf', 'username': 1, 'value': 'asdf'}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # Invalid value parameter type
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 1}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # type parameter too short
+    data = {'indicators': [{'type': '', 'username': 'asdf', 'value': 'asdf'}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # type parameter too long
+    data = {'indicators': [{'type': 'a' * 256, 'username': 'asdf', 'value': 'asdf'}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # username parameter too short
+    data = {'indicators': [{'type': 'asdf', 'username': '', 'value': 'asdf'}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # username parameter too long
+    data = {'indicators': [{'type': 'asdf', 'username': 'a' * 256, 'value': 'asdf'}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # value parameter too short
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': ''}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # value parameter too long
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'a' * 513}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid campaigns parameter type
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'campaigns': 'asdf'}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "'asdf' is not of type 'array'" in response['msg']
+
+    # Empty campaigns parameter type
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'campaigns': []}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # Invalid campaigns parameter type
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'campaigns': [1]}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # campaigns parameter too short
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'campaigns': ['']}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # campaigns parameter too long
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'campaigns': ['a' * 256]}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid references parameter type
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': 'asdf'}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "'asdf' is not of type 'array'" in response['msg']
+
+    # Empty references parameter type
+    data = {'indicators': [{'type': 'asdf', 'username': 'analyst', 'value': 'asdf', 'references': []}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # Invalid references parameter type
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': [1]}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'object'" in response['msg']
+
+    # reference parameter too short
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': [{'reference': '', 'source': 'asdf'}]}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # reference parameter too long
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': [{'reference': 'a' * 513, 'source': 'asdf'}]}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # source parameter too short
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': [{'reference': 'asdf', 'source': ''}]}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # source parameter too long
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': [{'reference': 'asdf', 'source': 'a' * 256}]}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid tags parameter type
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'tags': 'asdf'}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "'asdf' is not of type 'array'" in response['msg']
+
+    # Empty tags parameter type
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'tags': []}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # Invalid tags parameter type
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'tags': [1]}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # tags parameter too short
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'tags': ['']}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # tags parameter too long
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'tags': ['a' * 256]}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid case_sensitive parameter type
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'case_sensitive': 1}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'boolean'" in response['msg']
+
+    # Invalid substring parameter type
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'substring': 1}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'boolean'" in response['msg']
+
+    # Invalid confidence parameter type
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'confidence': 1}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # confidence parameter too short
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'confidence': ''}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # confidence parameter too long
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'confidence': 'a' * 256}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid impact parameter type
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'impact': 1}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # impact parameter too short
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'impact': ''}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # impact parameter too long
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'impact': 'a' * 256}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # Invalid status parameter type
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'status': 1}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert "1 is not of type 'string'" in response['msg']
+
+    # status parameter too short
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'status': ''}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # status parameter too long
+    data = {'indicators': [{'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'status': 'a' * 256}]}
+    request = client.post('/api/indicators/bulk', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+
 def test_create_duplicate(client):
     """ Ensure a duplicate record cannot be created """
 
@@ -763,6 +1061,38 @@ def test_create(client):
     assert response['status'] == 'Analyzed'
     assert response['substring'] is True
     assert sorted(response['tags']) == ['nanocore', 'phish']
+
+
+def test_create_bulk(client):
+    """ Ensure a proper request actually works """
+
+    data = {'indicators': [
+        {'type': 'asdf',
+         'value': 'asdf',
+         'username': 'analyst',
+         'campaigns': ['LOLcats', 'Derpsters'],
+         'confidence': 'HIGH',
+         'impact': 'HIGH',
+         'references': [{'source': 'OSINT', 'reference': 'http://blahblah.com'}],
+         'status': 'Analyzed',
+         'tags': ['phish', 'nanocore']},
+        {'type': 'asdf2',
+         'value': 'asdf2',
+         'username': 'analyst',
+         'confidence': 'LOW',
+         'impact': 'LOW',
+         'references': [{'source': 'OSINT', 'reference': 'http://blahblah.com'}],
+         'status': 'Analyzed',
+         'tags': ['phish', 'nanocore']}
+    ]}
+
+    request = client.post('/api/indicators/bulk', json=data)
+    assert request.status_code == 204
+
+    request = client.get('/api/indicators')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 2
 
 
 """

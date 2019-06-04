@@ -20,6 +20,8 @@ with open(os.path.join(this_dir, 'indicator_create.json')) as j:
     indicator_create = json.load(j)
 with open(os.path.join(this_dir, 'indicator_update.json')) as j:
     indicator_update = json.load(j)
+with open(os.path.join(this_dir, 'indicator_bulk_create.json')) as j:
+    indicator_bulk_create = json.load(j)
 
 # IntelReference
 with open(os.path.join(this_dir, 'intel_reference_create.json')) as j:
