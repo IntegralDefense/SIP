@@ -8,7 +8,7 @@ Summary
 -------
 
 .. qrefflask:: project:create_app()
-  :endpoints: api.create_indicator, api.create_indicator_equal, api.read_indicator, api.read_indicators, api.update_indicator, api.delete_indicator, api.delete_indicator_equal
+  :endpoints: api.create_indicator, api.create_indicators, api.create_indicator_equal, api.read_indicator, api.read_indicators, api.update_indicator, api.delete_indicator, api.delete_indicator_equal
   :order: path
 
 Create
@@ -41,7 +41,8 @@ Create Multiple
 
 **JSON Schema**
 
-*NOTE*: This API route follows the same rules and logic as the standard Create route. The only
+*NOTE*: This API route follows the same rules and logic as the standard Create route with the one exception
+being that duplicate indicators are ignored and skipped instead of returning a 409 status. The only
 difference in the JSON schema is that you specify a list of indicators under the **indicators** key.
 
 .. jsonschema:: ../../project/api/schemas/indicator_bulk_create.json
