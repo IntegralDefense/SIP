@@ -1256,6 +1256,12 @@ def test_read_with_filters(client):
     assert request.status_code == 200
     assert len(response) == 4
 
+    # Filter with count mode enabled.
+    request = client.get('/api/indicators?count')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert response['count'] == 4
+
     # Filter by case_sensitive
     request = client.get('/api/indicators?case_sensitive=true')
     response = json.loads(request.data.decode())
