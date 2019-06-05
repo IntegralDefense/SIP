@@ -859,7 +859,7 @@ def read_indicators():
 
     :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
-    :query bulk: True/False to enable "bulk" mode and received a gzipped response of all indicators, but only id+type+value
+    :query bulk: Flag to enable "bulk" mode and received a gzipped response of all indicators, but only id+type+value
     :query case_sensitive: True/False
     :query confidence: Confidence value
     :query count: Flag to return the number of results rather than the results themselves
@@ -1045,15 +1045,14 @@ def read_indicators():
 
     # If bulk is enabled, get all of the results and compress them.
     if 'bulk' in request.args:
-        if parse_boolean(request.args.get('bulk')):
-            data = [indicator.to_dict(bulk=True) for indicator in Indicator.query.filter(*filters)]
-            data = json.dumps(data).encode('utf-8')
+        data = [indicator.to_dict(bulk=True) for indicator in Indicator.query.filter(*filters)]
+        data = json.dumps(data).encode('utf-8')
 
-            response = Response(status=200, mimetype='application/json')
-            response.data = gzip.compress(data)
-            response.headers['Content-Encoding'] = 'gzip'
-            response.headers['Content-Length'] = len(response.data)
-            return response
+        response = Response(status=200, mimetype='application/json')
+        response.data = gzip.compress(data)
+        response.headers['Content-Encoding'] = 'gzip'
+        response.headers['Content-Length'] = len(response.data)
+        return response
 
     data = Indicator.to_collection_dict(Indicator.query.filter(*filters), 'api.read_indicators', **request.args)
     return jsonify(data)
