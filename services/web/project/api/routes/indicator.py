@@ -869,6 +869,7 @@ def read_indicators():
     :query impact: Impact value
     :query modified_after: Parsable date or datetime in GMT. Ex: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
     :query modified_before: Parsable date or datetime in GMT. Ex: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
+    :query no_campaigns: Flag to search for indicators withou any campaigns
     :query no_references: Flag to search for indicators without any references
     :query no_tags: Flag to search for indicators without any tags
     :query not_sources: Comma-separated list of intel sources to EXCLUDE
