@@ -1236,7 +1236,6 @@ def test_read_with_filters(client):
     time.sleep(1)
 
     indicator4_request, indicator4_response = create_indicator(client, 'Email', 'abcd2@abcd.com', 'admin',
-                                                               campaigns=[],
                                                                case_sensitive=False,
                                                                confidence='LOW',
                                                                impact='LOW',
@@ -1249,18 +1248,28 @@ def test_read_with_filters(client):
 
     time.sleep(1)
 
+    indicator5_request, indicator5_response = create_indicator(client, 'Filename', 'malware.exe', 'admin',
+                                                               case_sensitive=False,
+                                                               confidence='LOW',
+                                                               impact='LOW',
+                                                               status='New',
+                                                               substring=False)
+    assert indicator5_request.status_code == 201
+
+    time.sleep(1)
+
     # Filter with bulk mode enabled.
     request = client.get('/api/indicators?bulk=true')
     response = gzip.decompress(request.data)
     response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response) == 4
+    assert len(response) == 5
 
     # Filter with count mode enabled.
     request = client.get('/api/indicators?count')
     response = json.loads(request.data.decode())
     assert request.status_code == 200
-    assert response['count'] == 4
+    assert response['count'] == 5
 
     # Filter by case_sensitive
     request = client.get('/api/indicators?case_sensitive=true')
@@ -1273,7 +1282,7 @@ def test_read_with_filters(client):
     request = client.get('/api/indicators?created_before={}'.format(datetime.datetime.now()))
     response = json.loads(request.data.decode())
     assert request.status_code == 200
-    assert len(response['items']) == 4
+    assert len(response['items']) == 5
     request = client.get('/api/indicators?created_before={}'.format(indicator2_response['created_time']))
     response = json.loads(request.data.decode())
     assert request.status_code == 200
@@ -1284,11 +1293,11 @@ def test_read_with_filters(client):
     request = client.get('/api/indicators?created_after={}'.format(datetime.datetime.min))
     response = json.loads(request.data.decode())
     assert request.status_code == 200
-    assert len(response['items']) == 4
+    assert len(response['items']) == 5
     request = client.get('/api/indicators?created_after={}'.format(indicator1_response['created_time']))
     response = json.loads(request.data.decode())
     assert request.status_code == 200
-    assert len(response['items']) == 3
+    assert len(response['items']) == 4
     assert response['items'][0]['value'] == 'asdf@asdf.com'
 
     # Filter by confidence
@@ -1309,7 +1318,7 @@ def test_read_with_filters(client):
     request = client.get('/api/indicators?modified_before={}'.format(datetime.datetime.now()))
     response = json.loads(request.data.decode())
     assert request.status_code == 200
-    assert len(response['items']) == 4
+    assert len(response['items']) == 5
     request = client.get('/api/indicators?modified_before={}'.format(indicator2_response['modified_time']))
     response = json.loads(request.data.decode())
     assert request.status_code == 200
@@ -1320,11 +1329,11 @@ def test_read_with_filters(client):
     request = client.get('/api/indicators?modified_after={}'.format(datetime.datetime.min))
     response = json.loads(request.data.decode())
     assert request.status_code == 200
-    assert len(response['items']) == 4
+    assert len(response['items']) == 5
     request = client.get('/api/indicators?modified_after={}'.format(indicator1_response['modified_time']))
     response = json.loads(request.data.decode())
     assert request.status_code == 200
-    assert len(response['items']) == 3
+    assert len(response['items']) == 4
     assert response['items'][0]['value'] == 'asdf@asdf.com'
 
     # Filter by status
@@ -1357,12 +1366,12 @@ def test_read_with_filters(client):
     request = client.get('/api/indicators?not_tags=nanocore')
     response = json.loads(request.data.decode())
     assert request.status_code == 200
-    assert len(response['items']) == 1
+    assert len(response['items']) == 2
     assert response['items'][0]['value'] == '1.1.1.1'
     request = client.get('/api/indicators?not_tags=nanocore,phish')
     response = json.loads(request.data.decode())
     assert request.status_code == 200
-    assert len(response['items']) == 0
+    assert len(response['items']) == 1
 
     # Filter by type
     request = client.get('/api/indicators?type=IP')
@@ -1407,7 +1416,7 @@ def test_read_with_filters(client):
     request = client.get('/api/indicators?not_users=admin')
     response = json.loads(request.data.decode())
     assert request.status_code == 200
-    assert len(response['items']) == 1
+    assert len(response['items']) == 2
     assert response['items'][0]['user'] == 'analyst'
 
     # Filter by value
@@ -1459,7 +1468,7 @@ def test_read_with_filters(client):
     request = client.get('/api/indicators?not_sources=OSINT')
     response = json.loads(request.data.decode())
     assert request.status_code == 200
-    assert len(response['items']) == 3
+    assert len(response['items']) == 4
     assert response['items'][0]['value'] == 'asdf@asdf.com'
     assert response['items'][1]['value'] == 'abcd@abcd.com'
 
@@ -1475,6 +1484,24 @@ def test_read_with_filters(client):
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert len(response['items']) == 0
+
+    # Filter by NO campaigns
+    request = client.get('/api/indicators?no_campaigns')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 2
+
+    # Filter by NO references
+    request = client.get('/api/indicators?no_references')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 1
+
+    # Filter by NO tags
+    request = client.get('/api/indicators?no_tags')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 1
 
 
 """
