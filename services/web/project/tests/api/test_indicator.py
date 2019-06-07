@@ -1590,7 +1590,7 @@ def test_update_schema(client):
     assert "'asdf' is not of type 'array'" in response['msg']
 
     # Empty references parameter type
-    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': []}
+    data = {'type': 'asdf', 'username': 'analyst', 'value': 'asdf', 'references': []}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
@@ -1601,17 +1601,33 @@ def test_update_schema(client):
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert "1 is not of type 'string'" in response['msg']
+    assert "1 is not of type 'object'" in response['msg']
 
-    # references parameter too short
-    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': ['']}
+    # reference parameter too short
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': [{'reference': '', 'source': 'asdf'}]}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
     assert 'too short' in response['msg']
 
-    # references parameter too long
-    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': ['a' * 513]}
+    # reference parameter too long
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf',
+            'references': [{'reference': 'a' * 513, 'source': 'asdf'}]}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too long' in response['msg']
+
+    # source parameter too short
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': [{'reference': 'asdf', 'source': ''}]}
+    request = client.put('/api/indicators/1', json=data)
+    response = json.loads(request.data.decode())
+    assert request.status_code == 400
+    assert 'too short' in response['msg']
+
+    # source parameter too long
+    data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf',
+            'references': [{'reference': 'asdf', 'source': 'a' * 256}]}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
@@ -1863,7 +1879,7 @@ def test_update(client):
     # references list
     create_intel_reference(client, 'analyst', 'OSINT', 'http://blahblah2.com')
     create_intel_reference(client, 'analyst', 'OSINT', 'http://blahblah3.com')
-    data = {'references': ['http://blahblah2.com', 'http://blahblah3.com']}
+    data = {'references': [{'source': 'OSINT', 'reference': 'http://blahblah2.com'}, {'source': 'OSINT', 'reference': 'http://blahblah3.com'}]}
     request = client.put('/api/indicators/{}'.format(_id), json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 200

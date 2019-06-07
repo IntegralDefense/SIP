@@ -1211,16 +1211,17 @@ def update_indicator(indicator_id):
             return error_response(404, 'Indicator impact not found: {}'.format(data['impact']))
         indicator.impact = impact
 
-    # Verify references if it was specified.
+    # Verify any references that were specified.
     if 'references' in data:
         valid_references = []
-        for value in data['references']:
-
-            # Verify each reference is actually valid.
-            reference = IntelReference.query.filter_by(reference=value).first()
+        for item in data['references']:
+            reference = IntelReference.query.filter(and_(IntelReference.reference == item['reference'],
+                                                         IntelReference.source.has(
+                                                             IntelSource.value == item['source']))).first()
             if not reference:
-                error_response(404, 'Intel reference not found: {}'.format(value))
+                return error_response(404, 'Intel reference not found: {}'.format(item['reference']))
             valid_references.append(reference)
+
         if valid_references:
             indicator.references = valid_references
 
