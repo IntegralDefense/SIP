@@ -1236,7 +1236,6 @@ def test_read_with_filters(client):
     time.sleep(1)
 
     indicator4_request, indicator4_response = create_indicator(client, 'Email', 'abcd2@abcd.com', 'admin',
-                                                               campaigns=[],
                                                                case_sensitive=False,
                                                                confidence='LOW',
                                                                impact='LOW',
@@ -1485,6 +1484,12 @@ def test_read_with_filters(client):
     response = json.loads(request.data.decode())
     assert request.status_code == 200
     assert len(response['items']) == 0
+
+    # Filter by NO campaigns
+    request = client.get('/api/indicators?no_campaigns')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 2
 
     # Filter by NO references
     request = client.get('/api/indicators?no_references')

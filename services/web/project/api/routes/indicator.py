@@ -939,6 +939,10 @@ def read_indicators():
             modified_before = datetime.date.min
         filters.add(Indicator.modified_time < modified_before)
 
+    # NO campaigns filter
+    if 'no_campaigns' in request.args:
+        filters.add(~Indicator.campaigns.any())
+
     # NO Reference filter (IntelReference)
     if 'no_references' in request.args:
         filters.add(~Indicator.references.any())
