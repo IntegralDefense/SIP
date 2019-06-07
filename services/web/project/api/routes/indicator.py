@@ -869,6 +869,7 @@ def read_indicators():
     :query impact: Impact value
     :query modified_after: Parsable date or datetime in GMT. Ex: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
     :query modified_before: Parsable date or datetime in GMT. Ex: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
+    :query no_references: Flag to search for indicators without any references
     :query not_sources: Comma-separated list of intel sources to EXCLUDE
     :query not_tags: Comma-separated list of tags to EXCLUDE
     :query not_users: Comma-separated list of usernames to EXCLUDE
@@ -936,6 +937,10 @@ def read_indicators():
         except (ValueError, OverflowError):
             modified_before = datetime.date.min
         filters.add(Indicator.modified_time < modified_before)
+
+    # NO Reference filter (IntelReference)
+    if 'no_references' in request.args:
+        filters.add(~Indicator.references.any())
 
     # NOT Source filter (IntelReference)
     if 'not_sources' in request.args:
