@@ -1366,12 +1366,12 @@ def test_read_with_filters(client):
     request = client.get('/api/indicators?not_tags=nanocore')
     response = json.loads(request.data.decode())
     assert request.status_code == 200
-    assert len(response['items']) == 1
+    assert len(response['items']) == 2
     assert response['items'][0]['value'] == '1.1.1.1'
     request = client.get('/api/indicators?not_tags=nanocore,phish')
     response = json.loads(request.data.decode())
     assert request.status_code == 200
-    assert len(response['items']) == 0
+    assert len(response['items']) == 1
 
     # Filter by type
     request = client.get('/api/indicators?type=IP')
@@ -1410,13 +1410,13 @@ def test_read_with_filters(client):
     request = client.get('/api/indicators?users=[OR]analyst,admin')
     response = json.loads(request.data.decode())
     assert request.status_code == 200
-    assert len(response['items']) == 5
+    assert len(response['items']) == 4
 
     # Filter by NOT user
     request = client.get('/api/indicators?not_users=admin')
     response = json.loads(request.data.decode())
     assert request.status_code == 200
-    assert len(response['items']) == 1
+    assert len(response['items']) == 2
     assert response['items'][0]['user'] == 'analyst'
 
     # Filter by value
@@ -1468,7 +1468,7 @@ def test_read_with_filters(client):
     request = client.get('/api/indicators?not_sources=OSINT')
     response = json.loads(request.data.decode())
     assert request.status_code == 200
-    assert len(response['items']) == 3
+    assert len(response['items']) == 4
     assert response['items'][0]['value'] == 'asdf@asdf.com'
     assert response['items'][1]['value'] == 'abcd@abcd.com'
 
