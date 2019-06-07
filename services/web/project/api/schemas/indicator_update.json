@@ -11,7 +11,15 @@
         "impact": {"type": "string", "minLength": 1, "maxLength": 255},
         "references": {
             "type": "array",
-            "items": {"type": "string", "minLength": 1, "maxLength": 512},
+            "items": {
+                "type": "object",
+                "properties": {
+                    "source": {"type": "string", "minLength": 1, "maxLength": 255},
+                    "reference": {"type": "string", "minLength": 1, "maxLength": 512}
+                },
+                "required": ["source", "reference"],
+                "additionalProperties": false
+            },
             "minItems": 1
         },
         "status": {"type": "string", "minLength": 1, "maxLength": 255},
