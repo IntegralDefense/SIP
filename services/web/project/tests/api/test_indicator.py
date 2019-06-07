@@ -1492,6 +1492,12 @@ def test_read_with_filters(client):
     assert request.status_code == 200
     assert len(response['items']) == 1
 
+    # Filter by NO tags
+    request = client.get('/api/indicators?no_tags')
+    response = json.loads(request.data.decode())
+    assert request.status_code == 200
+    assert len(response['items']) == 1
+
 
 """
 UPDATE TESTS
