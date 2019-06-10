@@ -19,7 +19,7 @@ fi
 cp "$1" "$import_dir/indicators.json"
 
 docker-compose -f docker-compose-DEV.yml build
-docker-compose -f docker-compose-DEV.yml run web-dev pypy3 manage.py import-crits-indicators
+docker-compose -f docker-compose-DEV.yml run web-dev python manage.py import-crits-indicators
 
 # Delete the indicators.json file from the container.
 rm "$import_dir/indicators.json"

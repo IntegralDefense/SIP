@@ -98,7 +98,7 @@ Example output from the setup script is shown below:
    Successfully built 7a89a9af0aef
    Successfully tagged sip_db-dev:latest
    Building web-dev
-   Step 1/8 : FROM pypy:3
+   Step 1/8 : FROM python:3.7
     ---> dc6a60638123
    Step 2/8 : RUN apt-get update && apt-get install -y mysql-client
     ---> Using cache
@@ -149,7 +149,7 @@ Example output from the setup script is shown below:
    Successfully built 7a89a9af0aef
    Successfully tagged sip_db-test:latest
    Building web-test
-   Step 1/8 : FROM pypy:3
+   Step 1/8 : FROM python:3.7
     ---> dc6a60638123
    Step 2/8 : RUN apt-get update && apt-get install -y mysql-client
     ---> Using cache
