@@ -5,7 +5,7 @@ flask-security==3.0.0
 Flask-SQLAlchemy==2.4.0
 gunicorn==19.9.0
 jsonschema==2.6.0
-pymysql==0.9.3
+mysqlclient
 pytest==4.1.1
 python-dateutil==2.7.5
 sphinx==1.8.4

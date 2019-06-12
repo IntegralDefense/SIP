@@ -69,7 +69,7 @@ FLASK_SECURITY_PASSWORD_SALT = os.urandom(48).hex()
 WEB_DOCKER_ENV = """FLASK_APP=project
 FLASK_ENV={environment}
 APP_SETTINGS={config}
-DATABASE_URL=mysql+pymysql://{user}:{password}@db:3306/SIP?charset=utf8mb4
+DATABASE_URL=mysql+mysqldb://{user}:{password}@db:3306/SIP?charset=utf8mb4
 SECRET_KEY={secret_key}
 SECURITY_PASSWORD_SALT={salt}
 """

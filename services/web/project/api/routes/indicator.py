@@ -4,7 +4,7 @@ import json
 
 from dateutil.parser import parse
 from flask import current_app, jsonify, request, Response, url_for
-from sqlalchemy import and_, exc, func
+from sqlalchemy import and_, exc, func, select, join, outerjoin
 
 from project import db
 from project.api import bp
@@ -889,7 +889,25 @@ def read_indicators():
     :status 401: Invalid role to perform this action
     """
 
+    #with db.engine.connect() as conn:
+
+    query = Indicator.query
+
     filters = set()
+
+    """
+    join = db.join(Indicator, IndicatorConfidence)
+    join = db.join(join, IndicatorImpact)
+    join = db.join(join, IndicatorStatus)
+    join = db.join(join, IndicatorType)
+    join2 = db.outerjoin(Indicator, Campaign)
+
+    query = db.select([Indicator.id, IndicatorType.value, Indicator.value]).select_from(join)
+    current_app.logger.error(query)
+    return jsonify({})
+
+    #query.select_from(db.join(Indicator, IndicatorStatus)
+    """
 
     # Case-sensitive filter
     if 'case_sensitive' in request.args:
@@ -994,6 +1012,21 @@ def read_indicators():
 
     # Status filter
     if 'status' in request.args:
+        """
+        s = select([        
+            customers.c.first_name,
+            orders.c.id,
+        ]).select_from(
+            customers.outerjoin(orders)
+        )
+        """
+        """
+        query = query.select_from(db.join(Indicator, IndicatorStatus)).where(IndicatorStatus.value == request.args.get('status'))
+        results = conn.execute('select indicator.id, indicator.value from indicator join indicator_status as s on status_id = s.id where s.value = "Analyzed"').fetchall()
+        #current_app.logger.error(len(results))
+        #current_app.logger.error(results[0])
+        return jsonify([{'id': x[0], 'value': x[1]} for x in results])
+        """
         filters.add(Indicator.status.has(IndicatorStatus.value == request.args.get('status')))
 
     # Substring filter
