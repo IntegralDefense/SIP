@@ -146,7 +146,7 @@ class Campaign(db.Model):
     __tablename__ = 'campaign'
 
     id = db.Column(db.Integer, primary_key=True, nullable=False)
-    aliases = db.relationship('CampaignAlias', order_by='CampaignAlias.alias')
+    aliases = db.relationship('CampaignAlias', order_by='CampaignAlias.alias', cascade='delete')
     created_time = db.Column(db.DateTime, default=datetime.utcnow)
     modified_time = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     name = db.Column(db.String(255), unique=True, nullable=False)
