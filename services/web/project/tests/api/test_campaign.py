@@ -477,17 +477,23 @@ def test_delete_foreign_key_indicator(client):
 
 
 def test_delete_foreign_key_alias(client):
-    """ Ensure you cannot delete with foreign key constraints """
+    """ Ensure that deleting a campaign also deletes its aliases """
 
     campaign_request, campaign_response = create_campaign(client, 'Derpsters')
     alias_request, alias_response = create_campaign_alias(client, 'asdf', 'Derpsters')
     assert campaign_request.status_code == 201
     assert alias_request.status_code == 201
 
-    request = client.delete('/api/campaigns/{}'.format(campaign_response['id']))
+    request = client.get('/api/campaigns/alias')
     response = json.loads(request.data.decode())
-    assert request.status_code == 409
-    assert response['msg'] == 'Unable to delete campaign due to foreign key constraints'
+    assert len(response) == 1
+
+    request = client.delete('/api/campaigns/{}'.format(campaign_response['id']))
+    assert request.status_code == 204
+
+    request = client.get('/api/campaigns/alias')
+    response = json.loads(request.data.decode())
+    assert len(response) == 0
 
 
 def test_delete(client):
