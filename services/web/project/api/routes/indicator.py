@@ -4,7 +4,7 @@ import json
 
 from dateutil.parser import parse
 from flask import current_app, jsonify, request, Response, url_for
-from sqlalchemy import and_, exc, func, select, join, outerjoin
+from sqlalchemy import and_, exc, func, or_
 
 from project import db
 from project.api import bp
@@ -13,7 +13,8 @@ from project.api.errors import error_response
 from project.api.helpers import get_apikey, parse_boolean
 from project.api.schemas import indicator_create, indicator_update, indicator_bulk_create
 from project.models import Campaign, Indicator, IndicatorConfidence, IndicatorImpact, IndicatorStatus, IndicatorType, \
-    IntelReference, IntelSource, Tag, User
+    IntelReference, IntelSource, Tag, User, indicator_campaign_association, indicator_reference_association, \
+    indicator_tag_association
 
 """
 CREATE
@@ -889,34 +890,22 @@ def read_indicators():
     :status 401: Invalid role to perform this action
     """
 
-    #with db.engine.connect() as conn:
 
-    query = Indicator.query
-
-    filters = set()
-
-    """
-    join = db.join(Indicator, IndicatorConfidence)
-    join = db.join(join, IndicatorImpact)
-    join = db.join(join, IndicatorStatus)
-    join = db.join(join, IndicatorType)
-    join2 = db.outerjoin(Indicator, Campaign)
-
-    query = db.select([Indicator.id, IndicatorType.value, Indicator.value]).select_from(join)
-    current_app.logger.error(query)
-    return jsonify({})
-
-    #query.select_from(db.join(Indicator, IndicatorStatus)
-    """
+    filters = []
+    groupby = False
+    having = []
+    joins = []
+    outerjoins = []
 
     # Case-sensitive filter
     if 'case_sensitive' in request.args:
         arg = parse_boolean(request.args.get('case_sensitive'), default=None)
-        filters.add(Indicator.case_sensitive.is_(arg))
+        filters.append(Indicator.case_sensitive.is_(arg))
 
     # Confidence filter
     if 'confidence' in request.args:
-        filters.add(Indicator.confidence.has(IndicatorConfidence.value == request.args.get('confidence')))
+        joins.append(IndicatorConfidence)
+        filters.append(IndicatorConfidence.value == request.args.get('confidence'))
 
     # Created after filter
     if 'created_after' in request.args:
@@ -924,7 +913,7 @@ def read_indicators():
             created_after = parse(request.args.get('created_after'), ignoretz=True)
         except (ValueError, OverflowError):
             created_after = datetime.date.max
-        filters.add(created_after < Indicator.created_time)
+        filters.append(created_after < Indicator.created_time)
 
     # Created before filter
     if 'created_before' in request.args:
@@ -932,15 +921,16 @@ def read_indicators():
             created_before = parse(request.args.get('created_before'), ignoretz=True)
         except (ValueError, OverflowError):
             created_before = datetime.date.min
-        filters.add(Indicator.created_time < created_before)
+        filters.append(Indicator.created_time < created_before)
 
     # Exact value filter
     if 'exact_value' in request.args:
-        filters.add(Indicator.value == request.args.get('exact_value'))
+        filters.append(Indicator.value == request.args.get('exact_value'))
 
     # Impact filter
     if 'impact' in request.args:
-        filters.add(Indicator.impact.has(IndicatorImpact.value == request.args.get('impact')))
+        joins.append(IndicatorImpact)
+        filters.append(IndicatorImpact.value == request.args.get('impact'))
 
     # Modified after filter
     if 'modified_after' in request.args:
@@ -948,7 +938,7 @@ def read_indicators():
             modified_after = parse(request.args.get('modified_after'))
         except (ValueError, OverflowError):
             modified_after = datetime.date.max
-        filters.add(modified_after < Indicator.modified_time)
+        filters.append(modified_after < Indicator.modified_time)
 
     # Modified before filter
     if 'modified_before' in request.args:
@@ -956,45 +946,61 @@ def read_indicators():
             modified_before = parse(request.args.get('modified_before'))
         except (ValueError, OverflowError):
             modified_before = datetime.date.min
-        filters.add(Indicator.modified_time < modified_before)
+        filters.append(Indicator.modified_time < modified_before)
 
     # NO campaigns filter
+    # TODO: Try and remove ~
     if 'no_campaigns' in request.args:
-        filters.add(~Indicator.campaigns.any())
+        outerjoins.append(indicator_campaign_association)
+        filters.append(~Indicator.campaigns.any())
 
     # NO Reference filter (IntelReference)
+    # TODO: Try and remove ~
     if 'no_references' in request.args:
-        filters.add(~Indicator.references.any())
+        outerjoins.append(indicator_reference_association)
+        filters.append(~Indicator.references.any())
 
     # NO tags filter
+    # TODO: Try and remove ~
     if 'no_tags' in request.args:
-        filters.add(~Indicator.tags.any())
+        outerjoins.append(indicator_tag_association)
+        filters.append(~Indicator.tags.any())
 
     # NOT Source filter (IntelReference)
     if 'not_sources' in request.args:
+        joins.append(indicator_reference_association)
+        joins.append(IntelReference)
+        joins.append(IntelSource)
         not_sources = request.args.get('not_sources').split(',')
         for ns in not_sources:
-            filters.add(~Indicator.references.any(IntelReference.source.has(IntelSource.value == ns)))
+            filters.append(IntelSource.value != ns)
 
     # NOT Tags filter
     if 'not_tags' in request.args:
+        outerjoins.append(indicator_tag_association)
         not_tags = request.args.get('not_tags').split(',')
         for nt in not_tags:
-            filters.add(~Indicator.tags.any(value=nt))
+            filters.append(~Indicator.tags.any(value=nt))
 
     # NOT Username filter
     if 'not_users' in request.args:
+        joins.append(User)
         not_users = request.args.get('not_users').split(',')
         for nu in not_users:
-            filters.add(~Indicator.references.any(IntelReference.user.has(User.username == nu)))
+            filters.append(User.username != nu)
 
     # Reference filter (IntelReference)
     if 'reference' in request.args:
+        joins.append(indicator_reference_association)
         reference = request.args.get('reference')
-        filters.add(Indicator.references.any(IntelReference.reference == reference))
+        filters.append(Indicator.references.any(IntelReference.reference == reference))
 
     # Source filter (IntelReference)
     if 'sources' in request.args:
+        joins.append(indicator_reference_association)
+        joins.append(IntelReference)
+        joins.append(IntelSource)
+        groupby = True
 
         # Figure out AND or OR mode.
         list_mode = 'and'
@@ -1004,38 +1010,38 @@ def read_indicators():
             request_value = request_value.replace('[OR]', '')
 
         sources = request_value.split(',')
-        if list_mode == 'and':
-            for s in sources:
-                filters.add(Indicator.references.any(IntelReference.source.has(IntelSource.value == s)))
-        elif list_mode == 'or':
-            filters.add(Indicator.references.any(IntelReference.source.has(IntelSource.value.in_(sources))))
+
+        if len(sources) == 1:
+            filters.append(IntelSource.value == sources[0])
+        elif len(sources) > 1:
+
+            if list_mode == 'and':
+                source_filters = []
+                for s in sources:
+                    source_filters.append(func.sum(IntelSource.value == s))
+                having.append(and_(*source_filters))
+
+            elif list_mode == 'or':
+                source_filters = []
+                for s in sources:
+                    source_filters.append(IntelSource.value == s)
+                filters.append(or_(*source_filters))
 
     # Status filter
     if 'status' in request.args:
-        """
-        s = select([        
-            customers.c.first_name,
-            orders.c.id,
-        ]).select_from(
-            customers.outerjoin(orders)
-        )
-        """
-        """
-        query = query.select_from(db.join(Indicator, IndicatorStatus)).where(IndicatorStatus.value == request.args.get('status'))
-        results = conn.execute('select indicator.id, indicator.value from indicator join indicator_status as s on status_id = s.id where s.value = "Analyzed"').fetchall()
-        #current_app.logger.error(len(results))
-        #current_app.logger.error(results[0])
-        return jsonify([{'id': x[0], 'value': x[1]} for x in results])
-        """
-        filters.add(Indicator.status.has(IndicatorStatus.value == request.args.get('status')))
+        joins.append(IndicatorStatus)
+        filters.append(IndicatorStatus.value == request.args.get('status'))
 
     # Substring filter
     if 'substring' in request.args:
         arg = parse_boolean(request.args.get('substring'), default=None)
-        filters.add(Indicator.substring.is_(arg))
+        filters.append(Indicator.substring.is_(arg))
 
     # Tags filter
     if 'tags' in request.args:
+        joins.append(indicator_tag_association)
+        joins.append(Tag)
+        groupby = True
 
         # Figure out AND or OR mode.
         list_mode = 'and'
@@ -1045,27 +1051,52 @@ def read_indicators():
             request_value = request_value.replace('[OR]', '')
 
         search_tags = request_value.split(',')
-        if list_mode == 'and':
-            for search_tag in search_tags:
-                filters.add(Indicator.tags.any(value=search_tag))
-        elif list_mode == 'or':
-            filters.add(Indicator.tags.any(Tag.value.in_(search_tags)))
+
+        if len(search_tags) == 1:
+            filters.append(Tag.value == search_tags[0])
+        elif len(search_tags) > 1:
+
+            if list_mode == 'and':
+                tag_filters = []
+                for t in search_tags:
+                    tag_filters.append(func.sum(Tag.value == t))
+                having.append(and_(*tag_filters))
+
+            elif list_mode == 'or':
+                tag_filters = []
+                for t in search_tags:
+                    tag_filters.append(Tag.value == t)
+                filters.append(or_(*tag_filters))
 
     # Type filter
     if 'type' in request.args:
-        filters.add(Indicator.type.has(IndicatorType.value == request.args.get('type')))
+        filters.append(IndicatorType.value == request.args.get('type'))
 
     # Types filter
     if 'types' in request.args:
         types = request.args.get('types').split(',')
-        filters.add(Indicator.type.has(IndicatorType.value.in_(types)))
+
+        if len(types) == 1:
+            filters.append(IndicatorType.value == types[0])
+        elif len(types) > 1:
+            type_filters = []
+            for t in types:
+                type_filters.append(IndicatorType.value == t)
+            filters.append(or_(*type_filters))
 
     # User filter
     if 'user' in request.args:
-        filters.add(Indicator.references.any(IntelReference.user.has(User.username == request.args.get('user'))))
+        joins.append(indicator_reference_association)
+        joins.append(IntelReference)
+        joins.append(User)
+        filters.append(User.username == request.args.get('user'))
 
     # Users filter
     if 'users' in request.args:
+        joins.append(indicator_reference_association)
+        joins.append(IntelReference)
+        joins.append(User)
+        groupby = True
 
         # Figure out AND or OR mode.
         list_mode = 'and'
@@ -1075,35 +1106,96 @@ def read_indicators():
             request_value = request_value.replace('[OR]', '')
 
         search_users = request_value.split(',')
-        if list_mode == 'and':
-            for search_user in search_users:
-                filters.add(Indicator.references.any(IntelReference.user.has(User.username == search_user)))
-        elif list_mode == 'or':
-            filters.add(Indicator.references.any(IntelReference.user.has(User.username.in_(search_users))))
+
+        if len(search_users) == 1:
+            filters.append(User.username == search_users[0])
+        elif len(search_users) > 1:
+
+            if list_mode == 'and':
+                user_filters = []
+                for u in search_users:
+                    user_filters.append(func.sum(User.username == u))
+                having.append(and_(*user_filters))
+
+            elif list_mode == 'or':
+                user_filters = []
+                for u in search_users:
+                    user_filters.append(User.username == u)
+                filters.append(or_(*user_filters))
 
     # Value filter
     if 'value' in request.args:
-        filters.add(Indicator.value.like('%{}%'.format(request.args.get('value'))))
+        filters.append(Indicator.value.like('%{}%'.format(request.args.get('value'))))
+
+    # Perform any table JOINs.
+    join = db.join(Indicator, IndicatorType)
+    for oj in outerjoins:
+        join = db.outerjoin(join, oj)
+    for j in joins:
+        join = db.join(join, j)
 
     # If count is enabled, just return the number of results rather than the results themselves.
     if 'count' in request.args:
-        count = Indicator.query.filter(*filters).count()
-        data = {'count': count}
-        return jsonify(data)
 
-    # If bulk is enabled, get all of the results and compress them.
-    if 'bulk' in request.args:
-        data = [indicator.to_dict(bulk=True) for indicator in Indicator.query.filter(*filters)]
-        data = json.dumps(data).encode('utf-8')
+        # Check if we need to add GROUP BY
+        if groupby:
+            query = db.select([Indicator.id])
+            query = query.group_by(Indicator.id)
+        else:
+            query = db.select([func.count()])
 
-        response = Response(status=200, mimetype='application/json')
-        response.data = gzip.compress(data)
-        response.headers['Content-Encoding'] = 'gzip'
-        response.headers['Content-Length'] = len(response.data)
-        return response
+        # Check if we need to add HAVING
+        if having:
+            query = query.having(*having)
 
-    data = Indicator.to_collection_dict(Indicator.query.filter(*filters), 'api.read_indicators', **request.args)
-    return jsonify(data)
+        query = query.select_from(join)
+
+        # Add on all of the filters.
+        for f in filters:
+            query = query.where(f)
+
+        # If we used GROUP BY, it should run as a subquery.
+        if groupby:
+            query = db.select([func.count()]).select_from(query.alias('count'))
+
+        results = db.session.execute(query).fetchone()
+        return jsonify({'count': results[0]})
+
+    # Build the base query to return id/type/value.
+    query = db.select([Indicator.id, IndicatorType.value, Indicator.value])
+
+    # Check if we need to add GROUP BY
+    if groupby:
+        query = query.group_by(Indicator.id)
+
+    # Check if we need to add HAVING
+    if having:
+        query = query.having(*having)
+
+    query = query.select_from(join)
+
+    # Add on all of the filters.
+    for f in filters:
+        query = query.where(f)
+
+    # Sort the results by the indicator ID.
+    query = query.order_by(Indicator.id)
+
+    current_app.logger.error(query)
+
+    # Perform the query.
+    results = db.session.execute(query).fetchall()
+
+    # Build a list of the results.
+    data = [{'id': x[0], 'type': x[1], 'value': x[2]} for x in results]
+
+    # Compress and return the JSON results.
+    data = json.dumps(data).encode('utf-8')
+    response = Response(status=200, mimetype='application/json')
+    response.data = gzip.compress(data)
+    response.headers['Content-Encoding'] = 'gzip'
+    response.headers['Content-Length'] = len(response.data)
+    return response
 
 
 """

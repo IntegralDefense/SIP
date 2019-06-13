@@ -1090,9 +1090,10 @@ def test_create_bulk(client):
     assert request.status_code == 204
 
     request = client.get('/api/indicators')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 2
+    assert len(response) == 2
 
 
 """
@@ -1169,9 +1170,10 @@ def test_read_all_values(client):
     assert request.status_code == 201
 
     request = client.get('/api/indicators')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 3
+    assert len(response) == 3
 
 
 def test_read_by_id(client):
@@ -1259,7 +1261,7 @@ def test_read_with_filters(client):
     time.sleep(1)
 
     # Filter with bulk mode enabled.
-    request = client.get('/api/indicators?bulk=true')
+    request = client.get('/api/indicators')
     response = gzip.decompress(request.data)
     response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
@@ -1273,235 +1275,269 @@ def test_read_with_filters(client):
 
     # Filter by case_sensitive
     request = client.get('/api/indicators?case_sensitive=true')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 1
-    assert response['items'][0]['case_sensitive'] is True
+    assert len(response) == 1
+    assert response[0]['value'] == '1.1.1.1'
 
     # Filter by created_before
     request = client.get('/api/indicators?created_before={}'.format(datetime.datetime.now()))
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 5
+    assert len(response) == 5
     request = client.get('/api/indicators?created_before={}'.format(indicator2_response['created_time']))
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 1
-    assert response['items'][0]['value'] == '1.1.1.1'
+    assert len(response) == 1
+    assert response[0]['value'] == '1.1.1.1'
 
     # Filter by created_after
     request = client.get('/api/indicators?created_after={}'.format(datetime.datetime.min))
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 5
+    assert len(response) == 5
     request = client.get('/api/indicators?created_after={}'.format(indicator1_response['created_time']))
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 4
-    assert response['items'][0]['value'] == 'asdf@asdf.com'
+    assert len(response) == 4
+    assert response[0]['value'] == 'asdf@asdf.com'
 
     # Filter by confidence
     request = client.get('/api/indicators?confidence=HIGH')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 1
-    assert response['items'][0]['value'] == '1.1.1.1'
+    assert len(response) == 1
+    assert response[0]['value'] == '1.1.1.1'
 
     # Filter by impact
     request = client.get('/api/indicators?impact=HIGH')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 1
-    assert response['items'][0]['value'] == '1.1.1.1'
+    assert len(response) == 1
+    assert response[0]['value'] == '1.1.1.1'
 
     # Filter by modified_before
     request = client.get('/api/indicators?modified_before={}'.format(datetime.datetime.now()))
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 5
+    assert len(response) == 5
     request = client.get('/api/indicators?modified_before={}'.format(indicator2_response['modified_time']))
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 1
-    assert response['items'][0]['value'] == '1.1.1.1'
+    assert len(response) == 1
+    assert response[0]['value'] == '1.1.1.1'
 
     # Filter by modified_after
     request = client.get('/api/indicators?modified_after={}'.format(datetime.datetime.min))
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 5
+    assert len(response) == 5
     request = client.get('/api/indicators?modified_after={}'.format(indicator1_response['modified_time']))
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 4
-    assert response['items'][0]['value'] == 'asdf@asdf.com'
+    assert len(response) == 4
+    assert response[0]['value'] == 'asdf@asdf.com'
 
     # Filter by status
     request = client.get('/api/indicators?status=Analyzed')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 1
-    assert response['items'][0]['value'] == '1.1.1.1'
+    assert len(response) == 1
+    assert response[0]['value'] == '1.1.1.1'
 
     # Filter by tag (single)
     request = client.get('/api/indicators?tags=phish')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 1
-    assert response['items'][0]['value'] == '1.1.1.1'
+    assert len(response) == 1
+    assert response[0]['value'] == '1.1.1.1'
 
     # Filter by tag (AND)
     request = client.get('/api/indicators?tags=phish,nanocore')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 0
+    assert len(response) == 0
 
     # Filter by tag (OR)
     request = client.get('/api/indicators?tags=[OR]phish,nanocore')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 4
+    assert len(response) == 4
 
     # Filter by NOT tag
     request = client.get('/api/indicators?not_tags=nanocore')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 2
-    assert response['items'][0]['value'] == '1.1.1.1'
+    assert len(response) == 2
+    assert response[0]['value'] == '1.1.1.1'
     request = client.get('/api/indicators?not_tags=nanocore,phish')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 1
+    assert len(response) == 1
 
     # Filter by type
     request = client.get('/api/indicators?type=IP')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 1
-    assert response['items'][0]['value'] == '1.1.1.1'
+    assert len(response) == 1
+    assert response[0]['value'] == '1.1.1.1'
 
     # Filter by types
     request = client.get('/api/indicators?types=IP,Email')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 4
+    assert len(response) == 4
 
     # Filter by user
     request = client.get('/api/indicators?user=analyst')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 1
-    assert response['items'][0]['user'] == 'analyst'
+    assert len(response) == 1
 
     # Filter by users (single)
     request = client.get('/api/indicators?users=analyst')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 1
-    assert response['items'][0]['user'] == 'analyst'
+    assert len(response) == 1
 
     # Filter by users (AND)
     request = client.get('/api/indicators?users=analyst,admin')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 0
+    assert len(response) == 0
 
     # Filter by users (OR)
     request = client.get('/api/indicators?users=[OR]analyst,admin')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 4
+    assert len(response) == 4
 
     # Filter by NOT user
     request = client.get('/api/indicators?not_users=admin')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 2
-    assert response['items'][0]['user'] == 'analyst'
+    assert len(response) == 1
 
     # Filter by value
     request = client.get('/api/indicators?value=abcd')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 2
+    assert len(response) == 2
 
     # Filter by exact value (success)
     request = client.get('/api/indicators?exact_value=abcd@abcd.com')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 1
-    assert response['items'][0]['value'] == 'abcd@abcd.com'
+    assert len(response) == 1
+    assert response[0]['value'] == 'abcd@abcd.com'
 
     # Filter by exact value (failure)
     request = client.get('/api/indicators?exact_value=abcd')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 0
+    assert len(response) == 0
 
     # Filter by intel reference
     request = client.get('/api/indicators?reference={}'.format(urllib.parse.quote('https://your.wiki/display/events/20190501+somebadsite.local+-+Bad+Guy')))
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 1
-    assert response['items'][0]['value'] == 'abcd2@abcd.com'
+    assert len(response) == 1
+    assert response[0]['value'] == 'abcd2@abcd.com'
 
     # Filter by intel source (single)
     request = client.get('/api/indicators?sources=OSINT')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 1
-    assert response['items'][0]['value'] == '1.1.1.1'
+    assert len(response) == 1
+    assert response[0]['value'] == '1.1.1.1'
 
     # Filter by intel source (AND)
     request = client.get('/api/indicators?sources=OSINT,VirusTotal')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 0
+    assert len(response) == 0
 
     # Filter by intel source (OR)
     request = client.get('/api/indicators?sources=[OR]OSINT,AlienVault')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 2
+    assert len(response) == 2
 
     # Filter by NOT intel source
     request = client.get('/api/indicators?not_sources=OSINT')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 4
-    assert response['items'][0]['value'] == 'asdf@asdf.com'
-    assert response['items'][1]['value'] == 'abcd@abcd.com'
+    assert len(response) == 3
+    assert response[0]['value'] == 'asdf@asdf.com'
+    assert response[1]['value'] == 'abcd@abcd.com'
 
     # Filter by multiple
     request = client.get('/api/indicators?tags=phish&type=IP')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 1
-    assert response['items'][0]['value'] == '1.1.1.1'
+    assert len(response) == 1
+    assert response[0]['value'] == '1.1.1.1'
 
     # Filter by multiple (conflicting)
     request = client.get('/api/indicators?tags=phish&type=Email')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 0
+    assert len(response) == 0
 
     # Filter by NO campaigns
     request = client.get('/api/indicators?no_campaigns')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 2
+    assert len(response) == 2
 
     # Filter by NO references
     request = client.get('/api/indicators?no_references')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 1
+    assert len(response) == 1
 
     # Filter by NO tags
     request = client.get('/api/indicators?no_tags')
-    response = json.loads(request.data.decode())
+    response = gzip.decompress(request.data)
+    response = json.loads(response.decode('utf-8'))
     assert request.status_code == 200
-    assert len(response['items']) == 1
+    assert len(response) == 1
 
 
 """
@@ -1524,91 +1560,91 @@ def test_update_schema(client):
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'Additional properties are not allowed' in response['msg']
+    assert 'Request JSON does not match schema' in response['msg']
 
     # Invalid username parameter type
     data = {'type': 'asdf', 'username': 1, 'value': 'asdf'}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert "1 is not of type 'string'" in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # username parameter too short
     data = {'type': 'asdf', 'username': '', 'value': 'asdf'}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'too short' in response['msg']
+    assert 'Request JSON does not match schema' in response['msg']
 
     # username parameter too long
     data = {'type': 'asdf', 'username': 'a' * 256, 'value': 'asdf'}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'too long' in response['msg']
+    assert 'Request JSON does not match schema' in response['msg']
 
     # Invalid campaigns parameter type
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'campaigns': 'asdf'}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert "'asdf' is not of type 'array'" in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # Empty campaigns parameter type
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'campaigns': []}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'too short' in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # Invalid campaigns parameter type
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'campaigns': [1]}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert "1 is not of type 'string'" in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # campaigns parameter too short
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'campaigns': ['']}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'too short' in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # campaigns parameter too long
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'campaigns': ['a' * 256]}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'too long' in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # Invalid references parameter type
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': 'asdf'}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert "'asdf' is not of type 'array'" in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # Empty references parameter type
     data = {'type': 'asdf', 'username': 'analyst', 'value': 'asdf', 'references': []}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'too short' in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # Invalid references parameter type
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': [1]}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert "1 is not of type 'object'" in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # reference parameter too short
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': [{'reference': '', 'source': 'asdf'}]}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'too short' in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # reference parameter too long
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf',
@@ -1616,14 +1652,14 @@ def test_update_schema(client):
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'too long' in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # source parameter too short
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'references': [{'reference': 'asdf', 'source': ''}]}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'too short' in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # source parameter too long
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf',
@@ -1631,119 +1667,119 @@ def test_update_schema(client):
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'too long' in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # Invalid tags parameter type
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'tags': 'asdf'}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert "'asdf' is not of type 'array'" in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # Empty tags parameter type
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'tags': []}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'too short' in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # Invalid tags parameter type
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'tags': [1]}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert "1 is not of type 'string'" in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # tags parameter too short
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'tags': ['']}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'too short' in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # tags parameter too long
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'tags': ['a' * 256]}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'too long' in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # Invalid case_sensitive parameter type
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'case_sensitive': 1}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert "1 is not of type 'boolean'" in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # Invalid substring parameter type
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'substring': 1}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert "1 is not of type 'boolean'" in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # Invalid confidence parameter type
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'confidence': 1}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert "1 is not of type 'string'" in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # confidence parameter too short
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'confidence': ''}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'too short' in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # confidence parameter too long
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'confidence': 'a' * 256}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'too long' in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # Invalid impact parameter type
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'impact': 1}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert "1 is not of type 'string'" in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # impact parameter too short
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'impact': ''}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'too short' in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # impact parameter too long
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'impact': 'a' * 256}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'too long' in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # Invalid status parameter type
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'status': 1}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert "1 is not of type 'string'" in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # status parameter too short
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'status': ''}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'too short' in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
     # status parameter too long
     data = {'type': 'asdf', 'username': 'asdf', 'value': 'asdf', 'status': 'a' * 256}
     request = client.put('/api/indicators/1', json=data)
     response = json.loads(request.data.decode())
     assert request.status_code == 400
-    assert 'too long' in response['msg']
+    assert "Request JSON does not match schema" in response['msg']
 
 
 def test_update_nonexistent_username(client):
