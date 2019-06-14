@@ -754,9 +754,9 @@ def read_indicator(indicator_id):
 @bp.route('/indicators', methods=['GET'])
 @check_apikey
 def read_indicators():
-    """ Gets a paginated list of indicators based on various filter criteria.
+    """ Gets a gzip compressed list of indicators based on various filter criteria.
 
-    .. :quickref: Indicator; Gets a paginated list of indicators based on various filter criteria.
+    .. :quickref: Indicator; Gets a gzip compressed list of indicators based on various filter criteria.
 
     *NOTE*: Multiple query parameters can be used and will be applied with AND logic. The default logic for query
     parameters that accept a comma-separated list of values is also AND. However, there are some parameters listed
@@ -791,76 +791,19 @@ def read_indicators():
     .. sourcecode:: http
 
       HTTP/1.1 200 OK
+      Content-Encoding: gzip
       Content-Type: application/json
 
-      {
-        "_links": {
-          "next": null,
-          "prev": null,
-          "self": "/api/indicators?page=1&per_page=10&value=evil.com&status=NEW"
-        },
-        "_meta": {
-          "page": 1,
-          "per_page": 10,
-          "total_items": 1,
-          "total_pages": 1
-        },
-        "items": [
-          {
-            "all_children": [],
-            "all_equal": [],
-            "campaigns": [
-              {
-                "aliases": [],
-                "created_time": "Thu, 28 Feb 2019 17:10:44 GMT",
-                "id": 1,
-                "modified_time": "Thu, 28 Feb 2019 17:10:44 GMT",
-                "name": "LOLcats"
-              },
-              {
-                "aliases": [],
-                "created_time": "Fri, 01 Mar 2019 17:58:45 GMT",
-                "id": 2,
-                "modified_time": "Fri, 01 Mar 2019 17:58:45 GMT",
-                "name": "Derpsters"
-              }
-            ],
-            "case_sensitive": false,
-            "children": [],
-            "confidence": "LOW",
-            "created_time": "Fri, 01 Mar 2019 18:00:51 GMT",
-            "equal": [],
-            "id": 1,
-            "impact": "LOW",
-            "modified_time": "Fri, 01 Mar 2019 18:00:51 GMT",
-            "parent": null,
-            "references": [
-              {
-                "id": 1,
-                "reference": "http://yourwiki.com/page-for-the-event",
-                "source": "Your company",
-                "user": "your_SIP_username"
-              },
-              {
-                "id": 3,
-                "reference": "http://somehelpfulblog.com/malware-analysis",
-                "source": "OSINT",
-                "user": "your_SIP_username"
-              }
-            ],
-            "status": "NEW",
-            "substring": false,
-            "tags": ["from_address", "phish"],
-            "type": "Email - Address",
-            "user": "your_SIP_username",
-            "value": "badguy@evil.com"
-          }
-        ]
-      }
+      [
+        {
+          "id": 1,
+          "type": "Email - Address",
+          "value": "badguy@evil.com"
+        }
+      ]
 
     :reqheader Authorization: Optional Apikey value
     :resheader Content-Type: application/json
-    :query bulk: Flag to enable "bulk" mode and received a gzipped response of all indicators, but only id+type+value
     :query case_sensitive: True/False
     :query confidence: Confidence value
     :query count: Flag to return the number of results rather than the results themselves
@@ -870,12 +813,12 @@ def read_indicators():
     :query impact: Impact value
     :query modified_after: Parsable date or datetime in GMT. Ex: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
     :query modified_before: Parsable date or datetime in GMT. Ex: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS
-    :query no_campaigns: Flag to search for indicators withou any campaigns
+    :query no_campaigns: Flag to search for indicators without any campaigns
     :query no_references: Flag to search for indicators without any references
     :query no_tags: Flag to search for indicators without any tags
     :query not_sources: Comma-separated list of intel sources to EXCLUDE
     :query not_tags: Comma-separated list of tags to EXCLUDE
-    :query not_users: Comma-separated list of usernames to EXCLUDE
+    :query not_users: Comma-separated list of usernames to EXCLUDE from the references
     :query reference: Intel reference value
     :query sources: Comma-separated list of intel sources. Supports [OR].
     :query status: Status value
@@ -889,7 +832,6 @@ def read_indicators():
     :status 200: Indicators found
     :status 401: Invalid role to perform this action
     """
-
 
     filters = []
     groupby = False
@@ -971,6 +913,7 @@ def read_indicators():
         joins.append(indicator_reference_association)
         joins.append(IntelReference)
         joins.append(IntelSource)
+        groupby = True
         not_sources = request.args.get('not_sources').split(',')
         for ns in not_sources:
             filters.append(IntelSource.value != ns)
@@ -978,13 +921,17 @@ def read_indicators():
     # NOT Tags filter
     if 'not_tags' in request.args:
         outerjoins.append(indicator_tag_association)
+        groupby = True
         not_tags = request.args.get('not_tags').split(',')
         for nt in not_tags:
             filters.append(~Indicator.tags.any(value=nt))
 
     # NOT Username filter
     if 'not_users' in request.args:
+        joins.append(indicator_reference_association)
+        joins.append(IntelReference)
         joins.append(User)
+        groupby = True
         not_users = request.args.get('not_users').split(',')
         for nu in not_users:
             filters.append(User.username != nu)
@@ -992,6 +939,7 @@ def read_indicators():
     # Reference filter (IntelReference)
     if 'reference' in request.args:
         joins.append(indicator_reference_association)
+        groupby = True
         reference = request.args.get('reference')
         filters.append(Indicator.references.any(IntelReference.reference == reference))
 
@@ -1018,7 +966,7 @@ def read_indicators():
             if list_mode == 'and':
                 source_filters = []
                 for s in sources:
-                    source_filters.append(func.sum(IntelSource.value == s))
+                    source_filters.append(func.sum(IntelSource.value == s) > 0)
                 having.append(and_(*source_filters))
 
             elif list_mode == 'or':
@@ -1059,7 +1007,7 @@ def read_indicators():
             if list_mode == 'and':
                 tag_filters = []
                 for t in search_tags:
-                    tag_filters.append(func.sum(Tag.value == t))
+                    tag_filters.append(func.sum(Tag.value == t) > 0)
                 having.append(and_(*tag_filters))
 
             elif list_mode == 'or':
@@ -1089,6 +1037,7 @@ def read_indicators():
         joins.append(indicator_reference_association)
         joins.append(IntelReference)
         joins.append(User)
+        groupby = True
         filters.append(User.username == request.args.get('user'))
 
     # Users filter
@@ -1114,7 +1063,7 @@ def read_indicators():
             if list_mode == 'and':
                 user_filters = []
                 for u in search_users:
-                    user_filters.append(func.sum(User.username == u))
+                    user_filters.append(func.sum(User.username == u) > 0)
                 having.append(and_(*user_filters))
 
             elif list_mode == 'or':
@@ -1180,8 +1129,6 @@ def read_indicators():
 
     # Sort the results by the indicator ID.
     query = query.order_by(Indicator.id)
-
-    current_app.logger.error(query)
 
     # Perform the query.
     results = db.session.execute(query).fetchall()
