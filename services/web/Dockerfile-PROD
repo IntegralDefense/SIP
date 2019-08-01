@@ -3,7 +3,7 @@ FROM python:3.7
 ARG http_proxy
 ARG https_proxy
 
-RUN apt-get update && apt-get install -y mysql-client
+RUN apt-get update && apt-get install -y mariadb-client
 
 WORKDIR /usr/src/app
 
