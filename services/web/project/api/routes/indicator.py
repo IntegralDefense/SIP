@@ -836,8 +836,12 @@ def read_indicators():
     filters = []
     groupby = False
     having = []
-    joins = []
-    outerjoins = []
+    already_joined = set()
+    already_outerjoined = set()
+
+    # Start building the JOINS that we will need.
+    join = db.join(Indicator, IndicatorType, Indicator.type_id == IndicatorType.id)
+    already_joined.add('IndicatorType')
 
     # Case-sensitive filter
     if 'case_sensitive' in request.args:
@@ -846,7 +850,9 @@ def read_indicators():
 
     # Confidence filter
     if 'confidence' in request.args:
-        joins.append(IndicatorConfidence)
+        if 'IndicatorConfidence' not in already_joined:
+            join = db.join(join, IndicatorConfidence, Indicator.confidence_id == IndicatorConfidence.id)
+            already_joined.add('IndicatorConfidence')
         filters.append(IndicatorConfidence.value == request.args.get('confidence'))
 
     # Created after filter
@@ -871,7 +877,9 @@ def read_indicators():
 
     # Impact filter
     if 'impact' in request.args:
-        joins.append(IndicatorImpact)
+        if 'IndicatorImpact' not in already_joined:
+            join = db.join(join, IndicatorImpact, Indicator.impact_id == IndicatorImpact.id)
+            already_joined.add('IndicatorImpact')
         filters.append(IndicatorImpact.value == request.args.get('impact'))
 
     # Modified after filter
@@ -893,26 +901,44 @@ def read_indicators():
     # NO campaigns filter
     # TODO: Try and remove ~
     if 'no_campaigns' in request.args:
-        outerjoins.append(indicator_campaign_association)
+        if 'indicator_campaign_association' not in already_outerjoined:
+            join = db.outerjoin(join, indicator_campaign_association)
+            already_outerjoined.add('indicator_campaign_association')
+
         filters.append(~Indicator.campaigns.any())
 
     # NO Reference filter (IntelReference)
     # TODO: Try and remove ~
     if 'no_references' in request.args:
-        outerjoins.append(indicator_reference_association)
+        if 'indicator_reference_association' not in already_outerjoined:
+            join = db.outerjoin(join, indicator_reference_association)
+            already_outerjoined.add('indicator_reference_association')
+
         filters.append(~Indicator.references.any())
 
     # NO tags filter
     # TODO: Try and remove ~
     if 'no_tags' in request.args:
-        outerjoins.append(indicator_tag_association)
+        if 'indicator_tag_association' not in already_outerjoined:
+            join = db.outerjoin(join, indicator_tag_association)
+            already_outerjoined.add('indicator_tag_association')
+
         filters.append(~Indicator.tags.any())
 
     # NOT Source filter (IntelReference)
     if 'not_sources' in request.args:
-        joins.append(indicator_reference_association)
-        joins.append(IntelReference)
-        joins.append(IntelSource)
+        if 'indicator_reference_association' not in already_joined:
+            join = db.join(join, indicator_reference_association)
+            already_joined.add('indicator_reference_association')
+
+        if 'IntelReference' not in already_joined:
+            join = db.join(join, IntelReference, indicator_reference_association.c.intel_reference_id == IntelReference.id)
+            already_joined.add('IntelReference')
+
+        if 'IntelSource' not in already_joined:
+            join = db.join(join, IntelSource, IntelReference.intel_source_id == IntelSource.id)
+            already_joined.add('IntelSource')
+
         groupby = True
         not_sources = request.args.get('not_sources').split(',')
         for ns in not_sources:
@@ -920,7 +946,10 @@ def read_indicators():
 
     # NOT Tags filter
     if 'not_tags' in request.args:
-        outerjoins.append(indicator_tag_association)
+        if 'indicator_tag_association' not in already_outerjoined:
+            join = db.outerjoin(join, indicator_tag_association)
+            already_outerjoined.add('indicator_tag_association')
+
         groupby = True
         not_tags = request.args.get('not_tags').split(',')
         for nt in not_tags:
@@ -928,9 +957,18 @@ def read_indicators():
 
     # NOT Username filter
     if 'not_users' in request.args:
-        joins.append(indicator_reference_association)
-        joins.append(IntelReference)
-        joins.append(User)
+        if 'indicator_reference_association' not in already_joined:
+            join = db.join(join, indicator_reference_association)
+            already_joined.add('indicator_reference_association')
+
+        if 'IntelReference' not in already_joined:
+            join = db.join(join, IntelReference, indicator_reference_association.c.intel_reference_id == IntelReference.id)
+            already_joined.add('IntelReference')
+
+        if 'User' not in already_joined:
+            join = db.join(join, User, IntelReference.user_id == User.id)
+            already_joined.add('User')
+
         groupby = True
         not_users = request.args.get('not_users').split(',')
         for nu in not_users:
@@ -938,16 +976,28 @@ def read_indicators():
 
     # Reference filter (IntelReference)
     if 'reference' in request.args:
-        joins.append(indicator_reference_association)
+        if 'indicator_reference_association' not in already_joined:
+            join = db.join(join, indicator_reference_association)
+            already_joined.add('indicator_reference_association')
+
         groupby = True
         reference = request.args.get('reference')
         filters.append(Indicator.references.any(IntelReference.reference == reference))
 
     # Source filter (IntelReference)
     if 'sources' in request.args:
-        joins.append(indicator_reference_association)
-        joins.append(IntelReference)
-        joins.append(IntelSource)
+        if 'indicator_reference_association' not in already_joined:
+            join = db.join(join, indicator_reference_association)
+            already_joined.add('indicator_reference_association')
+
+        if 'IntelReference' not in already_joined:
+            join = db.join(join, IntelReference, indicator_reference_association.c.intel_reference_id == IntelReference.id)
+            already_joined.add('IntelReference')
+
+        if 'IntelSource' not in already_joined:
+            join = db.join(join, IntelSource, IntelReference.intel_source_id == IntelSource.id)
+            already_joined.add('IntelSource')
+
         groupby = True
 
         # Figure out AND or OR mode.
@@ -977,7 +1027,10 @@ def read_indicators():
 
     # Status filter
     if 'status' in request.args:
-        joins.append(IndicatorStatus)
+        if 'IndicatorStatus' not in already_joined:
+            join = db.join(join, IndicatorStatus, Indicator.status_id == IndicatorStatus.id)
+            already_joined.add('IndicatorStatus')
+
         filters.append(IndicatorStatus.value == request.args.get('status'))
 
     # Substring filter
@@ -987,8 +1040,14 @@ def read_indicators():
 
     # Tags filter
     if 'tags' in request.args:
-        joins.append(indicator_tag_association)
-        joins.append(Tag)
+        if 'indicator_tag_association' not in already_joined:
+            join = db.join(join, indicator_tag_association)
+            already_joined.add('indicator_tag_association')
+
+        if 'Tag' not in already_joined:
+            join = db.join(join, Tag, indicator_tag_association.c.tag_id == Tag.id)
+            already_joined.add('Tag')
+
         groupby = True
 
         # Figure out AND or OR mode.
@@ -1034,17 +1093,35 @@ def read_indicators():
 
     # User filter
     if 'user' in request.args:
-        joins.append(indicator_reference_association)
-        joins.append(IntelReference)
-        joins.append(User)
+        if 'indicator_reference_association' not in already_joined:
+            join = db.join(join, indicator_reference_association)
+            already_joined.add('indicator_reference_association')
+
+        if 'IntelReference' not in already_joined:
+            join = db.join(join, IntelReference, indicator_reference_association.c.intel_reference_id == IntelReference.id)
+            already_joined.add('IntelReference')
+
+        if 'User' not in already_joined:
+            join = db.join(join, User, IntelReference.user_id == User.id)
+            already_joined.add('User')
+
         groupby = True
         filters.append(User.username == request.args.get('user'))
 
     # Users filter
     if 'users' in request.args:
-        joins.append(indicator_reference_association)
-        joins.append(IntelReference)
-        joins.append(User)
+        if 'indicator_reference_association' not in already_joined:
+            join = db.join(join, indicator_reference_association)
+            already_joined.add('indicator_reference_association')
+
+        if 'IntelReference' not in already_joined:
+            join = db.join(join, IntelReference, indicator_reference_association.c.intel_reference_id == IntelReference.id)
+            already_joined.add('IntelReference')
+
+        if 'User' not in already_joined:
+            join = db.join(join, User, IntelReference.user_id == User.id)
+            already_joined.add('User')
+
         groupby = True
 
         # Figure out AND or OR mode.
@@ -1075,13 +1152,6 @@ def read_indicators():
     # Value filter
     if 'value' in request.args:
         filters.append(Indicator.value.like('%{}%'.format(request.args.get('value'))))
-
-    # Perform any table JOINs.
-    join = db.join(Indicator, IndicatorType)
-    for oj in outerjoins:
-        join = db.outerjoin(join, oj)
-    for j in joins:
-        join = db.join(join, j)
 
     # If count is enabled, just return the number of results rather than the results themselves.
     if 'count' in request.args:
